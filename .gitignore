@@ -1,0 +1,19 @@
+# editor temporaries
+*~
+
+# python byte code
+*.pyc
+
+# setup.py stuff
+build/
+dist/
+joerd.egg-info/
+
+# data directories
+srtm/
+gmted/
+etopo1/
+
+# tile generation directories
+tiles/
+terrarium_tiles/

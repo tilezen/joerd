@@ -1,0 +1,23 @@
+---
+regions:
+  # san-francisco-bay_california:
+  #   bbox:
+  #     top: 38.719
+  #     left: -123.640
+  #     bottom: 36.791
+  #     right: -121.025
+  san-francisco-downtown:
+    bbox:
+      top: 37.7997
+      left: -122.5109
+      bottom: 37.7127
+      right: -122.3636
+outputs:
+#  - skadi
+  - terrarium
+sources:
+  - etopo1
+  - gmted
+  - srtm
+logging:
+  config: logging.example.config
