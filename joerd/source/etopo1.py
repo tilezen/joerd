@@ -15,10 +15,9 @@ import glob
 from osgeo import gdal
 
 
-# ETOPO1_URL = 'https://www.ngdc.noaa.gov/mgg/global/relief/ETOPO1/data/' \
-#              'bedrock/grid_registered/georeferenced_tiff/' \
-#              'ETOPO1_Bed_g_geotiff.zip'
-ETOPO1_URL = 'http://localhost:8082/ETOPO1_Bed_g_geotiff.zip'
+ETOPO1_URL = 'https://www.ngdc.noaa.gov/mgg/global/relief/ETOPO1/data/' \
+             'bedrock/grid_registered/georeferenced_tiff/' \
+             'ETOPO1_Bed_g_geotiff.zip'
 
 
 WGS84_WKT = 'GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,' \
