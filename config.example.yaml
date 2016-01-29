@@ -19,5 +19,6 @@ sources:
   - etopo1
   - gmted
   - srtm
+  - ned
 logging:
   config: logging.example.config
