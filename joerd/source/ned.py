@@ -19,11 +19,7 @@ import urllib2
 import shutil
 
 
-NED_FTP_SERVER = 'rockyftp.cr.usgs.gov'
-NED_BASE_PATH = 'vdelivery/Datasets/Staged/NED/19/IMG'
-
-
-def __download_ned_file(img_name, zip_name, base_dir):
+def __download_ned_file(img_name, zip_name, base_dir, ftp_server, base_path):
     logger = logging.getLogger('ned')
     output_file = os.path.join(base_dir, img_name)
 
@@ -31,7 +27,7 @@ def __download_ned_file(img_name, zip_name, base_dir):
         return output_file
 
     with closing(tempfile.NamedTemporaryFile()) as tmp:
-        url = 'ftp://%s/%s/%s' % (NED_FTP_SERVER, NED_BASE_PATH, zip_name)
+        url = 'ftp://%s/%s/%s' % (ftp_server, base_path, zip_name)
         logger.info("FTP: Fetching %r" % url)
 
         with closing(urllib2.urlopen(url)) as req:
@@ -46,11 +42,13 @@ def __download_ned_file(img_name, zip_name, base_dir):
     return output_file
 
 
-def _download_ned_file(img_name, zip_name, base_dir):
+def _download_ned_file(img_name, zip_name, base_dir, ftp_server, base_path):
     try:
-        return __download_ned_file(img_name, zip_name, base_dir)
+        return __download_ned_file(img_name, zip_name, base_dir, ftp_server,
+                                   base_path)
     except:
-        print>>sys.stderr, "Caught exception: %s" % ("\n".join(traceback.format_exception(*sys.exc_info())))
+        print>>sys.stderr, "Caught exception: %s" % \
+            ("\n".join(traceback.format_exception(*sys.exc_info())))
         raise
 
 
@@ -91,41 +89,21 @@ def _ned_parse_filename(fname):
     return None
 
 
-def _list_ned_files():
-    ftp = FTP(NED_FTP_SERVER)
-    files = []
-
-    def _callback(zname):
-        bbox = _ned_parse_filename(zname)
-        if bbox is not None:
-            fname = zname.replace(".zip", ".img")
-            files.append((bbox, fname, zname))
-
-    ftp.login()
-    ftp.cwd(NED_BASE_PATH)
-    try:
-        ftp.set_pasv(True)
-        ftp.retrlines('NLST', _callback)
-        ftp.quit()
-    except EOFError:
-        pass
-
-    return files
-
-
 class NED:
 
-    def __init__(self, regions, base_dir='ned', num_download_threads=None):
+    def __init__(self, regions, options={}):
         self.regions = regions
-        self.num_download_threads = num_download_threads
-        self.base_dir = base_dir
+        self.num_download_threads = options.get('num_download_threads')
+        self.base_dir = options.get('base_dir', 'ned')
+        self.ftp_server = options['ftp_server']
+        self.base_path = options['base_path']
 
     def download(self):
         logger = logging.getLogger('ned')
         logger.info('Fetching NED index...')
 
         files = []
-        for bbox, fname, zname in _list_ned_files():
+        for bbox, fname, zname in self._list_ned_files():
             if self._intersects(bbox):
                 files.append((fname, zname))
 
@@ -133,9 +111,11 @@ class NED:
             os.makedirs(self.base_dir)
 
         logger.info("Starting download of %d NED files." % len(files))
-        files = _parallel(_download_ned_file,
-                          [(f, z, self.base_dir) for f, z in files],
-                          num_threads=self.num_download_threads)
+        files = _parallel(
+            _download_ned_file,
+            [(f, z, self.base_dir, self.ftp_server, self.base_path)
+             for f, z in files],
+            num_threads=self.num_download_threads)
 
         # sanity check
         for f, z in files:
@@ -178,6 +158,27 @@ class NED:
                 return True
         return False
 
+    def _list_ned_files(self):
+        ftp = FTP(self.ftp_server)
+        files = []
 
-def create(regions):
-    return NED(regions, num_download_threads=1)
+        def _callback(zname):
+            bbox = _ned_parse_filename(zname)
+            if bbox is not None:
+                fname = zname.replace(".zip", ".img")
+                files.append((bbox, fname, zname))
+
+        ftp.login()
+        ftp.cwd(self.base_path)
+        try:
+            ftp.set_pasv(True)
+            ftp.retrlines('NLST', _callback)
+            ftp.quit()
+        except EOFError:
+            pass
+
+        return files
+
+
+def create(regions, options):
+    return NED(regions, options)

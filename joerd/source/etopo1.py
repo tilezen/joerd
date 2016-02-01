@@ -15,11 +15,6 @@ import glob
 from osgeo import gdal
 
 
-ETOPO1_URL = 'https://www.ngdc.noaa.gov/mgg/global/relief/ETOPO1/data/' \
-             'bedrock/grid_registered/georeferenced_tiff/' \
-             'ETOPO1_Bed_g_geotiff.zip'
-
-
 WGS84_WKT = 'GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,' \
             '298.257223563,AUTHORITY["EPSG","7030"]],TOWGS84[0,0,0,0,0,0,0]' \
             ',AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY[' \
@@ -27,8 +22,7 @@ WGS84_WKT = 'GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,' \
             '"EPSG","9108"]],AUTHORITY["EPSG","4326"]]'
 
 
-def _download_etopo1_file(target_name, base_dir):
-    url = ETOPO1_URL
+def _download_etopo1_file(target_name, base_dir, url):
     output_file = os.path.join(base_dir, target_name)
 
     if os.path.isfile(output_file):
@@ -49,13 +43,15 @@ def _download_etopo1_file(target_name, base_dir):
 
 class ETOPO1:
 
-    def __init__(self, base_dir='etopo1'):
-        self.base_dir = base_dir
+    def __init__(self, options={}):
+        self.base_dir = options.get('base_dir', 'etopo1')
+        self.etopo1_url = options['url']
 
     def download(self):
         logger = logging.getLogger('etopo1')
         logger.info("Starting ETOPO1 download, this may take some time...")
-        file = _download_etopo1_file('ETOPO1_Bed_g_geotiff.tif', self.base_dir)
+        file = _download_etopo1_file('ETOPO1_Bed_g_geotiff.tif',
+                                     self.base_dir, self.etopo1_url)
         assert os.path.isfile(file)
         logger.info("Download complete.")
 
@@ -87,5 +83,5 @@ class ETOPO1:
         return gdal.GRA_Lanczos
 
 
-def create(regions):
-    return ETOPO1()
+def create(regions, options):
+    return ETOPO1(options)

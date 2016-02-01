@@ -90,11 +90,11 @@ def _lonlat_to_xy(zoom, lon, lat):
 
 class Terrarium:
 
-    def __init__(self, regions, sources, output_dir='terrarium_tiles', zoom=13):
+    def __init__(self, regions, sources, options={}):
         self.regions = regions
         self.sources = sources
-        self.output_dir = output_dir
-        self.zoom = zoom
+        self.output_dir = options.get('output_dir', 'terrarium_tiles')
+        self.zoom = options.get('zoom', 13)
 
     def _intersects(self, bbox):
         for r in self.regions:
@@ -168,5 +168,5 @@ class Terrarium:
         logger.info("Done generating tile %r" % tile_file)
 
 
-def create(regions, sources):
-    return Terrarium(regions, sources)
+def create(regions, sources, options):
+    return Terrarium(regions, sources, options)

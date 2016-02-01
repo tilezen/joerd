@@ -17,11 +17,8 @@ import glob
 from osgeo import gdal
 
 
-SRTM_BASE_URL = 'http://e4ftl01.cr.usgs.gov/SRTM/SRTMGL1.003/2000.02.11/'
-
-
-def __download_srtm_file(source_name, target_name, base_dir):
-    url = SRTM_BASE_URL + "/" + source_name
+def __download_srtm_file(source_name, target_name, base_dir, base_url):
+    url = base_url + "/" + source_name
     output_file = os.path.join(base_dir, target_name)
 
     if os.path.isfile(output_file):
@@ -40,11 +37,13 @@ def __download_srtm_file(source_name, target_name, base_dir):
     return output_file
 
 
-def _download_srtm_file(source_name, target_name, base_dir):
+def _download_srtm_file(source_name, target_name, base_dir, base_url):
     try:
-        return __download_srtm_file(source_name, target_name, base_dir)
+        return __download_srtm_file(source_name, target_name, base_dir,
+                                    base_url)
     except:
-        print>>sys.stderr, "Caught exception: %s" % ("\n".join(traceback.format_exception(*sys.exc_info())))
+        print>>sys.stderr, "Caught exception: %s" % \
+            ("\n".join(traceback.format_exception(*sys.exc_info())))
         raise
 
 
@@ -66,15 +65,16 @@ def _parallel(func, iterable, num_threads=None):
 
 class SRTM:
 
-    def __init__(self, regions, base_dir='srtm', num_download_threads=None):
+    def __init__(self, regions, options={}):
         self.regions = regions
-        self.num_download_threads = num_download_threads
-        self.base_dir = base_dir
+        self.num_download_threads = options.get('num_download_threads')
+        self.base_dir = options.get('base_dir', 'srtm')
+        self.url = options['url']
 
     def download(self):
         logger = logging.getLogger('srtm')
         logger.info('Fetching SRTM index...')
-        r = requests.get(SRTM_BASE_URL)
+        r = requests.get(self.url)
         soup = BeautifulSoup(r.text, 'html.parser')
 
         is_srtm_file = re.compile(
@@ -95,9 +95,10 @@ class SRTM:
             os.makedirs(self.base_dir)
 
         logger.info("Starting download of %d SRTM files." % len(links))
-        files = _parallel(_download_srtm_file,
-                          [(l, f, self.base_dir) for l, f in links],
-                          num_threads=self.num_download_threads)
+        files = _parallel(
+            _download_srtm_file,
+            [(l, f, self.base_dir, self.url) for l, f in links],
+            num_threads=self.num_download_threads)
 
         # sanity check
         for f in files:
@@ -156,5 +157,5 @@ class SRTM:
         return False
 
 
-def create(regions):
-    return SRTM(regions)
+def create(regions, options):
+    return SRTM(regions, options)
