@@ -13,6 +13,7 @@ joerd.egg-info/
 srtm/
 gmted/
 etopo1/
+ned/
 
 # tile generation directories
 tiles/
