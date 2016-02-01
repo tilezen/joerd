@@ -11,6 +11,7 @@ import shutil
 import errno
 import sys
 import joerd.composite as composite
+import numpy
 
 
 HALF_ARC_SEC = (1.0/3600.0)*.5
@@ -161,7 +162,28 @@ class Terrarium:
 
         composite.compose(self.sources, dst_ds, dst_bbox, logger)
 
+        mem_drv = gdal.GetDriverByName("MEM")
+        mem_ds = mem_drv.Create('', dst_x_size, dst_y_size, 1, gdal.GDT_UInt16)
+        mem_ds.SetGeoTransform(dst_gt)
+        mem_ds.SetProjection(dst_srs.ExportToWkt())
+        mem_ds.GetRasterBand(1).SetNoDataValue(0)
+
+        # convert from int16 to uint16 by shifting everything +32768. note that
+        # the conversion relies on uint16's wrap-around overflow behaviour.
+        # see this for more information:
+        # http://stackoverflow.com/questions/7715406/how-can-i-efficiently-transform-a-numpy-int8-array-in-place-to-a-value-shifted-n
+        pixels = dst_ds.GetRasterBand(1).ReadAsArray(0, 0, dst_x_size, dst_y_size)
+        pixels = pixels.view(numpy.uint16)
+        pixels += 32768
+        res = mem_ds.GetRasterBand(1).WriteArray(pixels)
+
+        png_file = os.path.join(self.output_dir, tile + ".png")
+        png_drv = gdal.GetDriverByName("PNG")
+        png_ds = png_drv.CreateCopy(png_file, mem_ds)
+
         del dst_ds
+        del mem_ds
+        del png_ds
 
         assert os.path.isfile(tile_file)
 
