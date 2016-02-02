@@ -114,7 +114,8 @@ class Skadi:
         dst_ds.SetProjection(dst_srs.ExportToWkt())
         dst_ds.GetRasterBand(1).SetNoDataValue(-32768)
 
-        composite.compose(self.sources, dst_ds, dst_bbox, logger)
+        composite.compose(self.sources, dst_ds, dst_bbox, logger,
+                          min(dst_x_res, dst_y_res))
 
         logger.info("Writing SRTMHGT: %r" % outfile)
         srtm_drv = gdal.GetDriverByName("SRTMHGT")

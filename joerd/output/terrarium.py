@@ -162,7 +162,14 @@ class Terrarium:
         dst_ds.SetProjection(dst_srs.ExportToWkt())
         dst_ds.GetRasterBand(1).SetNoDataValue(-32768)
 
-        composite.compose(self.sources, dst_ds, dst_bbox, logger)
+        # figure out what the approximate scale of the output image is in
+        # lat/lon coordinates. this is used to select the appropriate filter.
+        ll_bbox = _latlon_bbox(z, x, y)
+        ll_x_res = float(ll_bbox.bounds[2] - ll_bbox.bounds[0]) / dst_x_size
+        ll_y_res = float(ll_bbox.bounds[3] - ll_bbox.bounds[1]) / dst_y_size
+
+        composite.compose(self.sources, dst_ds, dst_bbox, logger,
+                          min(ll_x_res, ll_y_res))
 
         mem_drv = gdal.GetDriverByName("MEM")
         mem_ds = mem_drv.Create('', dst_x_size, dst_y_size, 1, gdal.GDT_UInt16)

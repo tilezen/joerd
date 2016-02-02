@@ -149,8 +149,8 @@ class NED:
     def mask_negative(self):
         return False
 
-    def filter_type(self):
-        return gdal.GRA_Lanczos
+    def filter_type(self, src_res, dst_res):
+        return gdal.GRA_Lanczos if src_res > dst_res else gdal.GRA_Cubic
 
     def _intersects(self, bbox):
         for r in self.regions:
