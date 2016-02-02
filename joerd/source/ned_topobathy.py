@@ -10,13 +10,24 @@ TOPOBATHY_PATTERN = re.compile('^ned19_' \
                                '(zip|img)$')
 
 
-class NEDTopobathy(NEDBase):
+class NEDTopobathy(object):
     def __init__(self, regions, options={}):
-        self.pattern = TOPOBATHY_PATTERN
-        super(NEDTopobathy, self).__init__(regions, options)
+        options.update(dict(
+            pattern=TOPOBATHY_PATTERN,
+            vrt_file="ned_topobathy.vrt"))
+        self.base = NEDBase(regions, options)
+
+    def download(self):
+        self.base.download()
+
+    def buildvrt(self):
+        self.base.buildvrt()
+
+    def filter_type(self):
+        return self.base.filter_type()
 
     def vrt_file(self):
-        return os.path.join(self.base_dir, "ned_topobathy.vrt")
+        return self.base.vrt_file()
 
     def mask_negative(self):
         return False

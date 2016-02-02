@@ -76,6 +76,8 @@ class NEDBase(object):
         self.base_dir = options.get('base_dir', 'ned')
         self.ftp_server = options['ftp_server']
         self.base_path = options['base_path']
+        self.pattern = re.compile(options['pattern'])
+        self.vrt_filename = options['vrt_file']
 
     def download(self):
         logger = logging.getLogger('ned')
@@ -112,18 +114,21 @@ class NEDBase(object):
             if bbox and self._intersects(bbox):
                 files.append(f)
 
-        args = ["gdalbuildvrt", "-q", self.vrt_file()] + files
+        args = ["gdalbuildvrt", "-q", self.vrt_file] + files
         status = subprocess.call(args)
 
         if status != 0:
             raise Exception("Call to gdalbuildvrt failed: status=%r" % status)
 
-        assert os.path.isfile(self.vrt_file())
+        assert os.path.isfile(self.vrt_file)
 
         logger.info("VRT created.")
 
     def filter_type(self):
         return gdal.GRA_Lanczos
+
+    def vrt_file(self):
+        return os.path.join(self.base_path, self.vrt_filename)
 
     def _intersects(self, bbox):
         for r in self.regions:
