@@ -102,7 +102,7 @@ def compose(layers, dst_ds, dst_bbox, logger):
     # by any valid data values in later layers. so layers should be listed
     # in order of increasing detail.
     for layer in layers:
-        logger.info("Processing layer VRT: %r", layer.vrt_file())
+        logger.debug("Processing layer VRT: %r", layer.vrt_file())
 
         mem_ds = mem_drv.Create('', dst_x_size, dst_y_size, 1, dst_type)
         assert mem_ds is not None
@@ -128,4 +128,4 @@ def compose(layers, dst_ds, dst_bbox, logger):
         res = dst_band.WriteArray(new_data)
         assert res == gdal.CPLE_None
 
-    logger.info("Done composite.")
+    logger.debug("Done composite.")
