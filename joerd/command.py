@@ -96,12 +96,6 @@ def joerd_main(argv=None):
     if argv is None:
         argv = sys.argv[1:]
 
-    # check the actually installed GDAL version
-    gdal_version = gdal.VersionInfo()
-    gdal_major_version = int(gdal_version)/1000000
-    assert gdal_major_version >= 2, \
-        'Joerd needs GDAL >= 2.0.0, but got %r' % gdal_version
-
     parser = JoerdArgumentParser()
     subparsers = parser.add_subparsers()
 
