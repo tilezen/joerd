@@ -28,5 +28,8 @@ sources:
   - type: ned
     ftp_server: rockyftp.cr.usgs.gov
     base_path: vdelivery/Datasets/Staged/NED/19/IMG
+  - type: ned_topobathy
+    ftp_server: rockyftp.cr.usgs.gov
+    base_path: vdelivery/Datasets/Staged/NED/19/IMG
 logging:
   config: logging.example.config
