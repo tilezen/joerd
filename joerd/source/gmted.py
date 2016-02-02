@@ -15,15 +15,7 @@ import glob
 from osgeo import gdal
 
 
-#GMTED_BASE_URL = 'http://topotools.cr.usgs.gov/GMTED_viewer/data/' \
-#                 'Global_tiles_GMTED'
-GMTED_BASE_URL = 'http://edcintl.cr.usgs.gov/downloads/sciweb1/shared' \
-                 '/topo/downloads/GMTED/Global_tiles_GMTED'
-GMTED_YS = [-90, -70, -50, -30, -10, 10, 30, 50, 70]
-GMTED_XS = [-180, -150, -120, -90, -60, -30, 0, 30, 60, 90, 120, 150]
-
-
-def __download_gmted_file(x, y, base_dir):
+def __download_gmted_file(x, y, base_dir, base_url):
     dir = "%s%03d" % ("E" if x >= 0 else "W", abs(x))
     res = '300' if y == -90 else '075'
     xname = "%03d%s" % (abs(x), "E" if x >= 0 else "W")
@@ -33,7 +25,7 @@ def __download_gmted_file(x, y, base_dir):
     fname = "%(y)s%(x)s_20101117_gmted_mea%(res)s.tif" % \
             dict(res=res, x=xname, y=yname)
 
-    url = GMTED_BASE_URL + dname + fname
+    url = base_url + dname + fname
     output_file = os.path.join(base_dir, fname)
 
     if os.path.isfile(output_file):
@@ -51,11 +43,13 @@ def __download_gmted_file(x, y, base_dir):
     return output_file
 
 
-def _download_gmted_file(source_name, target_name, base_dir):
+def _download_gmted_file(source_name, target_name, base_dir, base_url):
     try:
-        return __download_gmted_file(source_name, target_name, base_dir)
+        return __download_gmted_file(source_name, target_name, base_dir,
+                                     base_url)
     except:
-        print>>sys.stderr, "Caught exception: %s" % ("\n".join(traceback.format_exception(*sys.exc_info())))
+        print>>sys.stderr, "Caught exception: %s" % \
+            ("\n".join(traceback.format_exception(*sys.exc_info())))
         raise
 
 
@@ -77,10 +71,13 @@ def _parallel(func, iterable, num_threads=None):
 
 class GMTED:
 
-    def __init__(self, regions, base_dir='gmted', num_download_threads=None):
+    def __init__(self, regions, options={}):
         self.regions = regions
-        self.num_download_threads = num_download_threads
-        self.base_dir = base_dir
+        self.num_download_threads = options.get('num_download_threads')
+        self.base_dir = options.get('base_dir', 'gmted')
+        self.url = options['url']
+        self.xs = options['xs']
+        self.ys = options['ys']
 
     def download(self):
         logger = logging.getLogger('gmted')
@@ -88,8 +85,8 @@ class GMTED:
             os.makedirs(self.base_dir)
 
         tiles = []
-        for y in GMTED_YS:
-            for x in GMTED_XS:
+        for y in self.ys:
+            for x in self.xs:
                 bbox = BoundingBox(x, y, x + 30, y + 20)
                 if self._intersects(bbox):
                     tiles.append((x, y))
@@ -97,9 +94,10 @@ class GMTED:
         logger.info("Starting download of %d GMTED files "
                          "(these are _huge_, so please be patient)."
                          % len(tiles))
-        files = _parallel(_download_gmted_file,
-                          [(x, y, self.base_dir) for x, y in tiles],
-                          num_threads=self.num_download_threads)
+        files = _parallel(
+            _download_gmted_file,
+            [(x, y, self.base_dir, self.url) for x, y in tiles],
+            num_threads=self.num_download_threads)
 
         # sanity check
         for f in files:
@@ -162,5 +160,5 @@ class GMTED:
         return False
 
 
-def create(regions):
-    return GMTED(regions)
+def create(regions, options):
+    return GMTED(regions, options)

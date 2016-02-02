@@ -27,9 +27,8 @@ class Configuration(object):
 def default_yml_config():
     return {
         'regions': {},
-        'sources': [
-            'srtm'
-        ],
+        'sources': [],
+        'outputs': [],
         'logging': {
             'config': None
         },

@@ -40,7 +40,7 @@ class Joerd:
     def generate(self):
         tiles = []
 
-        for name, output in self.outputs.iteritems():
+        for output in self.outputs:
             tiles.extend([(output, t) for t in output.generate_tiles()])
 
         p = Pool()
@@ -54,17 +54,19 @@ class Joerd:
     def _sources(self, cfg):
         sources = []
         for source in cfg.sources:
-            module = import_module('joerd.source.%s' % source)
+            source_type = source['type']
+            module = import_module('joerd.source.%s' % source_type)
             create_fn = getattr(module, 'create')
-            sources.append(create_fn(cfg.regions))
+            sources.append(create_fn(cfg.regions, source))
         return sources
 
     def _outputs(self, cfg, sources):
-        outputs = {}
+        outputs = []
         for output in cfg.outputs:
-            module = import_module('joerd.output.%s' % output)
+            output_type = output['type']
+            module = import_module('joerd.output.%s' % output_type)
             create_fn = getattr(module, 'create')
-            outputs[output] = create_fn(cfg.regions, sources)
+            outputs.append(create_fn(cfg.regions, sources, output))
         return outputs
 
 

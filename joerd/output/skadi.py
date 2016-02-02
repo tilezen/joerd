@@ -38,10 +38,10 @@ def _parse_tile(tile_name):
 
 class Skadi:
 
-    def __init__(self, regions, sources, output_dir='tiles'):
+    def __init__(self, regions, sources, options={}):
         self.regions = regions
         self.sources = sources
-        self.output_dir = output_dir
+        self.output_dir = options.get('output_dir', 'tiles')
 
     def _bbox(self, x, y):
         return BoundingBox(
@@ -128,5 +128,5 @@ class Skadi:
         logger.info("Done generating tile %r" % tile_file)
 
 
-def create(regions, sources):
-    return Skadi(regions, sources)
+def create(regions, sources, options):
+    return Skadi(regions, sources, options)

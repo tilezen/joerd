@@ -13,12 +13,20 @@ regions:
       bottom: 37.7127
       right: -122.3636
 outputs:
-#  - skadi
-  - terrarium
+  - type: skadi
+  - type: terrarium
+    zoom: 13
 sources:
-  - etopo1
-  - gmted
-  - srtm
-  - ned
+  - type: etopo1
+    url: https://www.ngdc.noaa.gov/mgg/global/relief/ETOPO1/data/bedrock/grid_registered/georeferenced_tiff/ETOPO1_Bed_g_geotiff.zip
+  - type: gmted
+    url: http://edcintl.cr.usgs.gov/downloads/sciweb1/shared/topo/downloads/GMTED/Global_tiles_GMTED
+    ys: [-90, -70, -50, -30, -10, 10, 30, 50, 70]
+    xs: [-180, -150, -120, -90, -60, -30, 0, 30, 60, 90, 120, 150]
+  - type: srtm
+    url: http://e4ftl01.cr.usgs.gov/SRTM/SRTMGL1.003/2000.02.11/
+  - type: ned
+    ftp_server: rockyftp.cr.usgs.gov
+    base_path: vdelivery/Datasets/Staged/NED/19/IMG
 logging:
   config: logging.example.config

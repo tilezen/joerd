@@ -29,14 +29,14 @@ setup(name='joerd',
       include_package_data=True,
       zip_safe=False,
       install_requires=[
-          'GDAL >= 2.0.0',
+          'GDAL',
           'beautifulsoup4',
           'requests',
           'numpy',
+          'PyYAML',
       ],
       test_suite='tests',
       tests_require=[
-          'mock',
       ],
       entry_points=dict(
           console_scripts=[
