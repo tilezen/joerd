@@ -95,7 +95,8 @@ class Terrarium:
         self.regions = regions
         self.sources = sources
         self.output_dir = options.get('output_dir', 'terrarium_tiles')
-        self.zoom = options.get('zoom', 13)
+        self.zooms = options.get('zooms', [13])
+        self.enable_browser_png = options.get('enable_browser_png', False)
 
     def _intersects(self, bbox):
         for r in self.regions:
@@ -107,13 +108,14 @@ class Terrarium:
         logger = logging.getLogger('terrarium')
         tiles = set()
 
-        for r in self.regions:
-            lx, ly = _lonlat_to_xy(self.zoom, r.bounds[0], r.bounds[3])
-            ux, uy = _lonlat_to_xy(self.zoom, r.bounds[2], r.bounds[1])
+        for zoom in self.zooms:
+            for r in self.regions:
+                lx, ly = _lonlat_to_xy(zoom, r.bounds[0], r.bounds[3])
+                ux, uy = _lonlat_to_xy(zoom, r.bounds[2], r.bounds[1])
 
-            for x in range(lx, ux + 1):
-                for y in range(ly, uy + 1):
-                    tiles.add(_tile_name(self.zoom, x, y))
+                for x in range(lx, ux + 1):
+                    for y in range(ly, uy + 1):
+                        tiles.add(_tile_name(zoom, x, y))
 
         logger.info("Generated %d tile jobs." % len(tiles))
         return list(tiles)
@@ -126,7 +128,7 @@ class Terrarium:
             raise Exception("Unable to parse %r as terrarium tile name."
                             % tile)
 
-        logger.info("Generating tile %r..." % tile)
+        logger.debug("Generating tile %r..." % tile)
         z, x, y = t
         bbox = _merc_bbox(z, x, y)
 
@@ -180,6 +182,23 @@ class Terrarium:
         png_file = os.path.join(self.output_dir, tile + ".png")
         png_drv = gdal.GetDriverByName("PNG")
         png_ds = png_drv.CreateCopy(png_file, mem_ds)
+
+        # "browser" PNG is an image which will display okay in the browser. this
+        # can be very useful for demos, or checking that the data is looking
+        # okay. it's perhaps less useful for "production" use, so is disabled by
+        # default.
+        if self.enable_browser_png:
+            pixels = (numpy.clip(pixels, 31768, 34317) - 31768) / 10
+            mem2_ds = mem_drv.Create('', dst_x_size, dst_y_size, 1, gdal.GDT_Byte)
+            mem2_ds.SetGeoTransform(dst_gt)
+            mem2_ds.SetProjection(dst_srs.ExportToWkt())
+            mem2_ds.GetRasterBand(1).SetNoDataValue(0)
+            mem2_ds.GetRasterBand(1).WriteArray(pixels)
+            png2_file = os.path.join(self.output_dir, tile + ".u8.png")
+            png2_ds = png_drv.CreateCopy(png2_file, mem2_ds)
+
+            del mem2_ds
+            del png2_ds
 
         del dst_ds
         del mem_ds

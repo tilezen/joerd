@@ -15,7 +15,7 @@ regions:
 outputs:
   - type: skadi
   - type: terrarium
-    zoom: 13
+    zooms: [9, 10, 11, 12, 13]
 sources:
   - type: etopo1
     url: https://www.ngdc.noaa.gov/mgg/global/relief/ETOPO1/data/bedrock/grid_registered/georeferenced_tiff/ETOPO1_Bed_g_geotiff.zip
