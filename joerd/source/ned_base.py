@@ -114,13 +114,13 @@ class NEDBase(object):
             if bbox and self._intersects(bbox):
                 files.append(f)
 
-        args = ["gdalbuildvrt", "-q", self.vrt_file] + files
+        args = ["gdalbuildvrt", "-q", self.vrt_file()] + files
         status = subprocess.call(args)
 
         if status != 0:
             raise Exception("Call to gdalbuildvrt failed: status=%r" % status)
 
-        assert os.path.isfile(self.vrt_file)
+        assert os.path.isfile(self.vrt_file())
 
         logger.info("VRT created.")
 
