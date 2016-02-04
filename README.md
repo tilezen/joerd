@@ -14,7 +14,7 @@ Valhalla is an open source routing engine and accompanying libraries for use wit
 Build Status
 ------------
 
-[![Circle CI](https://circleci.com/gh/valhalla/joerd.svg?style=svg)](https://circleci.com/gh/valhalla/joerd)
+[![Circle CI](https://circleci.com/gh/mapzen/joerd.svg?style=svg)](https://circleci.com/gh/mapzen/joerd)
 
 Building
 --------
@@ -68,7 +68,7 @@ Joerd, and all of the projects under the Valhalla organization use the [MIT Lice
 Contributing
 ------------
 
-We welcome contributions to Joerd. If you would like to report an issue, or even better fix an existing one, please use the [Joerd issue tracker](https://github.com/valhalla/joerd/issues) on GitHub.
+We welcome contributions to Joerd. If you would like to report an issue, or even better fix an existing one, please use the [Joerd issue tracker](https://github.com/mapzen/joerd/issues) on GitHub.
 
 Tests
 -----
