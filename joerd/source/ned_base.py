@@ -124,11 +124,11 @@ class NEDBase(object):
 
         logger.info("VRT created.")
 
-    def filter_type(self):
-        return gdal.GRA_Lanczos
+    def filter_type(self, src_res, dst_res):
+        return gdal.GRA_Lanczos if src_res > dst_res else gdal.GRA_Cubic
 
     def vrt_file(self):
-        return os.path.join(self.base_path, self.vrt_filename)
+        return os.path.join(self.base_dir, self.vrt_filename)
 
     def _intersects(self, bbox):
         for r in self.regions:

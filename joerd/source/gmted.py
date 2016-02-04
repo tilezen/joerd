@@ -138,8 +138,8 @@ class GMTED:
     def mask_negative(self):
         return True
 
-    def filter_type(self):
-        return gdal.GRA_Lanczos
+    def filter_type(self, src_res, dst_res):
+        return gdal.GRA_Lanczos if src_res > dst_res else gdal.GRA_Cubic
 
     def _parse_bbox(self, ns_deg, is_ns, ew_deg, is_ew, res):
         bottom = int(ns_deg)

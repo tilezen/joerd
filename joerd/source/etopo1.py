@@ -79,7 +79,7 @@ class ETOPO1:
     def mask_negative(self):
         return False
 
-    def filter_type(self):
+    def filter_type(self, src_res, dst_res):
         return gdal.GRA_Lanczos
 
 

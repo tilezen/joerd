@@ -44,9 +44,9 @@ def _mk_image(infile, dst_ds, dst_bbox, mask_negative, filter_type):
     src_band = src_ds.GetRasterBand(1)
     src_nodata = src_band.GetNoDataValue()
 
+    f_type = filter_type(min(src_x_res, src_y_res))
     res = gdal.ReprojectImage(src_ds, dst_ds, src_srs.ExportToWkt(),
-                              dst_srs.ExportToWkt(), filter_type,
-                              1024, 0.125)
+                              dst_srs.ExportToWkt(), f_type, 1024, 0.125)
     assert res == gdal.CPLE_None
 
     dst_x_size = dst_ds.RasterXSize
@@ -74,7 +74,7 @@ _NUMPY_TYPES = {
 #
 # dst_ds will be erased to its nodata value before composition starts.
 #
-def compose(layers, dst_ds, dst_bbox, logger):
+def compose(layers, dst_ds, dst_bbox, logger, dst_res):
     dst_band = dst_ds.GetRasterBand(1)
     dst_nodata = dst_band.GetNoDataValue()
     dst_x_size = dst_ds.RasterXSize
@@ -113,10 +113,12 @@ def compose(layers, dst_ds, dst_bbox, logger):
         mem_band.WriteArray(
             numpy.full((dst_x_size, dst_y_size), dst_nodata, numpy_type))
 
-        filter_type = layer.filter_type()
+        def _filter_type_func(src_res):
+            return layer.filter_type(src_res, dst_res)
+
         vrt_file = layer.vrt_file()
         _mk_image(layer.vrt_file(), mem_ds, dst_bbox, layer.mask_negative(),
-                  layer.filter_type())
+                  _filter_type_func)
 
         mem_band = mem_ds.GetRasterBand(1)
         mem_data = mem_band.ReadAsArray(0, 0, dst_x_size, dst_y_size)

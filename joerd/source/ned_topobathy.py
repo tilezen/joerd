@@ -23,8 +23,8 @@ class NEDTopobathy(object):
     def buildvrt(self):
         self.base.buildvrt()
 
-    def filter_type(self):
-        return self.base.filter_type()
+    def filter_type(self, src_res, dst_res):
+        return self.base.filter_type(src_res, dst_res)
 
     def vrt_file(self):
         return self.base.vrt_file()
