@@ -82,7 +82,7 @@ class Skadi:
         bbox = self._bbox(x, y)
 
         mid_dir = os.path.join(self.output_dir,
-                               ("N" if y >= 0 else "S") + ("%02d" % abs(y)))
+                               ("N" if y >= 90 else "S") + ("%02d" % abs(y-90)))
         if not os.path.isdir(mid_dir):
             try:
                 os.makedirs(mid_dir)
