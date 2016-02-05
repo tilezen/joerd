@@ -17,7 +17,7 @@ How do I pronounce it?
 Jörð is [pronounced](assets/joerd_pronunciation.mp3):
 
 * j = y as in english 'yellow'
-* ö = ö as in german 'göttin'
+* ö = ö as in german 'Göttin'
 * r = r as in spanish 'pero'
 * ð = th as in english 'they'
 
