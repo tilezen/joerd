@@ -21,7 +21,7 @@ Jörð is [pronounced](assets/joerd_pronunciation.mp3):
 * r = r as in spanish 'pero'
 * ð = th as in english 'they'
 
-Which is close to "y-earth". Many thanks to @baldur for lending us his voice.
+Which is close to "y-earthe". Many thanks to @baldur for lending us his voice.
 
 Build Status
 ------------
