@@ -37,6 +37,7 @@ setup(name='joerd',
       ],
       test_suite='tests',
       tests_require=[
+          'httptestserver',
       ],
       entry_points=dict(
           console_scripts=[
