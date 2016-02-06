@@ -8,7 +8,8 @@
 build/
 dist/
 joerd.egg-info/
-*.egg/
+/*.egg/
+/*.egg
 
 # data directories
 srtm/
