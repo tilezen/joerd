@@ -1,4 +1,5 @@
 from joerd.util import BoundingBox
+from joerd.download import get as joerd_get
 from contextlib import closing
 from shutil import copyfile
 import os.path
@@ -13,6 +14,7 @@ import traceback
 import subprocess
 import glob
 from osgeo import gdal
+from time import sleep
 
 
 WGS84_WKT = 'GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,' \
@@ -22,19 +24,31 @@ WGS84_WKT = 'GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,' \
             '"EPSG","9108"]],AUTHORITY["EPSG","4326"]]'
 
 
+def _check_zip_file(tmp):
+    try:
+        zip_file = zipfile.ZipFile(tmp.name, 'r')
+        test_result = zip_file.testzip()
+        return test_result is None
+
+    except:
+        pass
+
+    return False
+
+
+def _exponential_backoff(try_num):
+    secs = min((1 << try_num) - 1, 600)
+    sleep(secs)
+
+
 def _download_etopo1_file(target_name, base_dir, url):
     output_file = os.path.join(base_dir, target_name)
 
     if os.path.isfile(output_file):
         return output_file
 
-    with closing(tempfile.NamedTemporaryFile()) as tmp:
-        with closing(requests.get(url, stream=True)) as req:
-            for chunk in req.iter_content(chunk_size=10240):
-                if chunk:
-                    tmp.write(chunk)
-        tmp.flush()
-
+    with joerd_get(url, dict(verifier=_check_zip_file, tries=10,
+                             backoff=_exponential_backoff)) as tmp:
         with zipfile.ZipFile(tmp.name, 'r') as zfile:
             zfile.extract(target_name, base_dir)
 
