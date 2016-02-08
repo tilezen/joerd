@@ -6,6 +6,11 @@ import logging
 import shutil
 
 
+# Custom error wrapper for (known) exceptions thrown by the download module.
+class DownloadFailedError(Exception):
+    pass
+
+
 @contextmanager
 def get(url, options={}):
     """
@@ -47,6 +52,14 @@ def get(url, options={}):
         # we need to download _something_ if the file position is less than the
         # known size, or the size is unknown.
         while filesize is None or filepos < filesize:
+            # explode if we've exceeded the number of allowed attempts
+            if tries >= max_tries:
+                raise DownloadFailedError("Max tries exceeded (%d) while "
+                                          "downloading file %r"
+                                          % (max_tries, url))
+            else:
+                tries += 1
+
             req = urllib2.Request(url)
 
             # if the server supports accept range, and we have a partial
@@ -76,7 +89,6 @@ def get(url, options={}):
             # update number of bytes read (this would be nicer if copyfileobj
             # returned it.
             filepos = tmp.tell()
-            tries += 1
 
             # if we don't know how large the file is supposed to be, then
             # verify it every time.
@@ -88,21 +100,13 @@ def get(url, options={}):
                 # no need to reset here - since filesize is none, then we'll be
                 # downloading from scratch, which will truncate the file.
 
-            # explode if we've exceeded the number of allowed attempts
-            if tries > max_tries:
-                break
-
-        if tries > max_tries:
-            raise Exception("Max tries exceeded (%d) while downloading file %r"
-                            % (max_tries, url))
-
         # verify the file, if it hasn't been verified before
         if filesize is not None and verifier is not None:
             # reset tmp file to beginning for verification
             tmp.seek(0, os.SEEK_SET)
             if not verifier(tmp):
-                raise Exception("File downloaded from %r failed verification"
-                                % url)
+                raise DownloadFailedError("File downloaded from %r failed "
+                                          "verification" % url)
 
         tmp.seek(0, os.SEEK_SET)
         yield tmp

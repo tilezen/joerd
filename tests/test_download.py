@@ -9,7 +9,6 @@ except ImportError:
 import contextlib
 from httptestserver import Server
 import re
-import sys
 
 
 # simple handler which does what most HTTP servers (should) do; responds with
@@ -159,3 +158,26 @@ class TestDownload(unittest.TestCase):
             with download.get(server.url('/'), dict(
                     verifier=_verifier, tries=(len(value) / 4 + 1))) as data:
                 self.assertEqual(value, data.read())
+
+    def test_download_limited_retries(self):
+        # In the case that the server is so thoroughly broken that it is not
+        # possible to download the file (or would take an inordinate amount of
+        # time), the download process should cap the maximum number of tries
+        # to a finite value.
+        value = "Some random string here."
+
+        # The server just gives back the same 4 bytes over and over.
+        max_len = _MaxLenFunc(4, 0)
+
+        def _handler(*args):
+            return _DroppingHandler(value, max_len, False, *args)
+
+        def _verifier(filelike):
+            v = filelike.read() == value
+            return v
+
+        with _test_http_server(_handler) as server:
+            with self.assertRaises(download.DownloadFailedError):
+                with download.get(server.url('/'), dict(verifier=_verifier,
+                                                        tries=10)) as data:
+                    data.read()
