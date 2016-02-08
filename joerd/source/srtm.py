@@ -1,5 +1,6 @@
 from bs4 import BeautifulSoup
 from joerd.util import BoundingBox
+from joerd.download import get as joerd_get
 from multiprocessing import Pool
 from contextlib import closing
 from shutil import copyfile
@@ -15,6 +16,24 @@ import traceback
 import subprocess
 import glob
 from osgeo import gdal
+from time import sleep
+
+
+def _check_zip_file(tmp):
+    try:
+        zip_file = zipfile.ZipFile(tmp.name, 'r')
+        test_result = zip_file.testzip()
+        return test_result is None
+
+    except:
+        pass
+
+    return False
+
+
+def _exponential_backoff(try_num):
+    secs = min((1 << try_num) - 1, 600)
+    sleep(secs)
 
 
 def __download_srtm_file(source_name, target_name, base_dir, base_url):
@@ -24,13 +43,8 @@ def __download_srtm_file(source_name, target_name, base_dir, base_url):
     if os.path.isfile(output_file):
         return output_file
 
-    with closing(tempfile.NamedTemporaryFile()) as tmp:
-        with closing(requests.get(url, stream=True)) as req:
-            for chunk in req.iter_content(chunk_size=10240):
-                if chunk:
-                    tmp.write(chunk)
-        tmp.flush()
-
+    with joerd_get(url, dict(verifier=_check_zip_file, tries=10,
+                             backoff=_exponential_backoff)) as tmp:
         with zipfile.ZipFile(tmp.name, 'r') as zfile:
             zfile.extract(target_name, base_dir)
 

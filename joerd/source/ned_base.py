@@ -1,4 +1,5 @@
 from joerd.util import BoundingBox
+from joerd.download import get as joerd_get
 from multiprocessing import Pool
 from contextlib import closing
 from shutil import copyfile
@@ -17,6 +18,24 @@ import glob
 from osgeo import gdal
 import urllib2
 import shutil
+from time import sleep
+
+
+def _check_zip_file(tmp):
+    try:
+        zip_file = zipfile.ZipFile(tmp.name, 'r')
+        test_result = zip_file.testzip()
+        return test_result is None
+
+    except:
+        pass
+
+    return False
+
+
+def _exponential_backoff(try_num):
+    secs = min((1 << try_num) - 1, 600)
+    sleep(secs)
 
 
 def __download_ned_file(img_name, zip_name, base_dir, ftp_server, base_path):
@@ -26,15 +45,9 @@ def __download_ned_file(img_name, zip_name, base_dir, ftp_server, base_path):
     if os.path.isfile(output_file):
         return output_file
 
-    with closing(tempfile.NamedTemporaryFile()) as tmp:
-        url = 'ftp://%s/%s/%s' % (ftp_server, base_path, zip_name)
-        logger.info("FTP: Fetching %r" % url)
-
-        with closing(urllib2.urlopen(url)) as req:
-            shutil.copyfileobj(req, tmp)
-
-        tmp.flush()
-
+    url = 'ftp://%s/%s/%s' % (ftp_server, base_path, zip_name)
+    with joerd_get(url, dict(verifier=_check_zip_file, tries=10,
+                             backoff=_exponential_backoff)) as tmp:
         with zipfile.ZipFile(tmp.name, 'r') as zfile:
             zfile.extract(img_name, base_dir)
             zfile.extract(img_name + ".aux.xml", base_dir)
