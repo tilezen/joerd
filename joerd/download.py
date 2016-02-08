@@ -6,6 +6,7 @@ import logging
 import shutil
 import httplib
 import ftplib
+from time import sleep
 
 
 # Custom error wrapper for (known) exceptions thrown by the download module.
@@ -132,3 +133,37 @@ def get(url, options={}):
 
         tmp.seek(0, os.SEEK_SET)
         yield tmp
+
+
+def _exponential_backoff(try_num):
+    """
+    Backoff exponentially, with each request backing off 2x from the previous
+    attempt. The time limits at 10 minutes maximum back-off. This is generally
+    a good default if nothing else is known about the upstream rate-limiter.
+    """
+    secs = min((1 << try_num) - 1, 600)
+    sleep(secs)
+
+
+def options(in_opts={}):
+    """
+    Extract a set of options from the input and augment them with some
+    defaults.
+    """
+
+    out_opts = dict()
+
+    backoff = in_opts.get('backoff', 'exponential')
+    if backoff == 'exponential':
+        out_opts['backoff'] = _exponential_backoff
+    else:
+        raise Exception("Configuration backoff=%r not understood."
+                            % backoff)
+
+    timeout = in_opts.get('timeout', 60)
+    out_opts['timeout'] = int(timeout)
+
+    tries = in_opts.get('tries', 10)
+    out_opts['tries'] = int(tries)
+
+    return out_opts

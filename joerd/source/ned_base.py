@@ -1,5 +1,6 @@
 from joerd.util import BoundingBox
-from joerd.download import get as joerd_get
+import joerd.download as download
+import joerd.check as check
 from multiprocessing import Pool
 from contextlib import closing
 from shutil import copyfile
@@ -18,27 +19,10 @@ import glob
 from osgeo import gdal
 import urllib2
 import shutil
-from time import sleep
 
 
-def _check_zip_file(tmp):
-    try:
-        zip_file = zipfile.ZipFile(tmp.name, 'r')
-        test_result = zip_file.testzip()
-        return test_result is None
-
-    except:
-        pass
-
-    return False
-
-
-def _exponential_backoff(try_num):
-    secs = min((1 << try_num) - 1, 600)
-    sleep(secs)
-
-
-def __download_ned_file(img_name, zip_name, base_dir, ftp_server, base_path):
+def __download_ned_file(img_name, zip_name, base_dir, ftp_server, base_path,
+                        options):
     logger = logging.getLogger('ned')
     output_file = os.path.join(base_dir, img_name)
 
@@ -46,8 +30,9 @@ def __download_ned_file(img_name, zip_name, base_dir, ftp_server, base_path):
         return output_file
 
     url = 'ftp://%s/%s/%s' % (ftp_server, base_path, zip_name)
-    with joerd_get(url, dict(verifier=_check_zip_file, tries=10,
-                             backoff=_exponential_backoff)) as tmp:
+
+    options['verifier'] = check.is_zip
+    with download.get(url, options) as tmp:
         with zipfile.ZipFile(tmp.name, 'r') as zfile:
             zfile.extract(img_name, base_dir)
             zfile.extract(img_name + ".aux.xml", base_dir)
@@ -55,10 +40,11 @@ def __download_ned_file(img_name, zip_name, base_dir, ftp_server, base_path):
     return output_file
 
 
-def _download_ned_file(img_name, zip_name, base_dir, ftp_server, base_path):
+def _download_ned_file(img_name, zip_name, base_dir, ftp_server, base_path,
+                       options):
     try:
         return __download_ned_file(img_name, zip_name, base_dir, ftp_server,
-                                   base_path)
+                                   base_path, options)
     except:
         print>>sys.stderr, "Caught exception: %s" % \
             ("\n".join(traceback.format_exception(*sys.exc_info())))
@@ -91,6 +77,7 @@ class NEDBase(object):
         self.base_path = options['base_path']
         self.pattern = re.compile(options['pattern'])
         self.vrt_filename = options['vrt_file']
+        self.download_options = download.options(options)
 
     def download(self):
         logger = logging.getLogger('ned')
@@ -107,8 +94,8 @@ class NEDBase(object):
         logger.info("Starting download of %d NED files." % len(files))
         files = _parallel(
             _download_ned_file,
-            [(f, z, self.base_dir, self.ftp_server, self.base_path)
-             for f, z in files],
+            [(f, z, self.base_dir, self.ftp_server, self.base_path,
+              self.download_options) for f, z in files],
             num_threads=self.num_download_threads)
 
         # sanity check
