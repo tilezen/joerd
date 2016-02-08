@@ -29,12 +29,13 @@ class _SimpleHandler(http.BaseHTTPRequestHandler):
 # handler which emulates the GMTED server / TCP-layer rate-limiter; it drops
 # connections after some number of bytes.
 class _DroppingHandler(http.BaseHTTPRequestHandler):
-    def __init__(self, value, max_len, *args):
+    def __init__(self, value, max_len_obj, support_range, *args):
         self.value = value
-        self.max_len = max_len
+        self.max_len_obj = max_len_obj
+        self.support_range = support_range
         http.BaseHTTPRequestHandler.__init__(self, *args)
 
-    def _parse_range(self, r):
+    def _parse_range(self, r, max_len):
         if r is None:
             return None
 
@@ -46,21 +47,23 @@ class _DroppingHandler(http.BaseHTTPRequestHandler):
         end = int(m.group(2)) if len(m.group(2)) > 0 else None
 
         if end is None:
-            end = min(start + self.max_len, len(self.value))
+            end = min(start + max_len, len(self.value))
         else:
-            end = min(end, start + self.max_len, len(self.value))
+            end = min(end, start + max_len, len(self.value))
 
         return (start, end)
 
     def do_GET(self):
-        byte_range = self._parse_range(self.headers.get('Range'))
+        max_len = self.max_len_obj.get()
+        byte_range = self._parse_range(self.headers.get('Range'), max_len)
 
-        if byte_range is None:
+        if byte_range is None or not self.support_range:
             self.send_response(200)
-            self.send_header('Accept-Ranges', 'bytes')
+            if self.support_range:
+                self.send_header('Accept-Ranges', 'bytes')
             self.send_header('Content-Length', len(self.value))
             self.end_headers()
-            self.wfile.write(self.value[0:self.max_len])
+            self.wfile.write(self.value[0:max_len])
 
         elif byte_range[0] >= len(self.value):
             self.send_response(416)
@@ -78,6 +81,17 @@ class _DroppingHandler(http.BaseHTTPRequestHandler):
             self.wfile.write(self.value[byte_range[0]:byte_range[1]+1])
 
 
+class _MaxLenFunc:
+    def __init__(self, init_len, incr_len):
+        self.length = init_len
+        self.incr = incr_len
+
+    def get(self):
+        l = self.length
+        self.length = l + self.incr
+        return l
+
+
 # guard function to run a test HTTP server on another thread and reap it when
 # it goes out of scope.
 @contextlib.contextmanager
@@ -90,6 +104,7 @@ def _test_http_server(handler):
 class TestDownload(unittest.TestCase):
 
     def test_download_simple(self):
+        # Test that the download function can download a file over HTTP.
         value = "Some random string here."
 
         def _handler(*args):
@@ -104,10 +119,37 @@ class TestDownload(unittest.TestCase):
                 self.assertEqual(value, data.read())
 
     def test_download_restart(self):
+        # Test that the download function can handle restarting, and fetching
+        # a file as a series of smaller byte ranges.
         value = "Some random string here."
 
+        # The server will only return 4-byte chunks, but it should be possible
+        # to download the whole file eventually.
+        max_len = _MaxLenFunc(4, 0)
+
         def _handler(*args):
-            return _DroppingHandler(value, 4, *args)
+            return _DroppingHandler(value, max_len, True, *args)
+
+        def _verifier(filelike):
+            v = filelike.read() == value
+            return v
+
+        with _test_http_server(_handler) as server:
+            with download.get(server.url('/'), dict(
+                    verifier=_verifier, tries=(len(value) / 4 + 1))) as data:
+                self.assertEqual(value, data.read())
+
+    def test_download_restart_from_scratch(self):
+        # Test that the download function can handle restarting from scratch
+        # if the server doesn't support byte range requests.
+        value = "Some random string here."
+
+        # The server initially doesn't give the whole file, but eventually
+        # will.
+        max_len = _MaxLenFunc(4, 4)
+
+        def _handler(*args):
+            return _DroppingHandler(value, max_len, False, *args)
 
         def _verifier(filelike):
             v = filelike.read() == value
