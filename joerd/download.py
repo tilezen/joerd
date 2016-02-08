@@ -4,6 +4,8 @@ import tempfile
 import os
 import logging
 import shutil
+import httplib
+import ftplib
 
 
 # Custom error wrapper for (known) exceptions thrown by the download module.
@@ -26,6 +28,8 @@ def get(url, options={}):
         should return True if the file is okay and appears to be fully
         downloaded.
     """
+    logger = logging.getLogger('download')
+
     with closing(tempfile.NamedTemporaryFile()) as tmp:
         # current file position = number of bytes read
         filepos = 0
@@ -45,6 +49,9 @@ def get(url, options={}):
         # verifier function
         verifier = options.get('verifier')
 
+        # backoff function - to delay between retries
+        backoff = options.get('backoff')
+
         # whether the server supports Range headers (if it doesn't we'll have
         # to restart from the beginning every time).
         accept_range = False
@@ -58,6 +65,8 @@ def get(url, options={}):
                                           "downloading file %r"
                                           % (max_tries, url))
             else:
+                if backoff:
+                    backoff(tries)
                 tries += 1
 
             req = urllib2.Request(url)
@@ -65,16 +74,29 @@ def get(url, options={}):
             # if the server supports accept range, and we have a partial
             # download then attemp to resume it.
             if accept_range and filepos > 0:
+                logger.info("Continuing (try %d/%d) at %d bytes: %r"
+                            % (tries, max_tries, filepos, url))
                 assert filesize is not None
                 req.headers['Range'] = 'bytes=%s-%s' % (filepos, filesize - 1)
             else:
                 # otherwise, truncate the file in readiness to download from
                 # scratch.
+                logger.info("Downloading (try %d/%d) %r"
+                            % (tries, max_tries, url))
                 filepos = 0
                 tmp.seek(0, os.SEEK_SET)
                 tmp.truncate(0)
 
-            f = urllib2.urlopen(req, timeout=timeout)
+            try:
+                f = urllib2.urlopen(req, timeout=timeout)
+
+            except (IOError, httplib.HTTPException) as e:
+                logger.debug("Got HTTP error: %s" % str(e))
+                continue
+
+            except ftplib.all_errors as e:
+                logger.debug("Got FTP error: %s" % str(e))
+                continue
 
             # try to get the filesize, if the server reports it.
             if filesize is None:

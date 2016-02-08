@@ -1,7 +1,8 @@
 from joerd.util import BoundingBox
+from joerd.download import get as joerd_get
 from multiprocessing import Pool
 from contextlib import closing
-from shutil import copyfile
+from shutil import copyfileobj
 import os.path
 import os
 import requests
@@ -13,6 +14,25 @@ import traceback
 import subprocess
 import glob
 from osgeo import gdal
+from time import sleep
+
+
+def _check_gdal_file(tmp):
+    try:
+        ds = gdal.Open(tmp.name)
+        band = ds.GetRasterBand(1)
+        band.ComputeBandStats()
+        return True
+
+    except:
+        pass
+
+    return False
+
+
+def _exponential_backoff(try_num):
+    secs = min((1 << try_num) - 1, 600)
+    sleep(secs)
 
 
 def __download_gmted_file(x, y, base_dir, base_url):
@@ -31,14 +51,9 @@ def __download_gmted_file(x, y, base_dir, base_url):
     if os.path.isfile(output_file):
         return output_file
 
-    with closing(tempfile.NamedTemporaryFile()) as tmp:
-        with closing(requests.get(url, stream=True)) as req:
-            for chunk in req.iter_content(chunk_size=10240):
-                if chunk:
-                    tmp.write(chunk)
-        tmp.flush()
-
-        copyfile(tmp.name, output_file)
+    with joerd_get(url, dict(verifier=_check_gdal_file, tries=100,
+                             backoff=_exponential_backoff)) as tmp:
+        copyfileobj(tmp, open(output_file, 'w'))
 
     return output_file
 
