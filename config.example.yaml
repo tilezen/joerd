@@ -23,6 +23,7 @@ sources:
     url: http://edcintl.cr.usgs.gov/downloads/sciweb1/shared/topo/downloads/GMTED/Global_tiles_GMTED
     ys: [-90, -70, -50, -30, -10, 10, 30, 50, 70]
     xs: [-180, -150, -120, -90, -60, -30, 0, 30, 60, 90, 120, 150]
+    tries: 100
   - type: srtm
     url: http://e4ftl01.cr.usgs.gov/SRTM/SRTMGL1.003/2000.02.11/
   - type: ned

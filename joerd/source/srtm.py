@@ -1,5 +1,7 @@
 from bs4 import BeautifulSoup
 from joerd.util import BoundingBox
+import joerd.download as download
+import joerd.check as check
 from multiprocessing import Pool
 from contextlib import closing
 from shutil import copyfile
@@ -17,30 +19,25 @@ import glob
 from osgeo import gdal
 
 
-def __download_srtm_file(source_name, target_name, base_dir, base_url):
+def __download_srtm_file(source_name, target_name, base_dir, base_url, options):
     url = base_url + "/" + source_name
     output_file = os.path.join(base_dir, target_name)
 
     if os.path.isfile(output_file):
         return output_file
 
-    with closing(tempfile.NamedTemporaryFile()) as tmp:
-        with closing(requests.get(url, stream=True)) as req:
-            for chunk in req.iter_content(chunk_size=10240):
-                if chunk:
-                    tmp.write(chunk)
-        tmp.flush()
-
+    options['verifier'] = check.is_zip
+    with download.get(url, options) as tmp:
         with zipfile.ZipFile(tmp.name, 'r') as zfile:
             zfile.extract(target_name, base_dir)
 
     return output_file
 
 
-def _download_srtm_file(source_name, target_name, base_dir, base_url):
+def _download_srtm_file(source_name, target_name, base_dir, base_url, options):
     try:
         return __download_srtm_file(source_name, target_name, base_dir,
-                                    base_url)
+                                    base_url, options)
     except:
         print>>sys.stderr, "Caught exception: %s" % \
             ("\n".join(traceback.format_exception(*sys.exc_info())))
@@ -70,6 +67,7 @@ class SRTM:
         self.num_download_threads = options.get('num_download_threads')
         self.base_dir = options.get('base_dir', 'srtm')
         self.url = options['url']
+        self.download_options = download.options(options)
 
     def download(self):
         logger = logging.getLogger('srtm')
@@ -97,7 +95,8 @@ class SRTM:
         logger.info("Starting download of %d SRTM files." % len(links))
         files = _parallel(
             _download_srtm_file,
-            [(l, f, self.base_dir, self.url) for l, f in links],
+            [(l, f, self.base_dir, self.url, self.download_options)
+             for l, f in links],
             num_threads=self.num_download_threads)
 
         # sanity check

@@ -1,7 +1,9 @@
 from joerd.util import BoundingBox
+import joerd.download as download
+import joerd.check as check
 from multiprocessing import Pool
 from contextlib import closing
-from shutil import copyfile
+from shutil import copyfileobj
 import os.path
 import os
 import requests
@@ -15,7 +17,7 @@ import glob
 from osgeo import gdal
 
 
-def __download_gmted_file(x, y, base_dir, base_url):
+def __download_gmted_file(x, y, base_dir, base_url, options):
     dir = "%s%03d" % ("E" if x >= 0 else "W", abs(x))
     res = '300' if y == -90 else '075'
     xname = "%03d%s" % (abs(x), "E" if x >= 0 else "W")
@@ -31,22 +33,18 @@ def __download_gmted_file(x, y, base_dir, base_url):
     if os.path.isfile(output_file):
         return output_file
 
-    with closing(tempfile.NamedTemporaryFile()) as tmp:
-        with closing(requests.get(url, stream=True)) as req:
-            for chunk in req.iter_content(chunk_size=10240):
-                if chunk:
-                    tmp.write(chunk)
-        tmp.flush()
-
-        copyfile(tmp.name, output_file)
+    options['verifier'] = check.is_gdal
+    with download.get(url, options) as tmp:
+        with open(output_file, 'w') as out:
+            copyfileobj(tmp, out)
 
     return output_file
 
 
-def _download_gmted_file(source_name, target_name, base_dir, base_url):
+def _download_gmted_file(source_name, target_name, base_dir, base_url, options):
     try:
         return __download_gmted_file(source_name, target_name, base_dir,
-                                     base_url)
+                                     base_url, options)
     except:
         print>>sys.stderr, "Caught exception: %s" % \
             ("\n".join(traceback.format_exception(*sys.exc_info())))
@@ -78,6 +76,7 @@ class GMTED:
         self.url = options['url']
         self.xs = options['xs']
         self.ys = options['ys']
+        self.download_options = download.options(options)
 
     def download(self):
         logger = logging.getLogger('gmted')
@@ -96,7 +95,8 @@ class GMTED:
                          % len(tiles))
         files = _parallel(
             _download_gmted_file,
-            [(x, y, self.base_dir, self.url) for x, y in tiles],
+            [(x, y, self.base_dir, self.url, self.download_options)
+             for x, y in tiles],
             num_threads=self.num_download_threads)
 
         # sanity check
