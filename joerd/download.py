@@ -105,7 +105,12 @@ def get(url, options={}):
 
             # try to get the filesize, if the server reports it.
             if filesize is None:
-                filesize = int(f.info().get('Content-Length'))
+                content_length = f.info().get('Content-Length')
+                if content_length is not None:
+                    try:
+                        filesize = int(content_length)
+                    except ValueError:
+                        pass
 
             # detect whether the server accepts Range requests.
             accept_range = f.info().get('Accept-Ranges') == 'bytes'
