@@ -35,7 +35,8 @@ def __download_gmted_file(x, y, base_dir, base_url, options):
 
     options['verifier'] = check.is_gdal
     with download.get(url, options) as tmp:
-        copyfileobj(tmp, open(output_file, 'w'))
+        with open(output_file, 'w') as out:
+            copyfileobj(tmp, out)
 
     return output_file
 
