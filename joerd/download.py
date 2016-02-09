@@ -41,6 +41,10 @@ def get(url, options={}):
         # number of attempts so far
         tries = 0
 
+        # last try which resulted in some forward progress (i.e: filepos got
+        # bigger)
+        last_successful_try = 0
+
         # maximum number of attempts to make
         max_tries = options.get('tries', 1)
 
@@ -66,8 +70,8 @@ def get(url, options={}):
                                           "downloading file %r"
                                           % (max_tries, url))
             else:
-                if backoff:
-                    backoff(tries)
+                if backoff and tries > last_successful_try:
+                    backoff(tries - last_successful_try)
                 tries += 1
 
             req = urllib2.Request(url)
@@ -111,7 +115,10 @@ def get(url, options={}):
 
             # update number of bytes read (this would be nicer if copyfileobj
             # returned it.
+            old_filepos = filepos
             filepos = tmp.tell()
+            if filepos > old_filepos:
+                last_successful_try = tries
 
             # if we don't know how large the file is supposed to be, then
             # verify it every time.
