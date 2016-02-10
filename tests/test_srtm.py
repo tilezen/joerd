@@ -11,14 +11,14 @@ class TestSRTMSource(unittest.TestCase):
 
     def test_file_name_parsing_1(self):
         fname = 'N37W123.SRTMGL1.hgt.zip'
-        s = srtm.create([], FAKE_OPTIONS)
+        s = srtm.create(FAKE_OPTIONS)
         bbox = s._parse_bbox(fname)
         self.assertTrue(bbox is not None)
         self.assertEqual((-123, 37, -122, 38), bbox.bounds)
 
     def test_file_name_parsing_2(self):
         fname = 'N38W122.SRTMGL1.hgt.zip'
-        s = srtm.create([], FAKE_OPTIONS)
+        s = srtm.create(FAKE_OPTIONS)
         bbox = s._parse_bbox(fname)
         self.assertTrue(bbox is not None)
         self.assertEqual((-122, 38, -121, 39), bbox.bounds)

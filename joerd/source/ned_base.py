@@ -66,8 +66,7 @@ class NEDTile(object):
 
 class NEDBase(object):
 
-    def __init__(self, regions, options={}):
-        self.regions = regions
+    def __init__(self, options={}):
         self.num_download_threads = options.get('num_download_threads')
         self.base_dir = options['base_dir']
         self.ftp_server = options['ftp_server']

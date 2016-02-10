@@ -115,7 +115,7 @@ class Joerd:
             source_type = source['type']
             module = import_module('joerd.source.%s' % source_type)
             create_fn = getattr(module, 'create')
-            sources.append(create_fn(cfg.regions, source))
+            sources.append(create_fn(source))
         return sources
 
     def _outputs(self, cfg, sources):

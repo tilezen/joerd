@@ -11,11 +11,11 @@ NORMAL_PATTERN = re.compile('^ned19_' \
 
 
 class NED(object):
-    def __init__(self, regions, options={}):
+    def __init__(self, options={}):
         options = options.copy()
         options['pattern'] = NORMAL_PATTERN
         options['base_dir'] = options.get('base_dir', 'ned')
-        self.base = NEDBase(regions, options)
+        self.base = NEDBase(options)
 
     def get_index(self):
         return self.base.get_index()
@@ -33,5 +33,5 @@ class NED(object):
         return self.base.srs()
 
 
-def create(regions, options):
-    return NED(regions, options)
+def create(options):
+    return NED(options)

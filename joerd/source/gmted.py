@@ -67,8 +67,7 @@ class GMTEDTile(object):
 
 class GMTED(object):
 
-    def __init__(self, regions, options={}):
-        self.regions = regions
+    def __init__(self, options={}):
         self.num_download_threads = options.get('num_download_threads')
         self.base_dir = options.get('base_dir', 'gmted')
         self.url = options['url']
@@ -124,5 +123,5 @@ class GMTED(object):
         return b
 
 
-def create(regions, options):
-    return GMTED(regions, options)
+def create(options):
+    return GMTED(options)

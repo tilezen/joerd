@@ -64,8 +64,7 @@ class SRTMTile(object):
 
 class SRTM(object):
 
-    def __init__(self, regions, options={}):
-        self.regions = regions
+    def __init__(self, options={}):
         self.base_dir = options.get('base_dir', 'srtm')
         self.url = options['url']
         self.download_options = download.options(options)
@@ -150,5 +149,5 @@ class SRTM(object):
         return BoundingBox(left, bottom, left + 1, bottom + 1)
 
 
-def create(regions, options):
-    return SRTM(regions, options)
+def create(options):
+    return SRTM(options)

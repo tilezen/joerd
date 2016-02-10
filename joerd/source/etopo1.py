@@ -63,5 +63,5 @@ class ETOPO1(object):
         return gdal.GRA_Lanczos
 
 
-def create(regions, options):
+def create(options):
     return ETOPO1(options)

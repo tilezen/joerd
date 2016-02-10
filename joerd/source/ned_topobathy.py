@@ -11,11 +11,11 @@ TOPOBATHY_PATTERN = re.compile('^ned19_' \
 
 
 class NEDTopobathy(object):
-    def __init__(self, regions, options={}):
+    def __init__(self, options={}):
         options = options.copy()
         options['pattern'] = TOPOBATHY_PATTERN
         options['base_dir'] = options.get('base_dir', 'ned_topobathy')
-        self.base = NEDBase(regions, options)
+        self.base = NEDBase(options)
 
     def get_index(self):
         return self.base.get_index()
@@ -33,5 +33,5 @@ class NEDTopobathy(object):
         return self.base.srs()
 
 
-def create(regions, options):
-    return NEDTopobathy(regions, options)
+def create(options):
+    return NEDTopobathy(options)
