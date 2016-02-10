@@ -48,19 +48,17 @@ python setup.py install
 Using
 -----
 
-Joerd installs as a command line library, and there are currently three commands:
+Joerd installs as a command line library, and there is currently only one command:
 
-* `download` reads the regions of interest from your config file and downloads all the sources to satisfy requests in that region. This is a prerequisite for the other steps.
-* `buildvrt` builds a [VRT](http://www.gdal.org/gdal_vrttut.html) "virtual dataset" of all the downloaded files. This requires that you have already run `download`, and is a prerequisite of the `generate` step.
-* `generate` generates all the configured outputs matching your regions of interest.
+* `process` reads the regions of interest from your config file, downloads all the sources to satisfy requests in that region, and for each tile intersecting the regions of interest in configured outputs, builds a [VRT](http://www.gdal.org/gdal_vrttut.html) "virtual dataset" of all relevant source files and generates the output image(s).
 
-To run each command, type something like this:
+To run a command, type something like this:
 
 ```sh
 joerd <command> --config config.example.yaml
 ```
 
-Where `<command>` is one of the commands above. The config has four sections:
+Where `<command>` is one of the commands above (currently only `process`). The config has five sections:
 
 * `regions` is a map of named sections, each with a `bbox` section having `top`, `left`, `bottom` and `right` coordinates. These describe the bounding box of the region. Data from the sources will be downloaded to cover that region, and outputs within it will be generated.
 * `outputs` is a list of output plugins. Currently available:
@@ -71,6 +69,9 @@ Where `<command>` is one of the commands above. The config has four sections:
   * `gmted` downloads data from GMTED, a global topology dataset at 30 or 15 arc-seconds.
   * `srtm` downloads data from SRTM, an almost-global 3 arc-second topology dataset.
 * `logging` has a single section, `config`, which gives the location of a Python logging config file.
+* `jobs` controls how Joerd runs jobs. The defaults are reasonable, so this whole section may be omitted. Current subsections are:
+  * `num_threads` is how many threads to use when downloading files or generating output images. Defaults to the number of CPUs on the host computer.
+  * `chunksize` is how many jobs to assign to a single thread at once. The default is a heuristic which tries to balance large chunk size for greater throughput and small chunk size for better load balance.
 
 License
 -------
