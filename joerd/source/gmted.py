@@ -1,6 +1,7 @@
 from joerd.util import BoundingBox
 import joerd.download as download
 import joerd.check as check
+import joerd.srs as srs
 from multiprocessing import Pool
 from contextlib import closing
 from shutil import copyfileobj
@@ -17,57 +18,54 @@ import glob
 from osgeo import gdal
 
 
-def __download_gmted_file(x, y, base_dir, base_url, options):
-    dir = "%s%03d" % ("E" if x >= 0 else "W", abs(x))
-    res = '300' if y == -90 else '075'
-    xname = "%03d%s" % (abs(x), "E" if x >= 0 else "W")
-    yname = "%02d%s" % (abs(y), "N" if y >= 0 else "S")
+class GMTEDTile(object):
+    def __init__(self, parent, x, y):
+        self.parent = parent
+        self.x = x
+        self.y = y
 
-    dname = "/%(res)sdarcsec/mea/%(dir)s/" % dict(res=res, dir=dir)
-    fname = "%(y)s%(x)s_20101117_gmted_mea%(res)s.tif" % \
+    def __key(self):
+        return (self.x, self.y)
+
+    def __eq__(a, b):
+        return isinstance(b, type(a)) and \
+            a.__key() == b.__key()
+
+    def __hash__(self):
+        return hash(self.__key())
+
+    def _res(self):
+        return '300' if self.y == -90 else '075'
+
+    def _file_name(self):
+        res = self._res()
+        xname = "%03d%s" % (abs(self.x), "E" if self.x >= 0 else "W")
+        yname = "%02d%s" % (abs(self.y), "N" if self.y >= 0 else "S")
+        return "%(y)s%(x)s_20101117_gmted_mea%(res)s.tif" % \
             dict(res=res, x=xname, y=yname)
 
-    url = base_url + dname + fname
-    output_file = os.path.join(base_dir, fname)
+    def url(self):
+        dir = "%s%03d" % ("E" if self.x >= 0 else "W", abs(self.x))
+        res = self._res()
+        dname = "/%(res)sdarcsec/mea/%(dir)s/" % dict(res=res, dir=dir)
+        return self.parent.url + dname + self._file_name()
 
-    if os.path.isfile(output_file):
-        return output_file
+    def verifier(self):
+        return check.is_gdal
 
-    options['verifier'] = check.is_gdal
-    with download.get(url, options) as tmp:
-        with open(output_file, 'w') as out:
+    def options(self):
+        return self.parent.download_options
+
+    def output_file(self):
+        fname = self._file_name()
+        return os.path.join(self.parent.base_dir, fname)
+
+    def unpack(self, tmp):
+        with open(self.output_file(), 'w') as out:
             copyfileobj(tmp, out)
 
-    return output_file
 
-
-def _download_gmted_file(source_name, target_name, base_dir, base_url, options):
-    try:
-        return __download_gmted_file(source_name, target_name, base_dir,
-                                     base_url, options)
-    except:
-        print>>sys.stderr, "Caught exception: %s" % \
-            ("\n".join(traceback.format_exception(*sys.exc_info())))
-        raise
-
-
-def _parallel(func, iterable, num_threads=None):
-    p = Pool(processes=num_threads)
-    threads = []
-
-    for x in iterable:
-        p.apply_async(func, x)
-
-    p.close()
-    return_values = []
-    for t in threads:
-        return_values.append(t.get())
-
-    p.join()
-    return return_values
-
-
-class GMTED:
+class GMTED(object):
 
     def __init__(self, regions, options={}):
         self.regions = regions
@@ -78,62 +76,34 @@ class GMTED:
         self.ys = options['ys']
         self.download_options = download.options(options)
 
-    def download(self):
-        logger = logging.getLogger('gmted')
+    def get_index(self):
+        # GMTED is a static set of files - there's no need for an index, but we
+        # do need a directory to store stuff in.
         if not os.path.isdir(self.base_dir):
             os.makedirs(self.base_dir)
 
-        tiles = []
+    def downloads_for(self, tile):
+        tiles = set()
+        # if the tile scale is greater than 20x the GMTED scale, then there's no
+        # point in including GMTED, it'll be far too fine to make a difference.
+        # GMTED is 7.5 arc seconds at best (30 at the poles).
+        if tile.max_resolution() > 20 * 7.5 / 3600:
+            return tiles
+
+        # buffer by 0.1 degrees (48px) to grab neighbouring tiles to ensure
+        # that there's no tile edge artefacts.
+        tile_bbox = tile.latlon_bbox().buffer(0.1)
+
         for y in self.ys:
             for x in self.xs:
                 bbox = BoundingBox(x, y, x + 30, y + 20)
-                if self._intersects(bbox):
-                    tiles.append((x, y))
+                if tile_bbox.intersects(bbox):
+                    tiles.add(GMTEDTile(self, x, y))
 
-        logger.info("Starting download of %d GMTED files "
-                         "(these are _huge_, so please be patient)."
-                         % len(tiles))
-        files = _parallel(
-            _download_gmted_file,
-            [(x, y, self.base_dir, self.url, self.download_options)
-             for x, y in tiles],
-            num_threads=self.num_download_threads)
+        return tiles
 
-        # sanity check
-        for f in files:
-            assert os.path.isfile(f)
-
-        logger.info("Download complete.")
-
-    def buildvrt(self):
-        logger = logging.getLogger('gmted')
-        logger.info("Creating VRT.")
-
-        is_gmted_tif = re.compile(
-            '^([0-9]{2})([NS])([0-9]{3})([EW])_'
-            '20101117_gmted_mea([0-9]{3}).tif$')
-
-        files = []
-        for f in glob.glob(os.path.join(self.base_dir, '*.tif')):
-            name = os.path.split(f)[1]
-            m = is_gmted_tif.match(os.path.split(f)[1])
-            if m:
-                bbox = self._parse_bbox(*m.groups())
-                if self._intersects(bbox):
-                    files.append(f)
-
-        args = ["gdalbuildvrt", "-q", self.vrt_file()] + files
-        status = subprocess.call(args)
-
-        if status != 0:
-            raise Exception("Call to gdalbuildvrt failed: status=%r" % status)
-
-        assert os.path.isfile(self.vrt_file())
-
-        logger.info("VRT created.")
-
-    def vrt_file(self):
-        return os.path.join(self.base_dir, "gmted.vrt")
+    def srs(self):
+        return srs.wgs84()
 
     def mask_negative(self):
         return True
@@ -152,12 +122,6 @@ class GMTED:
 
         b = BoundingBox(left, bottom, left + 30, bottom + 20)
         return b
-
-    def _intersects(self, bbox):
-        for r in self.regions:
-            if r.intersects(bbox):
-                return True
-        return False
 
 
 def create(regions, options):

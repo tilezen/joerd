@@ -31,6 +31,12 @@ class TestNEDSource(unittest.TestCase):
         bbox = n.base._ned_parse_filename(fname)
         self.assertTrue(bbox is None)
 
+    def test_zip_file_name_parsing_normal_topo_2(self):
+        fname = 'ned19_n38x00_w122x50_tx_cameronco06_cameronco_2003.zip'
+        n = ned_topo.create([], FAKE_OPTIONS)
+        bbox = n.base._ned_parse_filename(fname)
+        self.assertTrue(bbox is None)
+
     def test_zip_file_name_parsing_normal(self):
         fname = 'ned19_n38x00_w122x50_ca_sanfrancisco_2010.zip'
         n = ned.create([], FAKE_OPTIONS)
@@ -40,6 +46,13 @@ class TestNEDSource(unittest.TestCase):
 
     def test_img_file_name_parsing_normal(self):
         fname = 'ned19_n38x00_w122x50_ca_sanfrancisco_2010.img'
+        n = ned.create([], FAKE_OPTIONS)
+        bbox = n.base._ned_parse_filename(fname)
+        self.assertTrue(bbox is not None)
+        self.assertEqual((-122.5, 37.75, -122.25, 38.0), bbox.bounds)
+
+    def test_zip_file_name_parsing_normal_2(self):
+        fname = 'ned19_n38x00_w122x50_tx_cameronco06_cameronco_2003.zip'
         n = ned.create([], FAKE_OPTIONS)
         bbox = n.base._ned_parse_filename(fname)
         self.assertTrue(bbox is not None)

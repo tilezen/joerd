@@ -2,7 +2,7 @@ from bs4 import BeautifulSoup
 from joerd.util import BoundingBox
 import joerd.download as download
 import joerd.check as check
-from multiprocessing import Pool
+import joerd.srs as srs
 from contextlib import closing
 from shutil import copyfile
 import os.path
@@ -17,128 +17,128 @@ import traceback
 import subprocess
 import glob
 from osgeo import gdal
+import yaml
+import time
 
 
-def __download_srtm_file(source_name, target_name, base_dir, base_url, options):
-    url = base_url + "/" + source_name
-    output_file = os.path.join(base_dir, target_name)
+GLOBAL_CACHE = {}
 
-    if os.path.isfile(output_file):
-        return output_file
 
-    options['verifier'] = check.is_zip
-    with download.get(url, options) as tmp:
+IS_SRTM_FILE = re.compile(
+    '^([NS])([0-9]{2})([EW])([0-9]{3}).SRTMGL1.hgt.zip$')
+
+
+class SRTMTile(object):
+    def __init__(self, parent, link, fname, bbox):
+        self.parent = parent
+        self.link = link
+        self.fname = fname
+        self.bbox = bbox
+
+    def __key(self):
+        return (self.link, self.fname, self.bbox)
+
+    def __eq__(a, b):
+        return isinstance(b, type(a)) and \
+            a.__key() == b.__key()
+
+    def __hash__(self):
+        return hash(self.__key())
+
+    def url(self):
+        return self.parent.url + "/" + self.link
+
+    def verifier(self):
+        return check.is_zip
+
+    def options(self):
+        return self.parent.download_options
+
+    def output_file(self):
+        return os.path.join(self.parent.base_dir, self.fname)
+
+    def unpack(self, tmp):
         with zipfile.ZipFile(tmp.name, 'r') as zfile:
-            zfile.extract(target_name, base_dir)
-
-    return output_file
+            zfile.extract(self.fname, self.parent.base_dir)
 
 
-def _download_srtm_file(source_name, target_name, base_dir, base_url, options):
-    try:
-        return __download_srtm_file(source_name, target_name, base_dir,
-                                    base_url, options)
-    except:
-        print>>sys.stderr, "Caught exception: %s" % \
-            ("\n".join(traceback.format_exception(*sys.exc_info())))
-        raise
-
-
-def _parallel(func, iterable, num_threads=None):
-    p = Pool(processes=num_threads)
-    threads = []
-
-    for x in iterable:
-        p.apply_async(func, x)
-
-    p.close()
-    return_values = []
-    for t in threads:
-        return_values.append(t.get())
-
-    p.join()
-    return return_values
-
-
-class SRTM:
+class SRTM(object):
 
     def __init__(self, regions, options={}):
         self.regions = regions
-        self.num_download_threads = options.get('num_download_threads')
         self.base_dir = options.get('base_dir', 'srtm')
         self.url = options['url']
         self.download_options = download.options(options)
 
-    def download(self):
+    def get_index(self):
+        index_file = os.path.join(self.base_dir, 'index.yaml')
+        # if index doesn't exist, or is more than 24h old
+        if not os.path.isfile(index_file) or \
+           time.time() > os.path.getmtime(index_file) + 86400:
+            self.download_index(index_file)
+
+    def download_index(self, index_file):
+        if not os.path.isdir(self.base_dir):
+            os.makedirs(self.base_dir)
+
         logger = logging.getLogger('srtm')
         logger.info('Fetching SRTM index...')
         r = requests.get(self.url)
         soup = BeautifulSoup(r.text, 'html.parser')
 
-        is_srtm_file = re.compile(
-            '^([NS])([0-9]{2})([EW])([0-9]{3}).SRTMGL1.hgt.zip$')
-
         links = []
         for a in soup.find_all('a'):
             link = a.get('href')
             if link is not None:
-                m = is_srtm_file.match(link)
-                if m:
-                    bbox = self._parse_bbox(*m.groups())
-                    if self._intersects(bbox):
-                        fname = link.replace(".SRTMGL1.hgt.zip", ".hgt")
-                        links.append((link, fname))
+                bbox = self._parse_bbox(link)
+                if bbox:
+                    fname = link.replace(".SRTMGL1.hgt.zip", ".hgt")
+                    links.append(dict(link=link, fname=fname, bbox=bbox.bounds))
 
-        if not os.path.isdir(self.base_dir):
-            os.makedirs(self.base_dir)
+        with open(index_file, 'w') as f:
+            f.write(yaml.dump(links))
 
-        logger.info("Starting download of %d SRTM files." % len(links))
-        files = _parallel(
-            _download_srtm_file,
-            [(l, f, self.base_dir, self.url, self.download_options)
-             for l, f in links],
-            num_threads=self.num_download_threads)
+    def downloads_for(self, tile):
+        tiles = set()
+        # if the tile scale is greater than 20x the SRTM scale, then there's no
+        # point in including SRTM, it'll be far too fine to make a difference.
+        # SRTM is 1 arc second.
+        if tile.max_resolution() > 20 * 1.0 / 3600:
+            return tiles
 
-        # sanity check
-        for f in files:
-            assert os.path.isfile(f)
+        # buffer by 0.01 degrees (36px) to grab neighbouring tiles and ensure
+        # that there aren't any boundary artefacts.
+        tile_bbox = tile.latlon_bbox().buffer(0.01)
 
-        logger.info("Download complete.")
+        links = GLOBAL_CACHE.get('index')
+        if links is None:
+            index_file = os.path.join(self.base_dir, 'index.yaml')
+            with open(index_file, 'r') as f:
+                links = yaml.load(f.read())
+            GLOBAL_CACHE['index'] = links
 
-    def buildvrt(self):
-        logger = logging.getLogger('srtm')
-        logger.info("Creating VRT.")
+        for link in links:
+            bbox = BoundingBox(*link['bbox'])
+            if tile_bbox.intersects(bbox):
+                tiles.add(SRTMTile(self, link['link'], link['fname'], bbox))
 
-        is_srtm_hgt = re.compile(
-            '^([NS])([0-9]{2})([EW])([0-9]{3}).hgt$')
-        files = []
-        for f in glob.glob(os.path.join(self.base_dir, '*.hgt')):
-            m = is_srtm_hgt.match(os.path.split(f)[1])
-            if m:
-                bbox = self._parse_bbox(*m.groups())
-                if self._intersects(bbox):
-                    files.append(f)
-
-        args = ["gdalbuildvrt", "-q", self.vrt_file()] + files
-        status = subprocess.call(args)
-
-        if status != 0:
-            raise Exception("Call to gdalbuildvrt failed: status=%r" % status)
-
-        assert os.path.isfile(self.vrt_file())
-
-        logger.info("VRT created.")
-
-    def vrt_file(self):
-        return os.path.join(self.base_dir, "srtm.vrt")
-
-    def mask_negative(self):
-        return True
+        return tiles
 
     def filter_type(self, src_res, dst_res):
         return gdal.GRA_Lanczos if src_res > dst_res else gdal.GRA_Cubic
 
-    def _parse_bbox(self, is_ns, ns_deg, is_ew, ew_deg):
+    def mask_negative(self):
+        return True
+
+    def srs(self):
+        return srs.wgs84()
+
+    def _parse_bbox(self, link):
+        m = IS_SRTM_FILE.match(link)
+        if not m:
+            return None
+
+        is_ns, ns_deg, is_ew, ew_deg = m.groups()
         bottom = int(ns_deg)
         left = int(ew_deg)
 
@@ -148,12 +148,6 @@ class SRTM:
             left = -left
 
         return BoundingBox(left, bottom, left + 1, bottom + 1)
-
-    def _intersects(self, bbox):
-        for r in self.regions:
-            if r.intersects(bbox):
-                return True
-        return False
 
 
 def create(regions, options):
