@@ -105,7 +105,6 @@ def compose(tile, dst_ds, dst_bbox, logger, dst_res):
         def _filter_type_func(src_res):
             return source.filter_type(src_res, dst_res)
 
-        # TODO!
         rasters = source.downloads_for(tile)
         with vrt.build([r.output_file() for r in rasters],
                        source.srs().ExportToWkt()) as src_ds:
