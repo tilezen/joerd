@@ -24,9 +24,6 @@ import yaml
 import time
 
 
-GLOBAL_CACHE = {}
-
-
 class NEDTile(object):
     def __init__(self, parent, fname, zname, bbox):
         self.parent = parent
@@ -73,6 +70,7 @@ class NEDBase(object):
         self.base_path = options['base_path']
         self.pattern = re.compile(options['pattern'])
         self.download_options = download.options(options)
+        self.index_cache = None
 
     def get_index(self):
         index_file = os.path.join(self.base_dir, 'index.yaml')
@@ -107,12 +105,12 @@ class NEDBase(object):
         # some overlap to take care of boundary issues.
         tile_bbox = tile.latlon_bbox().buffer(0.0025)
 
-        files = GLOBAL_CACHE.get('index')
+        files = self.index_cache
         if files is None:
             index_file = os.path.join(self.base_dir, 'index.yaml')
             with open(index_file, 'r') as f:
                 files = yaml.load(f.read())
-            GLOBAL_CACHE['index'] = files
+            self.index_cache = files
 
         for f in files:
             bbox = BoundingBox(*f['bbox'])

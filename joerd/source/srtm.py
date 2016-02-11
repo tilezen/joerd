@@ -21,9 +21,6 @@ import yaml
 import time
 
 
-GLOBAL_CACHE = {}
-
-
 IS_SRTM_FILE = re.compile(
     '^([NS])([0-9]{2})([EW])([0-9]{3}).SRTMGL1.hgt.zip$')
 
@@ -68,6 +65,7 @@ class SRTM(object):
         self.base_dir = options.get('base_dir', 'srtm')
         self.url = options['url']
         self.download_options = download.options(options)
+        self.index_cache = None
 
     def get_index(self):
         index_file = os.path.join(self.base_dir, 'index.yaml')
@@ -109,12 +107,12 @@ class SRTM(object):
         # that there aren't any boundary artefacts.
         tile_bbox = tile.latlon_bbox().buffer(0.01)
 
-        links = GLOBAL_CACHE.get('index')
+        links = self.index_cache
         if links is None:
             index_file = os.path.join(self.base_dir, 'index.yaml')
             with open(index_file, 'r') as f:
                 links = yaml.load(f.read())
-            GLOBAL_CACHE['index'] = links
+            self.index_cache = links
 
         for link in links:
             bbox = BoundingBox(*link['bbox'])
