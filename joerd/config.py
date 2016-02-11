@@ -1,5 +1,6 @@
 from yaml import load
 from util import BoundingBox
+from multiprocessing import cpu_count
 
 
 class Configuration(object):
@@ -14,6 +15,8 @@ class Configuration(object):
         self.sources = self._cfg('sources')
         self.outputs = self._cfg('outputs')
         self.logconfig = self._cfg('logging config')
+        self.num_threads = self._cfg('jobs num_threads')
+        self.chunksize = self._cfg('jobs chunksize')
 
 
     def _cfg(self, yamlkeys_str):
@@ -31,6 +34,10 @@ def default_yml_config():
         'outputs': [],
         'logging': {
             'config': None
+        },
+        'jobs': {
+            'num_threads': cpu_count(),
+            'chunksize': None,
         },
     }
 

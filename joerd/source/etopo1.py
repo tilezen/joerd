@@ -1,6 +1,7 @@
 from joerd.util import BoundingBox
 import joerd.download as download
 import joerd.check as check
+import joerd.srs as srs
 from contextlib import closing
 from shutil import copyfile
 import os.path
@@ -17,63 +18,43 @@ import glob
 from osgeo import gdal
 
 
-WGS84_WKT = 'GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,' \
-            '298.257223563,AUTHORITY["EPSG","7030"]],TOWGS84[0,0,0,0,0,0,0]' \
-            ',AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY[' \
-            '"EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY[' \
-            '"EPSG","9108"]],AUTHORITY["EPSG","4326"]]'
-
-
-def _download_etopo1_file(target_name, base_dir, url, options):
-    output_file = os.path.join(base_dir, target_name)
-
-    if os.path.isfile(output_file):
-        return output_file
-
-    options['verifier'] = check.is_zip
-    with download.get(url, options) as tmp:
-        with zipfile.ZipFile(tmp.name, 'r') as zfile:
-            zfile.extract(target_name, base_dir)
-
-    return output_file
-
-
-class ETOPO1:
+class ETOPO1(object):
 
     def __init__(self, options={}):
         self.base_dir = options.get('base_dir', 'etopo1')
         self.etopo1_url = options['url']
         self.download_options = download.options(options)
+        self.target_name = 'ETOPO1_Bed_g_geotiff.tif'
 
-    def download(self):
-        logger = logging.getLogger('etopo1')
-        logger.info("Starting ETOPO1 download, this may take some time...")
-        file = _download_etopo1_file('ETOPO1_Bed_g_geotiff.tif',
-                                     self.base_dir, self.etopo1_url,
-                                     self.download_options)
-        assert os.path.isfile(file)
-        logger.info("Download complete.")
+    def get_index(self):
+        # ETOPO1 needs no index - it's a single file, for which we'll need
+        # a directory to call home.
+        if not os.path.isdir(self.base_dir):
+            os.makedirs(self.base_dir)
 
-    def buildvrt(self):
-        logger = logging.getLogger('etopo1')
-        logger.info("Creating VRT.")
+    def downloads_for(self, tile):
+        # There's just one thing to download, and it's this single world
+        # tile.
+        return set([self])
 
-        # ETOPO1 covers the whole world
-        files = glob.glob(os.path.join(self.base_dir, '*.tif'))
+    def output_file(self):
+        return os.path.join(self.base_dir, self.target_name)
 
-        args = ["gdalbuildvrt", "-q", "-a_srs", WGS84_WKT, \
-                self.vrt_file()] + files
-        status = subprocess.call(args)
+    def url(self):
+        return self.etopo1_url
 
-        if status != 0:
-            raise Exception("Call to gdalbuildvrt failed: status=%r" % status)
+    def options(self):
+        return self.download_options
 
-        assert os.path.isfile(self.vrt_file())
+    def verifier(self):
+        return check.is_zip
 
-        logger.info("VRT created.")
+    def unpack(self, tmp):
+        with zipfile.ZipFile(tmp.name, 'r') as zfile:
+            zfile.extract(self.target_name, self.base_dir)
 
-    def vrt_file(self):
-        return os.path.join(self.base_dir, "etopo1.vrt")
+    def srs(self):
+        return srs.wgs84()
 
     def mask_negative(self):
         return False
@@ -82,5 +63,5 @@ class ETOPO1:
         return gdal.GRA_Lanczos
 
 
-def create(regions, options):
+def create(options):
     return ETOPO1(options)

@@ -1,6 +1,7 @@
 from joerd.util import BoundingBox
 import joerd.download as download
 import joerd.check as check
+import joerd.srs as srs
 from multiprocessing import Pool
 from contextlib import closing
 from shutil import copyfile
@@ -19,122 +20,105 @@ import glob
 from osgeo import gdal
 import urllib2
 import shutil
+import yaml
+import time
 
 
-def __download_ned_file(img_name, zip_name, base_dir, ftp_server, base_path,
-                        options):
-    logger = logging.getLogger('ned')
-    output_file = os.path.join(base_dir, img_name)
+class NEDTile(object):
+    def __init__(self, parent, fname, zname, bbox):
+        self.parent = parent
+        self.img_name = fname
+        self.zip_name = zname
+        self.bbox = bbox
 
-    if os.path.isfile(output_file):
-        return output_file
+    def __key(self):
+        return (self.img_name, self.zip_name, self.bbox)
 
-    url = 'ftp://%s/%s/%s' % (ftp_server, base_path, zip_name)
+    def __eq__(a, b):
+        return isinstance(b, type(a)) and \
+            a.__key() == b.__key()
 
-    options['verifier'] = check.is_zip
-    with download.get(url, options) as tmp:
+    def __hash__(self):
+        return hash(self.__key())
+
+    def url(self):
+        return 'ftp://%s/%s/%s' % (self.parent.ftp_server,
+                                   self.parent.base_path,
+                                   self.zip_name)
+
+    def verifier(self):
+        return check.is_zip
+
+    def options(self):
+        return self.parent.download_options
+
+    def output_file(self):
+        return os.path.join(self.parent.base_dir, self.img_name)
+
+    def unpack(self, tmp):
         with zipfile.ZipFile(tmp.name, 'r') as zfile:
-            zfile.extract(img_name, base_dir)
-            zfile.extract(img_name + ".aux.xml", base_dir)
-
-    return output_file
-
-
-def _download_ned_file(img_name, zip_name, base_dir, ftp_server, base_path,
-                       options):
-    try:
-        return __download_ned_file(img_name, zip_name, base_dir, ftp_server,
-                                   base_path, options)
-    except:
-        print>>sys.stderr, "Caught exception: %s" % \
-            ("\n".join(traceback.format_exception(*sys.exc_info())))
-        raise
-
-
-def _parallel(func, iterable, num_threads=None):
-    p = Pool(processes=num_threads)
-    threads = []
-
-    for x in iterable:
-        p.apply_async(func, x)
-
-    p.close()
-    return_values = []
-    for t in threads:
-        return_values.append(t.get())
-
-    p.join()
-    return return_values
+            zfile.extract(self.img_name, self.parent.base_dir)
+            zfile.extract(self.img_name + ".aux.xml", self.parent.base_dir)
 
 
 class NEDBase(object):
 
-    def __init__(self, regions, options={}):
-        self.regions = regions
+    def __init__(self, options={}):
         self.num_download_threads = options.get('num_download_threads')
-        self.base_dir = options.get('base_dir', 'ned')
+        self.base_dir = options['base_dir']
         self.ftp_server = options['ftp_server']
         self.base_path = options['base_path']
         self.pattern = re.compile(options['pattern'])
-        self.vrt_filename = options['vrt_file']
         self.download_options = download.options(options)
+        self.index_cache = None
 
-    def download(self):
+    def get_index(self):
+        index_file = os.path.join(self.base_dir, 'index.yaml')
+        # if index doesn't exist, or is more than 24h old
+        if not os.path.isfile(index_file) or \
+           time.time() > os.path.getmtime(index_file) + 86400:
+            self.download_index(index_file)
+
+    def download_index(self, index_file):
+        if not os.path.isdir(self.base_dir):
+            os.makedirs(self.base_dir)
+
         logger = logging.getLogger('ned')
         logger.info('Fetching NED index...')
 
         files = []
         for bbox, fname, zname in self._list_ned_files():
-            if self._intersects(bbox):
-                files.append((fname, zname))
+            files.append(dict(fname=fname, zname=zname, bbox=bbox.bounds))
 
-        if not os.path.isdir(self.base_dir):
-            os.makedirs(self.base_dir)
+        with open(index_file, 'w') as f:
+            f.write(yaml.dump(files))
 
-        logger.info("Starting download of %d NED files." % len(files))
-        files = _parallel(
-            _download_ned_file,
-            [(f, z, self.base_dir, self.ftp_server, self.base_path,
-              self.download_options) for f, z in files],
-            num_threads=self.num_download_threads)
+    def downloads_for(self, tile):
+        tiles = set()
+        # if the tile scale is greater than 20x the NED scale, then there's no
+        # point in including NED, it'll be far too fine to make a difference.
+        # NED is 1/9th arc second.
+        if tile.max_resolution() > 20 * 1.0 / (3600 * 9):
+            return tiles
 
-        # sanity check
-        for f, z in files:
-            assert os.path.isfile(os.path.join(self.base_dir, f))
+        # buffer by 0.0025 degrees (81px) to grab neighbouring tiles and ensure
+        # some overlap to take care of boundary issues.
+        tile_bbox = tile.latlon_bbox().buffer(0.0025)
 
-        logger.info("Download complete.")
+        files = self.index_cache
+        if files is None:
+            index_file = os.path.join(self.base_dir, 'index.yaml')
+            with open(index_file, 'r') as f:
+                files = yaml.load(f.read())
+            self.index_cache = files
 
-    def buildvrt(self):
-        logger = logging.getLogger('ned')
-        logger.info("Creating VRT.")
+        for f in files:
+            bbox = BoundingBox(*f['bbox'])
+            if tile_bbox.intersects(bbox) and \
+               self.pattern.match(f['fname']):
+                tiles.add(NEDTile(self, f['fname'], f['zname'], bbox))
 
-        files = []
-        for f in glob.glob(os.path.join(self.base_dir, '*.img')):
-            bbox = self._ned_parse_filename(os.path.split(f)[1])
-            if bbox and self._intersects(bbox):
-                files.append(f)
-
-        args = ["gdalbuildvrt", "-q", self.vrt_file()] + files
-        status = subprocess.call(args)
-
-        if status != 0:
-            raise Exception("Call to gdalbuildvrt failed: status=%r" % status)
-
-        assert os.path.isfile(self.vrt_file())
-
-        logger.info("VRT created.")
-
-    def filter_type(self, src_res, dst_res):
-        return gdal.GRA_Lanczos if src_res > dst_res else gdal.GRA_Cubic
-
-    def vrt_file(self):
-        return os.path.join(self.base_dir, self.vrt_filename)
-
-    def _intersects(self, bbox):
-        for r in self.regions:
-            if r.intersects(bbox):
-                return True
-        return False
+        return tiles
 
     def _list_ned_files(self):
         ftp = FTP(self.ftp_server)
@@ -157,6 +141,11 @@ class NEDBase(object):
 
         return files
 
+    def filter_type(self, src_res, dst_res):
+        return gdal.GRA_Lanczos if src_res > dst_res else gdal.GRA_Cubic
+
+    def srs(self):
+        return srs.wgs84()
 
     def _ned_parse_filename(self, fname):
         m = self.pattern.match(fname)

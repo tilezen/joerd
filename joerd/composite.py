@@ -1,3 +1,4 @@
+from joerd import vrt
 from osgeo import osr, gdal
 import numpy
 import numpy.ma
@@ -22,21 +23,8 @@ def _tx_bbox(tx, bbox, expand=0.0):
             bbox[3] + 0.5 * expand * yspan)
 
 
-def _mk_image(infile, dst_ds, dst_bbox, mask_negative, filter_type):
-    src_ds = gdal.Open(infile)
-
-    src_srs = osr.SpatialReference()
+def _mk_image(src_ds, dst_ds, mask_negative, filter_type):
     src_srs_wkt = src_ds.GetProjection()
-    assert src_srs_wkt, "Need a valid source SRS, not %r" % src_srs_wkt
-    src_srs.ImportFromWkt(src_srs_wkt)
-    dst_srs = osr.SpatialReference()
-    dst_srs_wkt = dst_ds.GetProjection()
-    assert dst_srs_wkt, "Need a valid destination SRS, not %r" % dst_srs_wkt
-    dst_srs.ImportFromWkt(dst_srs_wkt)
-
-    rev_tx = osr.CoordinateTransformation(dst_srs, src_srs)
-    src_bbox = _tx_bbox(rev_tx, dst_bbox, 0.1)
-
     src_gt = src_ds.GetGeoTransform()
     src_x_res = abs(src_gt[1])
     src_y_res = abs(src_gt[5])
@@ -44,15 +32,16 @@ def _mk_image(infile, dst_ds, dst_bbox, mask_negative, filter_type):
     src_band = src_ds.GetRasterBand(1)
     src_nodata = src_band.GetNoDataValue()
 
-    f_type = filter_type(min(src_x_res, src_y_res))
-    res = gdal.ReprojectImage(src_ds, dst_ds, src_srs.ExportToWkt(),
-                              dst_srs.ExportToWkt(), f_type, 1024, 0.125)
-    assert res == gdal.CPLE_None
-
     dst_x_size = dst_ds.RasterXSize
     dst_y_size = dst_ds.RasterYSize
     dst_band = dst_ds.GetRasterBand(1)
     dst_nodata = dst_band.GetNoDataValue()
+    dst_srs_wkt = dst_ds.GetProjection()
+
+    f_type = filter_type(min(src_x_res, src_y_res))
+    res = gdal.ReprojectImage(src_ds, dst_ds, src_srs_wkt,
+                              dst_srs_wkt, f_type, 1024, 0.125)
+    assert res == gdal.CPLE_None
 
     if mask_negative:
         dst_data = dst_band.ReadAsArray(0, 0, dst_x_size, dst_y_size)
@@ -74,7 +63,7 @@ _NUMPY_TYPES = {
 #
 # dst_ds will be erased to its nodata value before composition starts.
 #
-def compose(layers, dst_ds, dst_bbox, logger, dst_res):
+def compose(tile, dst_ds, dst_bbox, logger, dst_res):
     dst_band = dst_ds.GetRasterBand(1)
     dst_nodata = dst_band.GetNoDataValue()
     dst_x_size = dst_ds.RasterXSize
@@ -101,8 +90,8 @@ def compose(layers, dst_ds, dst_bbox, logger, dst_res):
     # loop over layers in order, so the first layer will be overwritten
     # by any valid data values in later layers. so layers should be listed
     # in order of increasing detail.
-    for layer in layers:
-        logger.debug("Processing layer VRT: %r", layer.vrt_file())
+    for source in tile.sources:
+        logger.debug("Processing layer %s VRT", type(source).__name__)
 
         mem_ds = mem_drv.Create('', dst_x_size, dst_y_size, 1, dst_type)
         assert mem_ds is not None
@@ -114,11 +103,13 @@ def compose(layers, dst_ds, dst_bbox, logger, dst_res):
             numpy.full((dst_x_size, dst_y_size), dst_nodata, numpy_type))
 
         def _filter_type_func(src_res):
-            return layer.filter_type(src_res, dst_res)
+            return source.filter_type(src_res, dst_res)
 
-        vrt_file = layer.vrt_file()
-        _mk_image(layer.vrt_file(), mem_ds, dst_bbox, layer.mask_negative(),
-                  _filter_type_func)
+        rasters = source.downloads_for(tile)
+        with vrt.build([r.output_file() for r in rasters],
+                       source.srs().ExportToWkt()) as src_ds:
+            _mk_image(src_ds, mem_ds, source.mask_negative(),
+                      _filter_type_func)
 
         mem_band = mem_ds.GetRasterBand(1)
         mem_data = mem_band.ReadAsArray(0, 0, dst_x_size, dst_y_size)

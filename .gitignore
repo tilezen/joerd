@@ -10,12 +10,14 @@ dist/
 joerd.egg-info/
 /*.egg/
 /*.egg
+/.eggs
 
 # data directories
 srtm/
 gmted/
 etopo1/
 ned/
+ned_topobathy/
 
 # tile generation directories
 tiles/

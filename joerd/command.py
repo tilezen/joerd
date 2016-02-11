@@ -2,9 +2,11 @@ from config import make_config_from_argparse
 from osgeo import gdal
 from importlib import import_module
 from multiprocessing import Pool
+import joerd.download as download
 import sys
 import argparse
 import os
+import os.path
 import logging
 import logging.config
 
@@ -18,9 +20,18 @@ def create_command_parser(fn):
     return create_parser_fn
 
 
-def _mktile(t):
-    output, tile = t
-    output.process_tile(tile)
+def _download(d):
+    options = d.options().copy()
+    options['verifier'] = d.verifier()
+
+    with download.get(d.url(), options) as tmp:
+        d.unpack(tmp)
+
+    assert os.path.isfile(d.output_file())
+
+
+def _render(t):
+    t.render()
 
 
 class Joerd:
@@ -28,28 +39,75 @@ class Joerd:
     def __init__(self, cfg):
         self.sources = self._sources(cfg)
         self.outputs = self._outputs(cfg, self.sources)
+        self.num_threads = cfg.num_threads
+        self.chunksize = cfg.chunksize
 
-    def download(self):
+    def process(self):
+        logger = logging.getLogger('process')
+
+        # fetch index for each source, which speeds up subsequent downloads or
+        # queries about which source tiles are available.
         for source in self.sources:
-            source.download()
+            source.get_index()
 
-    def buildvrt(self):
-        for source in self.sources:
-            source.buildvrt()
-
-    def generate(self):
+        # get the list of all tiles to be generated
         tiles = []
-
         for output in self.outputs:
-            tiles.extend([(output, t) for t in output.generate_tiles()])
+            tiles.extend(output.generate_tiles())
 
-        p = Pool()
-        try:
-            p.map(_mktile, tiles)
+        logger.info("Will generate %d tiles." % len(tiles))
 
-        finally:
-            p.close()
-            p.join()
+        # gather the set of all downloads - upstream source tiles - for all the
+        # tiles that will be generated.
+        downloads = set()
+        for tile in tiles:
+            # each tile intersects a set of downloads for each source, perhaps
+            # an empty set. to track those, only sources which intersect the
+            # tile are tracked.
+            tile_sources = []
+            for source in self.sources:
+                d = source.downloads_for(tile)
+                if d:
+                    downloads.update(d)
+                    tile_sources.append(source)
+            tile.set_sources(tile_sources)
+
+        p = Pool(processes=self.num_threads)
+
+        # grab a list of the files which aren't currently available
+        need_to_download = []
+        for download in downloads:
+            if not os.path.isfile(download.output_file()):
+                need_to_download.append(download)
+
+        logger.info("Need to download %d source files."
+                    % len(need_to_download))
+
+        p.map(_download, need_to_download,
+              chunksize=self._chunksize(len(need_to_download)))
+
+        logger.info("Starting render of %d tiles." % len(tiles))
+
+        # now render the tiles
+        p.map(_render, tiles, chunksize=self._chunksize(len(tiles)))
+
+        # clean up the Pool.
+        p.close()
+        p.join()
+
+    def _chunksize(self, length):
+        """
+        Try to determine an appropriate chunk size. The bigger the chunk, the
+        lower the overheads, but potentially worse load balance between the
+        different threads. A compromise is a fixed fraction of the maximum
+        chunk size - in this case, an eighth.
+
+        Chunksize can be overridden in the config, in which case this
+        heuristic is ignored.
+        """
+        if self.chunksize is not None:
+              return self.chunksize
+        return max(1, length / self.num_threads / 8)
 
     def _sources(self, cfg):
         sources = []
@@ -57,7 +115,7 @@ class Joerd:
             source_type = source['type']
             module = import_module('joerd.source.%s' % source_type)
             create_fn = getattr(module, 'create')
-            sources.append(create_fn(cfg.regions, source))
+            sources.append(create_fn(source))
         return sources
 
     def _outputs(self, cfg, sources):
@@ -77,19 +135,9 @@ class JoerdArgumentParser(argparse.ArgumentParser):
         sys.exit(2)
 
 
-def joerd_download(cfg):
+def joerd_process(cfg):
     j = Joerd(cfg)
-    j.download()
-
-
-def joerd_buildvrt(cfg):
-    j = Joerd(cfg)
-    j.buildvrt()
-
-
-def joerd_generate(cfg):
-    j = Joerd(cfg)
-    j.generate()
+    j.process()
 
 
 def joerd_main(argv=None):
@@ -100,9 +148,7 @@ def joerd_main(argv=None):
     subparsers = parser.add_subparsers()
 
     parser_config = (
-        ('download', create_command_parser(joerd_download)),
-        ('buildvrt', create_command_parser(joerd_buildvrt)),
-        ('generate', create_command_parser(joerd_generate)),
+        ('process', create_command_parser(joerd_process)),
     )
 
     for name, func in parser_config:
