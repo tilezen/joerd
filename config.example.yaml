@@ -16,7 +16,6 @@ outputs:
   - type: skadi
   - type: terrarium
     zooms: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
-    enable_browser_png: true
 sources:
   - type: etopo1
     url: https://www.ngdc.noaa.gov/mgg/global/relief/ETOPO1/data/bedrock/grid_registered/georeferenced_tiff/ETOPO1_Bed_g_geotiff.zip

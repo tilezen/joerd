@@ -52,7 +52,8 @@ def _mk_image(src_ds, dst_ds, mask_negative, filter_type):
 
 
 _NUMPY_TYPES = {
-    gdal.GDT_Int16: numpy.int16
+    gdal.GDT_Int16: numpy.int16,
+    gdal.GDT_Float32: numpy.float32
 }
 
 
