@@ -23,6 +23,9 @@ class NEDTopobathy(object):
     def downloads_for(self, tile):
         return self.base.downloads_for(tile)
 
+    def vrts_for(self, tile):
+        return self.base.vrts_for(tile)
+
     def filter_type(self, src_res, dst_res):
         return self.base.filter_type(src_res, dst_res)
 

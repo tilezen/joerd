@@ -27,10 +27,9 @@ sources:
     tries: 100
   - type: srtm
     url: http://e4ftl01.cr.usgs.gov/SRTM/SRTMGL1.003/2000.02.11/
-  # disable, until https://github.com/mapzen/joerd/issues/3 is sorted out
-  # - type: ned
-  #   ftp_server: rockyftp.cr.usgs.gov
-  #   base_path: vdelivery/Datasets/Staged/NED/19/IMG
+  - type: ned
+    ftp_server: rockyftp.cr.usgs.gov
+    base_path: vdelivery/Datasets/Staged/NED/19/IMG
   - type: ned_topobathy
     ftp_server: rockyftp.cr.usgs.gov
     base_path: vdelivery/Datasets/Staged/NED/19/IMG

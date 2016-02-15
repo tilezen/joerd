@@ -101,6 +101,19 @@ class GMTED(object):
 
         return tiles
 
+    def vrts_for(self, tile):
+        """
+        Returns a list of sets of tiles, with each list element intended as a
+        separate VRT for use in GDAL.
+
+        The reason for this is that GDAL doesn't do any compositing _within_
+        a single VRT, so if there are multiple overlapping source rasters in
+        the VRT, only one will be chosen. This isn't often the case - most
+        raster datasets are non-overlapping apart from deliberately duplicated
+        margins.
+        """
+        return [self.downloads_for(tile)]
+
     def srs(self):
         return srs.wgs84()
 

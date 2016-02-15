@@ -13,13 +13,15 @@ class TestTerrariumTiles(unittest.TestCase):
                         terrarium._parse_tile(tile_name))
 
     def test_location_to_xy(self):
-        x, y = terrarium._lonlat_to_xy(19, -122.39199, 37.79123)
+        t = terrarium.Terrarium([], [])
+        x, y = t.lonlat_to_xy(19, -122.39199, 37.79123)
         self.assertEqual(83897, x)
         self.assertEqual(202618, y)
 
     def test_projections(self):
+        t = terrarium.Terrarium([], [])
         z, x, y = (13, 1308, 3165)
-        ll_bbox = terrarium._latlon_bbox(z, x, y)
+        ll_bbox = t.latlon_bbox(z, x, y)
         cx = 0.5 * (ll_bbox.bounds[0] + ll_bbox.bounds[2])
         cy = 0.5 * (ll_bbox.bounds[1] + ll_bbox.bounds[3])
-        self.assertEqual((x, y), terrarium._lonlat_to_xy(z, cx, cy))
+        self.assertEqual((x, y), t.lonlat_to_xy(z, cx, cy))

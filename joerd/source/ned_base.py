@@ -2,6 +2,7 @@ from joerd.util import BoundingBox
 import joerd.download as download
 import joerd.check as check
 import joerd.srs as srs
+import joerd.index as index
 from multiprocessing import Pool
 from contextlib import closing
 from shutil import copyfile
@@ -22,17 +23,20 @@ import urllib2
 import shutil
 import yaml
 import time
+import math
+from itertools import groupby
 
 
 class NEDTile(object):
-    def __init__(self, parent, fname, zname, bbox):
+    def __init__(self, parent, state_code, region_name, year, bbox):
         self.parent = parent
-        self.img_name = fname
-        self.zip_name = zname
+        self.state_code = state_code
+        self.region_name = region_name
+        self.year = int(year)
         self.bbox = bbox
 
     def __key(self):
-        return (self.img_name, self.zip_name, self.bbox)
+        return (self.state_code, self.region_name, self.year, self.bbox)
 
     def __eq__(a, b):
         return isinstance(b, type(a)) and \
@@ -44,7 +48,7 @@ class NEDTile(object):
     def url(self):
         return 'ftp://%s/%s/%s' % (self.parent.ftp_server,
                                    self.parent.base_path,
-                                   self.zip_name)
+                                   self.zip_name())
 
     def verifier(self):
         return check.is_zip
@@ -53,12 +57,60 @@ class NEDTile(object):
         return self.parent.download_options
 
     def output_file(self):
-        return os.path.join(self.parent.base_dir, self.img_name)
+        return os.path.join(self.parent.base_dir, self.img_name())
 
     def unpack(self, tmp):
         with zipfile.ZipFile(tmp.name, 'r') as zfile:
-            zfile.extract(self.img_name, self.parent.base_dir)
-            zfile.extract(self.img_name + ".aux.xml", self.parent.base_dir)
+            zfile.extract(self.img_name(), self.parent.base_dir)
+            zfile.extract(self.img_name() + ".aux.xml", self.parent.base_dir)
+
+    def base_name(self):
+        def fmt(v, neg, pos):
+            return (pos if v >= 0 else neg,
+                    abs(int(v)),
+                    abs(int(round(100 * math.modf(v)[0]))))
+
+        return "ned19_%s%02dx%02d_%s%03dx%02d_%s_%s_%4d" \
+            % (fmt(self.bbox.bounds[3], 's', 'n') +
+               fmt(self.bbox.bounds[0], 'w', 'e') +
+               (self.state_code, self.region_name, self.year))
+
+    def img_name(self):
+        return self.base_name() + ".img"
+
+    def zip_name(self):
+        return self.base_name() + ".zip"
+
+
+UNIVERSAL_NED_PATTERN = re.compile(
+    '^ned19_'
+    '([ns])([0-9]{2})x([0257][05])_' # northing
+    '([ew])([0-9]{3})x([0257][05])_' # easting
+    '([a-z]{2})_' # two letter state code
+    '([a-z0-9_]+)_' # the name of the region
+    '(20[0-9]{2})' # the year of the data
+    '\.zip')
+
+
+def _parse_ned_tile(fname, parent):
+    m = UNIVERSAL_NED_PATTERN.match(fname)
+
+    if not m:
+        return None
+
+    y = int(m.group(2)) + float(m.group(3)) / 100.0
+    x = int(m.group(5)) + float(m.group(6)) / 100.0
+    if m.group(1) == 's':
+        y = -y
+    if m.group(4) == 'w':
+        x = -x
+    bbox = BoundingBox(x, y - 0.25, x + 0.25, y)
+
+    state_code = m.group(7)
+    region_name = m.group(8)
+    year = int(m.group(9))
+
+    return NEDTile(parent, state_code, region_name, year, bbox)
 
 
 class NEDBase(object):
@@ -70,7 +122,7 @@ class NEDBase(object):
         self.base_path = options['base_path']
         self.pattern = re.compile(options['pattern'])
         self.download_options = download.options(options)
-        self.index_cache = None
+        self.tile_index = None
 
     def get_index(self):
         index_file = os.path.join(self.base_dir, 'index.yaml')
@@ -87,11 +139,20 @@ class NEDBase(object):
         logger.info('Fetching NED index...')
 
         files = []
-        for bbox, fname, zname in self._list_ned_files():
-            files.append(dict(fname=fname, zname=zname, bbox=bbox.bounds))
+        for zname in self._list_ned_files():
+            files.append(zname)
 
         with open(index_file, 'w') as f:
             f.write(yaml.dump(files))
+
+    def _ensure_tile_index(self):
+        if self.tile_index is None:
+            index_file = os.path.join(self.base_dir, 'index.yaml')
+            bbox = (-180, -90, 180, 90)
+            self.tile_index = index.create(index_file, bbox, _parse_ned_tile,
+                                           self)
+
+        return self.tile_index
 
     def downloads_for(self, tile):
         tiles = set()
@@ -105,30 +166,50 @@ class NEDBase(object):
         # some overlap to take care of boundary issues.
         tile_bbox = tile.latlon_bbox().buffer(0.0025)
 
-        files = self.index_cache
-        if files is None:
-            index_file = os.path.join(self.base_dir, 'index.yaml')
-            with open(index_file, 'r') as f:
-                files = yaml.load(f.read())
-            self.index_cache = files
+        tile_index = self._ensure_tile_index()
 
-        for f in files:
-            bbox = BoundingBox(*f['bbox'])
-            if tile_bbox.intersects(bbox) and \
-               self.pattern.match(f['fname']):
-                tiles.add(NEDTile(self, f['fname'], f['zname'], bbox))
+        for t in index.intersections(tile_index, tile_bbox):
+            if self.pattern.match(t.zip_name()):
+                tiles.add(t)
 
         return tiles
+
+    def vrts_for(self, tile):
+        """
+        Returns a list of sets of tiles, with each list element intended as a
+        separate VRT for use in GDAL.
+
+        The reason for this is that GDAL doesn't do any compositing _within_
+        a single VRT, so if there are multiple overlapping source rasters in
+        the VRT, only one will be chosen. This isn't often the case - most
+        raster datasets are non-overlapping apart from deliberately duplicated
+        margins.
+
+        NED is one of those datasets for which there are overlapping regions.
+        The state/region name and bbox are independent, so we choose to order
+        them alphabetically, for want of a better way.
+
+        Note that it appears the years in NED are non-overlapping.
+        """
+        vrts = []
+        tiles = self.downloads_for(tile)
+
+        def keyfunc(tile):
+            return (tile.state_code, tile.region_name)
+
+        for k, ts in groupby(sorted(tiles, key=keyfunc), keyfunc):
+            vrts.append(set(ts))
+
+        return vrts
 
     def _list_ned_files(self):
         ftp = FTP(self.ftp_server)
         files = []
 
         def _callback(zname):
-            bbox = self._ned_parse_filename(zname)
-            if bbox is not None:
-                fname = zname.replace(".zip", ".img")
-                files.append((bbox, fname, zname))
+            t = _parse_ned_tile(zname, self)
+            if t is not None:
+                files.append(t.zip_name())
 
         ftp.login()
         ftp.cwd(self.base_path)
@@ -148,15 +229,11 @@ class NEDBase(object):
         return srs.wgs84()
 
     def _ned_parse_filename(self, fname):
-        m = self.pattern.match(fname)
+        t = _parse_ned_tile(fname, self)
+        if t is None:
+            return None
 
-        if m:
-            y = int(m.group(2)) + float(m.group(3)) / 100.0
-            x = int(m.group(5)) + float(m.group(6)) / 100.0
-            if m.group(1) == 's':
-                y = -y
-            if m.group(4) == 'w':
-                x = -x
-            return BoundingBox(x, y - 0.25, x + 0.25, y)
+        if self.pattern.match(t.zip_name()):
+            return t.bbox
 
         return None

@@ -61,33 +61,6 @@ def _merc_bbox(z, x, y):
         MERCATOR_WORLD_SIZE * ((x + 1) / extent - 0.5),
         MERCATOR_WORLD_SIZE * (0.5 - y / extent))
 
-def _latlon_bbox(z, x, y):
-    merc = _merc_bbox(z, x, y)
-
-    merc_srs = osr.SpatialReference()
-    merc_srs.ImportFromEPSG(3857)
-    latlon_srs = osr.SpatialReference()
-    latlon_srs.ImportFromEPSG(4326)
-
-    tx = osr.CoordinateTransformation(merc_srs, latlon_srs)
-
-    return BoundingBox(*_tx_bbox(tx, merc.bounds))
-
-def _lonlat_to_xy(zoom, lon, lat):
-    merc_srs = osr.SpatialReference()
-    merc_srs.ImportFromEPSG(3857)
-    latlon_srs = osr.SpatialReference()
-    latlon_srs.ImportFromEPSG(4326)
-
-    tx = osr.CoordinateTransformation(latlon_srs, merc_srs)
-
-    x, y, z = tx.TransformPoint(float(lon), float(lat))
-
-    extent = 1 << zoom
-    tx = int(extent * ((x / MERCATOR_WORLD_SIZE) + 0.5))
-    ty = int(extent * (0.5 - (y / MERCATOR_WORLD_SIZE)))
-    return (tx, ty)
-
 
 class TerrariumTile:
     def __init__(self, parent, z, x, y):
@@ -103,7 +76,7 @@ class TerrariumTile:
         self.sources = sources
 
     def latlon_bbox(self):
-        return _latlon_bbox(self.z, self.x, self.y)
+        return self.parent.latlon_bbox(self.z, self.x, self.y)
 
     def max_resolution(self):
         bbox = self.latlon_bbox().bounds
@@ -149,12 +122,11 @@ class TerrariumTile:
 
         # figure out what the approximate scale of the output image is in
         # lat/lon coordinates. this is used to select the appropriate filter.
-        ll_bbox = _latlon_bbox(self.z, self.x, self.y)
+        ll_bbox = self.parent.latlon_bbox(self.z, self.x, self.y)
         ll_x_res = float(ll_bbox.bounds[2] - ll_bbox.bounds[0]) / dst_x_size
         ll_y_res = float(ll_bbox.bounds[3] - ll_bbox.bounds[1]) / dst_y_size
 
-        composite.compose(self, dst_ds, dst_bbox, logger,
-                          min(ll_x_res, ll_y_res))
+        composite.compose(self, dst_ds, logger, min(ll_x_res, ll_y_res))
 
         mem_drv = gdal.GetDriverByName("MEM")
         mem_ds = mem_drv.Create('', dst_x_size, dst_y_size, 1, gdal.GDT_UInt16)
@@ -211,12 +183,36 @@ class Terrarium:
         self.output_dir = options.get('output_dir', 'terrarium_tiles')
         self.zooms = options.get('zooms', [13])
         self.enable_browser_png = options.get('enable_browser_png', False)
+        self._setup_transforms()
 
-    def _intersects(self, bbox):
-        for r in self.regions:
-            if r.intersects(bbox):
-                return True
-        return False
+    def _setup_transforms(self):
+        # cache these transforms, as they are mildly expensive to create and
+        # are used a lot when intersecting mercator tiles against latlon
+        # sources.
+        self.merc_srs = osr.SpatialReference()
+        self.merc_srs.ImportFromEPSG(3857)
+        self.latlon_srs = osr.SpatialReference()
+        self.latlon_srs.ImportFromEPSG(4326)
+
+        self.tx = osr.CoordinateTransformation(self.merc_srs, self.latlon_srs)
+        self.tx_inv = osr.CoordinateTransformation(self.latlon_srs,
+                                                   self.merc_srs)
+
+    # The Terrarium object is pickled to send it to other processes when we
+    # generate tiles in parallel, but the OSR / GDAL objects can't be pickled.
+    # So we must exclude them from the pickling process and regenerate them
+    # at the other side.
+    def __getstate__(self):
+        odict = self.__dict__.copy()
+        del odict['merc_srs']
+        del odict['latlon_srs']
+        del odict['tx']
+        del odict['tx_inv']
+        return odict
+
+    def __setstate__(self, d):
+        self.__dict__.update(d)
+        self._setup_transforms()
 
     def generate_tiles(self):
         logger = logging.getLogger('terrarium')
@@ -224,8 +220,8 @@ class Terrarium:
 
         for zoom in self.zooms:
             for r in self.regions:
-                lx, ly = _lonlat_to_xy(zoom, r.bounds[0], r.bounds[3])
-                ux, uy = _lonlat_to_xy(zoom, r.bounds[2], r.bounds[1])
+                lx, ly = self.lonlat_to_xy(zoom, r.bounds[0], r.bounds[3])
+                ux, uy = self.lonlat_to_xy(zoom, r.bounds[2], r.bounds[1])
 
                 for x in range(lx, ux + 1):
                     for y in range(ly, uy + 1):
@@ -233,6 +229,19 @@ class Terrarium:
 
         logger.info("Generated %d tile jobs." % len(tiles))
         return list(tiles)
+
+    def latlon_bbox(self, z, x, y):
+        merc = _merc_bbox(z, x, y)
+
+        return BoundingBox(*_tx_bbox(self.tx, merc.bounds))
+
+    def lonlat_to_xy(self, zoom, lon, lat):
+        x, y, z = self.tx_inv.TransformPoint(float(lon), float(lat))
+
+        extent = 1 << zoom
+        tx = int(extent * ((x / MERCATOR_WORLD_SIZE) + 0.5))
+        ty = int(extent * (0.5 - (y / MERCATOR_WORLD_SIZE)))
+        return (tx, ty)
 
 
 def create(regions, sources, options):
