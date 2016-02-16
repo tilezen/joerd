@@ -105,12 +105,34 @@ class NormalTile:
         dst_srs.ImportFromEPSG(3857)
 
         # expand bbox & image to generate "bleed" for image filter
-        mid_x_size = dst_x_size + 2 * filter_size
-        mid_y_size = dst_y_size + 2 * filter_size
-        mid_bbox = (dst_bbox[0] - filter_size * dst_x_res,
-                    dst_bbox[1] - filter_size * dst_y_res,
-                    dst_bbox[2] + filter_size * dst_x_res,
-                    dst_bbox[3] + filter_size * dst_y_res)
+        mid_min_x = dst_bbox[0] - filter_size * dst_x_res
+        mid_min_y = dst_bbox[1] - filter_size * dst_y_res
+        mid_max_x = dst_bbox[2] + filter_size * dst_x_res
+        mid_max_y = dst_bbox[3] + filter_size * dst_y_res
+        filter_top_margin = filter_size
+        filter_bot_margin = filter_size
+        filter_lft_margin = filter_size
+        filter_rgt_margin = filter_size
+
+        # clip bounding box back to the edges of the world. GDAL can handle
+        # wrapping around the world, but it doesn't give the results that
+        # would be expected.
+        if mid_min_x < -0.5 * MERCATOR_WORLD_SIZE:
+            filter_lft_margin = 0
+            mid_min_x = dst_bbox[0]
+        if mid_min_y < -0.5 * MERCATOR_WORLD_SIZE:
+            filter_bot_margin = 0
+            mid_min_y = dst_bbox[1]
+        if mid_max_x > 0.5 * MERCATOR_WORLD_SIZE:
+            filter_rgt_margin = 0
+            mid_max_x = dst_bbox[2]
+        if mid_max_y > 0.5 * MERCATOR_WORLD_SIZE:
+            filter_top_margin = 0
+            mid_max_y = dst_bbox[3]
+
+        mid_x_size = dst_x_size + filter_lft_margin + filter_rgt_margin
+        mid_y_size = dst_y_size + filter_bot_margin + filter_top_margin
+        mid_bbox = (mid_min_x, mid_min_y, mid_max_x, mid_max_y)
 
         mid_drv = gdal.GetDriverByName("MEM")
         mid_ds = mid_drv.Create('', mid_x_size, mid_y_size, 1, gdal.GDT_Float32)
@@ -136,7 +158,7 @@ class NormalTile:
         # NOTE: in defiance of predictability and regularity, the geod methods
         # take input as (lat, lon) in that order, rather than (x, y) as would
         # be sensible.
-        geodesic_res_x = dst_x_size / \
+        geodesic_res_x = -dst_x_size / \
                          geod.Inverse(ll_mid_y, ll_bbox.bounds[0],
                                       ll_mid_y, ll_bbox.bounds[2])['s12']
         geodesic_res_y = dst_y_size / \
@@ -148,7 +170,7 @@ class NormalTile:
         pixels = mid_ds.GetRasterBand(1).ReadAsArray(0, 0, mid_x_size, mid_y_size)
         ygrad, xgrad = numpy.gradient(pixels, 2)
         img = numpy.dstack((geodesic_res_x * xgrad, geodesic_res_y * ygrad,
-                            numpy.ones((mid_x_size, mid_y_size))))
+                            numpy.ones((mid_y_size, mid_x_size))))
 
         def make_normal(v):
             # first, we normalise to unit vectors. this puts each element of v
@@ -171,8 +193,8 @@ class NormalTile:
         dst_ds.SetProjection(dst_srs.ExportToWkt())
 
         # extract the area without the "bleed" margin.
-        ext = img[filter_size:(filter_size+dst_x_size), \
-                  filter_size:(filter_size+dst_y_size)]
+        ext = img[filter_lft_margin:(filter_lft_margin+dst_x_size), \
+                  filter_bot_margin:(filter_bot_margin+dst_y_size)]
         dst_ds.GetRasterBand(1).WriteArray(ext[...,0].astype(numpy.uint8))
         dst_ds.GetRasterBand(2).WriteArray(ext[...,1].astype(numpy.uint8))
         dst_ds.GetRasterBand(3).WriteArray(ext[...,2].astype(numpy.uint8))
