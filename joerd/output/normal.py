@@ -152,18 +152,23 @@ class NormalTile:
         # calculate the resolution of a pixel in real meters for both x and y.
         # this will be used to scale the gradient so that it's consistent
         # across zoom levels.
-        ll_mid_x = 0.5 * (ll_bbox.bounds[0] + ll_bbox.bounds[2])
-        ll_mid_y = 0.5 * (ll_bbox.bounds[1] + ll_bbox.bounds[3])
+        ll_mid_x = 0.5 * (ll_bbox.bounds[2] + ll_bbox.bounds[0])
+        ll_spc_x = 0.5 * (ll_bbox.bounds[2] - ll_bbox.bounds[0]) / dst_x_size
+        ll_mid_y = 0.5 * (ll_bbox.bounds[3] + ll_bbox.bounds[1])
+        ll_spc_y = 0.5 * (ll_bbox.bounds[3] - ll_bbox.bounds[1]) / dst_y_size
         geod = Geodesic.WGS84
         # NOTE: in defiance of predictability and regularity, the geod methods
         # take input as (lat, lon) in that order, rather than (x, y) as would
         # be sensible.
+        # NOTE: at low zooms, taking the width across the tile starts to break
+        # down, so we take the width across a small portion of the interior of
+        # the tile instead.
         geodesic_res_x = -dst_x_size / \
-                         geod.Inverse(ll_mid_y, ll_bbox.bounds[0],
-                                      ll_mid_y, ll_bbox.bounds[2])['s12']
+                         geod.Inverse(ll_mid_y, ll_mid_x - ll_spc_x,
+                                      ll_mid_y, ll_mid_x + ll_spc_x)['s12']
         geodesic_res_y = dst_y_size / \
-                         geod.Inverse(ll_bbox.bounds[1], ll_mid_x,
-                                      ll_bbox.bounds[3], ll_mid_x)['s12']
+                         geod.Inverse(ll_mid_y - ll_spc_y, ll_mid_x,
+                                      ll_mid_y + ll_spc_y, ll_mid_x)['s12']
 
         composite.compose(self, mid_ds, logger, min(ll_x_res, ll_y_res))
 
