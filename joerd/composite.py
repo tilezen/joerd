@@ -80,8 +80,10 @@ def compose(tile, dst_ds, logger, dst_res):
         dst_band.GetUnitType()
 
     # write the nodata value to blank out the source dataset
+    # WATCH OUT! numpy shapes are confusingly the "wrong" way around, that
+    # is they are (height, width)!
     dst_band.WriteArray(
-        numpy.full((dst_x_size, dst_y_size), dst_nodata, numpy_type))
+        numpy.full((dst_y_size, dst_x_size), dst_nodata, numpy_type))
 
     # we'll hold temporary reprojected layers in memory, so we need a
     # memory driver to hold all of that.
@@ -109,7 +111,7 @@ def compose(tile, dst_ds, logger, dst_res):
             # overwritten by the call to _mk_image.
             mem_band.SetNoDataValue(dst_nodata)
             mem_band.WriteArray(
-                numpy.full((dst_x_size, dst_y_size), dst_nodata, numpy_type))
+                numpy.full((dst_y_size, dst_x_size), dst_nodata, numpy_type))
 
             # build a VRT of just the overlapping tiles, then generate
             # the output image.
