@@ -163,10 +163,10 @@ class NormalTile:
         # NOTE: at low zooms, taking the width across the tile starts to break
         # down, so we take the width across a small portion of the interior of
         # the tile instead.
-        geodesic_res_x = -dst_x_size / \
+        geodesic_res_x = -1.0 / \
                          geod.Inverse(ll_mid_y, ll_mid_x - ll_spc_x,
                                       ll_mid_y, ll_mid_x + ll_spc_x)['s12']
-        geodesic_res_y = dst_y_size / \
+        geodesic_res_y = 1.0 / \
                          geod.Inverse(ll_mid_y - ll_spc_y, ll_mid_x,
                                       ll_mid_y + ll_spc_y, ll_mid_x)['s12']
 
