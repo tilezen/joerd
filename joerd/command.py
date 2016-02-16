@@ -10,6 +10,7 @@ import os.path
 import logging
 import logging.config
 import time
+import traceback
 
 
 def create_command_parser(fn):
@@ -32,7 +33,10 @@ def _download(d):
 
 
 def _render(t):
-    t.render()
+    try:
+        t.render()
+    except:
+        raise Exception("".join(traceback.format_exception(*sys.exc_info())))
 
 
 # ProgressLogger - logs progress towards a goal to the given logger.
