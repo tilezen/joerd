@@ -81,4 +81,4 @@ class TestNEDSource(unittest.TestCase):
             t = ned_base._parse_ned_tile(fname, None)
             self.assertTrue(t is not None, fname)
             f = t.zip_name()
-            self.assertTrue(fname, f)
+            self.assertEqual(fname, f)
