@@ -3,6 +3,7 @@ from joerd.util import BoundingBox
 import joerd.download as download
 import joerd.check as check
 import joerd.srs as srs
+import joerd.index as index
 from contextlib import closing
 from shutil import copyfile
 import os.path
@@ -59,13 +60,27 @@ class SRTMTile(object):
             zfile.extract(self.fname, self.parent.base_dir)
 
 
+def _parse_srtm_tile(link, parent):
+    fname = link.replace(".SRTMGL1.hgt.zip", ".hgt")
+    bbox = parent._parse_bbox(link)
+    return SRTMTile(parent, link, fname, bbox)
+
+
 class SRTM(object):
 
     def __init__(self, options={}):
         self.base_dir = options.get('base_dir', 'srtm')
         self.url = options['url']
         self.download_options = download.options(options)
-        self.index_cache = None
+        self.tile_index = None
+
+    # Pickling the tile index is probably not a good idea, since it is
+    # an FFI / C object. Setting it to None should cause it to be
+    # regenerated post-unpickle.
+    def __getstate__(self):
+        odict = self.__dict__.copy()
+        odict['tile_index'] = None
+        return odict
 
     def get_index(self):
         index_file = os.path.join(self.base_dir, 'index.yaml')
@@ -89,11 +104,19 @@ class SRTM(object):
             if link is not None:
                 bbox = self._parse_bbox(link)
                 if bbox:
-                    fname = link.replace(".SRTMGL1.hgt.zip", ".hgt")
-                    links.append(dict(link=link, fname=fname, bbox=bbox.bounds))
+                    links.append(link)
 
         with open(index_file, 'w') as f:
             f.write(yaml.dump(links))
+
+    def _ensure_tile_index(self):
+        if self.tile_index is None:
+            index_file = os.path.join(self.base_dir, 'index.yaml')
+            bbox = (-180, -90, 180, 90)
+            self.tile_index = index.create(index_file, bbox, _parse_srtm_tile,
+                                           self)
+
+        return self.tile_index
 
     def downloads_for(self, tile):
         tiles = set()
@@ -107,19 +130,25 @@ class SRTM(object):
         # that there aren't any boundary artefacts.
         tile_bbox = tile.latlon_bbox().buffer(0.01)
 
-        links = self.index_cache
-        if links is None:
-            index_file = os.path.join(self.base_dir, 'index.yaml')
-            with open(index_file, 'r') as f:
-                links = yaml.load(f.read())
-            self.index_cache = links
+        tile_index = self._ensure_tile_index()
 
-        for link in links:
-            bbox = BoundingBox(*link['bbox'])
-            if tile_bbox.intersects(bbox):
-                tiles.add(SRTMTile(self, link['link'], link['fname'], bbox))
+        for t in index.intersections(tile_index, tile_bbox):
+            tiles.add(t)
 
         return tiles
+
+    def vrts_for(self, tile):
+        """
+        Returns a list of sets of tiles, with each list element intended as a
+        separate VRT for use in GDAL.
+
+        The reason for this is that GDAL doesn't do any compositing _within_
+        a single VRT, so if there are multiple overlapping source rasters in
+        the VRT, only one will be chosen. This isn't often the case - most
+        raster datasets are non-overlapping apart from deliberately duplicated
+        margins.
+        """
+        return [self.downloads_for(tile)]
 
     def filter_type(self, src_res, dst_res):
         return gdal.GRA_Lanczos if src_res > dst_res else gdal.GRA_Cubic

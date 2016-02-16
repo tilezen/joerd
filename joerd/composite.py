@@ -63,7 +63,7 @@ _NUMPY_TYPES = {
 #
 # dst_ds will be erased to its nodata value before composition starts.
 #
-def compose(tile, dst_ds, dst_bbox, logger, dst_res):
+def compose(tile, dst_ds, logger, dst_res):
     dst_band = dst_ds.GetRasterBand(1)
     dst_nodata = dst_band.GetNoDataValue()
     dst_x_size = dst_ds.RasterXSize
@@ -98,27 +98,36 @@ def compose(tile, dst_ds, dst_bbox, logger, dst_res):
         mem_ds.SetGeoTransform(dst_gt)
         mem_ds.SetProjection(dst_srs)
         mem_band = mem_ds.GetRasterBand(1)
-        mem_band.SetNoDataValue(dst_nodata)
-        mem_band.WriteArray(
-            numpy.full((dst_x_size, dst_y_size), dst_nodata, numpy_type))
 
         def _filter_type_func(src_res):
             return source.filter_type(src_res, dst_res)
 
-        rasters = source.downloads_for(tile)
-        with vrt.build([r.output_file() for r in rasters],
-                       source.srs().ExportToWkt()) as src_ds:
-            _mk_image(src_ds, mem_ds, source.mask_negative(),
-                      _filter_type_func)
+        vrts = source.vrts_for(tile)
+        for rasters in vrts:
+            # set the memory buffer to be all nodata, which will be
+            # overwritten by the call to _mk_image.
+            mem_band.SetNoDataValue(dst_nodata)
+            mem_band.WriteArray(
+                numpy.full((dst_x_size, dst_y_size), dst_nodata, numpy_type))
 
-        mem_band = mem_ds.GetRasterBand(1)
-        mem_data = mem_band.ReadAsArray(0, 0, dst_x_size, dst_y_size)
-        nodata = mem_band.GetNoDataValue()
+            # build a VRT of just the overlapping tiles, then generate
+            # the output image.
+            with vrt.build([r.output_file() for r in rasters],
+                           source.srs().ExportToWkt()) as src_ds:
+                _mk_image(src_ds, mem_ds, source.mask_negative(),
+                          _filter_type_func)
 
-        dst_data = dst_band.ReadAsArray(0, 0, dst_x_size, dst_y_size)
-        nodata_test = numpy.equal(mem_data, nodata)
-        new_data = numpy.choose(nodata_test, (mem_data, dst_data))
-        res = dst_band.WriteArray(new_data)
-        assert res == gdal.CPLE_None
+            # extract the output data, but only those which are not nodata,
+            # and overwrite those pixels in the dst. the pixels which are
+            # nodata in the VRT will stay nodata in the output.
+            mem_band = mem_ds.GetRasterBand(1)
+            mem_data = mem_band.ReadAsArray(0, 0, dst_x_size, dst_y_size)
+            nodata = mem_band.GetNoDataValue()
+
+            dst_data = dst_band.ReadAsArray(0, 0, dst_x_size, dst_y_size)
+            nodata_test = numpy.equal(mem_data, nodata)
+            new_data = numpy.choose(nodata_test, (mem_data, dst_data))
+            res = dst_band.WriteArray(new_data)
+            assert res == gdal.CPLE_None
 
     logger.debug("Done composite.")

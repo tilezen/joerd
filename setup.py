@@ -34,6 +34,7 @@ setup(name='joerd',
           'requests',
           'numpy',
           'PyYAML',
+          'pyqtree',
       ],
       test_suite='tests',
       tests_require=[

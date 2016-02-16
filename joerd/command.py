@@ -9,6 +9,7 @@ import os
 import os.path
 import logging
 import logging.config
+import time
 
 
 def create_command_parser(fn):
@@ -32,6 +33,32 @@ def _download(d):
 
 def _render(t):
     t.render()
+
+
+# ProgressLogger - logs progress towards a goal to the given logger.
+# This is useful for letting the user know that something is happening, and
+# roughly how far along it is. Progress is logged at given percentage
+# intervals or time intervals, whichever is crossed first.
+class ProgressLogger(object):
+    def __init__(self, logger, total, time_interval=10, pct_interval=5):
+        self.logger = logger
+        self.total = total
+        self.progress = 0
+        self.time_interval = time_interval
+        self.pct_interval = pct_interval
+
+        self.next_time = time.time() + self.time_interval
+        self.next_pct = self.pct_interval
+
+    def increment(self, amount):
+        self.progress += amount
+        pct = (100.0 * self.progress) / self.total
+        now = time.time()
+
+        if pct > self.next_pct or now > self.next_time:
+            self.next_pct = pct + self.pct_interval
+            self.next_time = now + self.time_interval
+            self.logger.info("Progress: %3.1f%%" % pct)
 
 
 class Joerd:
@@ -60,6 +87,7 @@ class Joerd:
         # gather the set of all downloads - upstream source tiles - for all the
         # tiles that will be generated.
         downloads = set()
+        progress = ProgressLogger(logger, len(tiles))
         for tile in tiles:
             # each tile intersects a set of downloads for each source, perhaps
             # an empty set. to track those, only sources which intersect the
@@ -71,6 +99,7 @@ class Joerd:
                     downloads.update(d)
                     tile_sources.append(source)
             tile.set_sources(tile_sources)
+            progress.increment(1)
 
         p = Pool(processes=self.num_threads)
 
