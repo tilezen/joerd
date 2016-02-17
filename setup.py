@@ -36,6 +36,7 @@ setup(name='joerd',
           'PyYAML',
           'pyqtree',
           'geographiclib',
+          'boto3',
       ],
       test_suite='tests',
       tests_require=[

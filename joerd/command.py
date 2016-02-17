@@ -11,6 +11,8 @@ import logging
 import logging.config
 import time
 import traceback
+import json
+import boto3
 
 
 def create_command_parser(fn):
@@ -173,6 +175,20 @@ def joerd_process(cfg):
     j.process()
 
 
+def joerd_server(global_cfg):
+    assert cfg.sqs_queue_name is not None, \
+        "Could not find SQS queue name in config, but this must be configured."
+
+    sqs = boto3.resource('sqs')
+    queue = sqs.Queue(cfg.sqs_queue_name)
+
+    while True:
+        for message in queue.get_messages():
+            region = json.loads(message.body)
+            cfg = global_cfg.copy_with_regions([region])
+            joerd_process(cfg)
+
+
 def joerd_main(argv=None):
     if argv is None:
         argv = sys.argv[1:]
@@ -182,6 +198,7 @@ def joerd_main(argv=None):
 
     parser_config = (
         ('process', create_command_parser(joerd_process)),
+        ('server', create_command_parser(joerd_server)),
     )
 
     for name, func in parser_config:

@@ -10,17 +10,28 @@ class Configuration(object):
         self.yml = yml
         self.regions = []
         for name, settings in self._cfg('regions').iteritems():
-            box = settings['bbox']
-            zoom_range = tuple(settings['zoom_range'])
-            self.regions.append(Region(
-                BoundingBox(box['left'], box['bottom'], box['right'],
-                            box['top']), zoom_range))
+            self.regions.append(self._parse_region(settings))
 
         self.sources = self._cfg('sources')
         self.outputs = self._cfg('outputs')
         self.logconfig = self._cfg('logging config')
         self.num_threads = self._cfg('jobs num_threads')
         self.chunksize = self._cfg('jobs chunksize')
+        self.sqs_queue_name = self._cfg('cluster sqs_queue_name')
+
+
+    def copy_with_regions(self, regions):
+        """
+        Copy this config, replacing the regions with those in the `regions`
+        parameter.
+        """
+
+        new = copy.deepcopy(self)
+        new.regions = []
+        for region in regions:
+            new.regions.append(self._parse_region(region))
+
+        return new
 
 
     def _cfg(self, yamlkeys_str):
@@ -29,6 +40,14 @@ class Configuration(object):
         for subkey in yamlkeys:
             yamlval = yamlval[subkey]
         return yamlval
+
+
+    def _parse_region(self, settings):
+        box = settings['bbox']
+        zoom_range = tuple(settings['zoom_range'])
+        return Region(
+            BoundingBox(box['left'], box['bottom'], box['right'],
+                        box['top']), zoom_range))
 
 
 def default_yml_config():
@@ -43,6 +62,9 @@ def default_yml_config():
             'num_threads': cpu_count(),
             'chunksize': None,
         },
+        'cluster': {
+            'sqs_queue_name': None
+        }
     }
 
 
