@@ -18,6 +18,7 @@ class Configuration(object):
         self.num_threads = self._cfg('jobs num_threads')
         self.chunksize = self._cfg('jobs chunksize')
         self.sqs_queue_name = self._cfg('cluster sqs_queue_name')
+        self.block_size = self._cfg('cluster block_size')
 
 
     def copy_with_regions(self, regions):
@@ -47,7 +48,7 @@ class Configuration(object):
         zoom_range = tuple(settings['zoom_range'])
         return Region(
             BoundingBox(box['left'], box['bottom'], box['right'],
-                        box['top']), zoom_range))
+                        box['top']), zoom_range)
 
 
 def default_yml_config():
@@ -63,7 +64,8 @@ def default_yml_config():
             'chunksize': None,
         },
         'cluster': {
-            'sqs_queue_name': None
+            'sqs_queue_name': None,
+            'block_size': 2,
         }
     }
 

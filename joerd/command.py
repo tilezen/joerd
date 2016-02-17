@@ -189,6 +189,84 @@ def joerd_server(global_cfg):
             joerd_process(cfg)
 
 
+def joerd_enqueuer(cfg):
+    """
+    Split the regions in the input file into jobs suitable for enqueueing and
+    send them to the SQS queue for the server to work on.
+    """
+
+    assert cfg.sqs_queue_name is not None, \
+        "Could not find SQS queue name in config, but this must be configured."
+
+    logger = logging.getLogger('enqueuer')
+    block_size = cfg.block_size
+    bboxes = dict()
+    global_region_zoom = None
+
+    for r in cfg.regions.itervalues():
+        rbox = r.bbox.bounds
+        zrange = r.zoom_range
+
+        # split anything zoom 8 or greater into blocks
+        if zrange[1] >= 8:
+            lft = int(block_size * math.floor(rbox[0] / block_size))
+            bot = int(block_size * math.floor(rbox[1] / block_size))
+            rgt = int(block_size * math.ceil(rbox[2] / block_size))
+            top = int(block_size * math.ceil(rbox[3] / block_size))
+
+            # just in case, clip to the world
+            lft = max(0, lft)
+            bot = max(0, bot)
+            rgt = min(180, rgt)
+            top = min(90, top)
+
+            for x in range(lft, rgt, block_size):
+                for y in range(bot, top, block_size):
+                    # accumulate the max z for each block
+                    zmax = bboxes.get((x, y))
+                    bboxes[(x, y)] = max(zmax, zrange[1])
+
+        # for anything with a range < 8, we also do a "global" range
+        # starting at the min zoom seen.
+        if zrange[0] < 8:
+            global_region_zoom = min(global_region_zoom or 8, zrange[0])
+
+    num_jobs = len(bboxes)
+    if global_region_zoom is not None:
+        num_jobs += 1
+
+    logger.info("Sending %d jobs to the queue" % num_jobs)
+
+    # if there's a global region, then do the whole world down to that
+    # zoom.
+    if global_region_zoom is not None:
+        region = {
+            'zoom_range': [global_region_zoom, 8],
+            'bbox': {
+                'left': -180.0,
+                'bottom': -90.0,
+                'right': 180.0,
+                'top': 90.0,
+            }
+        }
+        sqs.send_message(MessageBody=json.dumps(region))
+
+    # send messages for all the other bboxes that need rendering.
+    for (x, y), max_z in bboxes.iteritems():
+        region = {
+            'zoom_range': [8, max_z],
+            'bbox': {
+                'left': x,
+                'bottom': y,
+                'right': x + block_size,
+                'top': y + block_size,
+            }
+        }
+        sqs.send_message(MessageBody=json.dumps(region))
+
+    logger.info("Done.")
+
+
 def joerd_main(argv=None):
     if argv is None:
         argv = sys.argv[1:]
@@ -199,6 +277,7 @@ def joerd_main(argv=None):
     parser_config = (
         ('process', create_command_parser(joerd_process)),
         ('server', create_command_parser(joerd_server)),
+        ('enqueuer', create_command_parser(joerd_enqueuer)),
     )
 
     for name, func in parser_config:
