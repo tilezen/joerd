@@ -16,6 +16,12 @@ import joerd.composite as composite
 HALF_ARC_SEC = (1.0/3600.0)*.5
 TILE_NAME_PATTERN = re.compile('^([NS])([0-9]{2})([EW])([0-9]{3})$')
 
+
+# Skadi tiles are at 1 arc second = 1,296,000 pixels around the circumference
+# of the whole world. This is about equivalent to a zoom of 12.3
+SKADI_NOMINAL_ZOOM = 12.3
+
+
 def _bbox(x, y):
     return BoundingBox(
         (x - 180) - HALF_ARC_SEC,
@@ -123,7 +129,7 @@ class Skadi:
 
     def _intersects(self, bbox):
         for r in self.regions:
-            if r.intersects(bbox):
+            if r.intersects(bbox, SKADI_NOMINAL_ZOOM):
                 return True
         return False
 

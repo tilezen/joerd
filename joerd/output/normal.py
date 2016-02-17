@@ -285,7 +285,6 @@ class Normal:
         self.regions = regions
         self.sources = sources
         self.output_dir = options.get('output_dir', 'normal_tiles')
-        self.zooms = options.get('zooms', [13])
         self.enable_browser_png = options.get('enable_browser_png', False)
         self._setup_transforms()
 
@@ -322,10 +321,11 @@ class Normal:
         logger = logging.getLogger('normal')
         tiles = set()
 
-        for zoom in self.zooms:
-            for r in self.regions:
-                lx, ly = self.lonlat_to_xy(zoom, r.bounds[0], r.bounds[3])
-                ux, uy = self.lonlat_to_xy(zoom, r.bounds[2], r.bounds[1])
+        for r in self.regions:
+            rbox = r.bbox.bounds
+            for zoom in range(*r.zoom_range):
+                lx, ly = self.lonlat_to_xy(zoom, rbox[0], rbox[3])
+                ux, uy = self.lonlat_to_xy(zoom, rbox[2], rbox[1])
 
                 for x in range(lx, ux + 1):
                     for y in range(ly, uy + 1):

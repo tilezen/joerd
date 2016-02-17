@@ -1,6 +1,7 @@
 from yaml import load
 from util import BoundingBox
 from multiprocessing import cpu_count
+from joerd.region import Region
 
 
 class Configuration(object):
@@ -10,8 +11,11 @@ class Configuration(object):
         self.regions = []
         for name, settings in self._cfg('regions').iteritems():
             box = settings['bbox']
-            self.regions.append(BoundingBox(
-                box['left'], box['bottom'], box['right'], box['top']))
+            zoom_range = tuple(settings['zoom_range'])
+            self.regions.append(Region(
+                BoundingBox(box['left'], box['bottom'], box['right'],
+                            box['top']), zoom_range))
+
         self.sources = self._cfg('sources')
         self.outputs = self._cfg('outputs')
         self.logconfig = self._cfg('logging config')
