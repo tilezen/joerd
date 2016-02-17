@@ -6,6 +6,7 @@ import logging
 import shutil
 import httplib
 import ftplib
+import socket
 from time import sleep
 
 
@@ -101,6 +102,10 @@ def get(url, options={}):
 
             except ftplib.all_errors as e:
                 logger.debug("Got FTP error: %s" % str(e))
+                continue
+
+            except socket.timeout as e:
+                logger.debug("Got socket timeout: %s" % str(e))
                 continue
 
             # try to get the filesize, if the server reports it.

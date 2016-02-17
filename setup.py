@@ -35,6 +35,7 @@ setup(name='joerd',
           'numpy',
           'PyYAML',
           'pyqtree',
+          'geographiclib',
       ],
       test_suite='tests',
       tests_require=[
