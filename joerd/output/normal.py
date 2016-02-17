@@ -9,6 +9,7 @@ import joerd.composite as composite
 import numpy
 import math
 from geographiclib.geodesic import Geodesic
+import bisect
 
 
 # first tried using the minimum value for this, but it doesn't seem to stay
@@ -17,6 +18,45 @@ from geographiclib.geodesic import Geodesic
 # so now using a nice "round" number, which should be less prone to precision
 # truncation issues (since all the precision bits are zero).
 FLT_NODATA = -3.0e38
+
+
+# Generate a table of heights suitable for use as hypsometric tinting. These
+# have only a little precision for bathymetry, and concentrate most of the
+# rest in the 0-3000m range, which is where most of the world's population
+# lives.
+#
+# It seemed better to have this as a function which returned the table rather
+# than include the table verbatim, as this would be a big blob of unreadable
+# numbers.
+def _generate_mapping_table():
+    table = []
+    for i in range(0, 11):
+        table.append(-11000 + i * 1000)
+    table.append(-100)
+    table.append( -50)
+    table.append( -20)
+    table.append( -10)
+    table.append(  -1)
+    for i in range(0, 150):
+        table.append(20 * i)
+    for i in range(0, 60):
+        table.append(3000 + 50 * i)
+    for i in range(0, 29):
+        table.append(6000 + 100 * i)
+    return table
+
+
+# Make a constant version of the table for reference.
+HEIGHT_TABLE = _generate_mapping_table()
+
+
+# Function which returns the index of the maximum height in the height table
+# which is lower than the input `h`. I.e: it rounds down. We then _flip_ the
+# table "backwards" so that low heights have higher indices. This is so that
+# when it's displayed on a regular computer, the lower values near sea level
+# have high alpha, making them more opaque.
+def _height_mapping_func(h):
+    return 255 - bisect.bisect_left(HEIGHT_TABLE, h)
 
 
 def _tile_name(z, x, y):
@@ -190,12 +230,20 @@ class NormalTile:
 
         img = numpy.apply_along_axis(make_normal, 2, img)
 
-        dst_ds = mid_drv.Create('', dst_x_size, dst_y_size, 3, gdal.GDT_Byte)
+        # Create output as a 4-channel RGBA image, each (byte) channel
+        # corresponds to x, y, z, h where x, y and z are the respective
+        # components of the normal, and h is an index into a hypsometric tint
+        # table (see HEIGHT_TABLE).
+        dst_ds = mid_drv.Create('', dst_x_size, dst_y_size, 4, gdal.GDT_Byte)
 
         dst_gt = (dst_bbox[0], dst_x_res, 0,
                   dst_bbox[3], 0, -dst_y_res)
         dst_ds.SetGeoTransform(dst_gt)
         dst_ds.SetProjection(dst_srs.ExportToWkt())
+
+        # apply the height mapping function to get the table index.
+        func = numpy.vectorize(_height_mapping_func)
+        hyps = func(pixels).astype(numpy.uint8)
 
         # extract the area without the "bleed" margin.
         ext = img[filter_lft_margin:(filter_lft_margin+dst_x_size), \
@@ -203,6 +251,11 @@ class NormalTile:
         dst_ds.GetRasterBand(1).WriteArray(ext[...,0].astype(numpy.uint8))
         dst_ds.GetRasterBand(2).WriteArray(ext[...,1].astype(numpy.uint8))
         dst_ds.GetRasterBand(3).WriteArray(ext[...,2].astype(numpy.uint8))
+
+        # add hypsometric tint index as alpha channel
+        dst_ds.GetRasterBand(4).WriteArray(
+            hyps[filter_lft_margin:(filter_lft_margin+dst_x_size),
+                 filter_bot_margin:(filter_bot_margin+dst_y_size)])
 
         png_drv = gdal.GetDriverByName("PNG")
         png_ds = png_drv.CreateCopy(tile_file, dst_ds)
