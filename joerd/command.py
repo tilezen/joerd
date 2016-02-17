@@ -13,6 +13,9 @@ import time
 import traceback
 import json
 import boto3
+from contextlib import contextmanager
+import shutil
+import tempfile
 
 
 def create_command_parser(fn):
@@ -34,11 +37,31 @@ def _download(d):
     assert os.path.isfile(d.output_file())
 
 
-def _render(t):
+# Equivalent of NamedTemporaryFile, but for directories. Will completely
+# remove the directory on exit.
+@contextmanager
+def _tmpdir():
+    path = tempfile.mkdtemp()
+
     try:
-        t.render()
+        yield path
+
+    finally:
+        shutil.rmtree(path, ignore_errors=True)
+
+
+def _render(t, store):
+    try:
+        with _tmpdir() as d:
+            t.render(d)
+            store.upload_all(d)
+
     except:
         raise Exception("".join(traceback.format_exception(*sys.exc_info())))
+
+
+def _renderstar(args):
+    _render(*args)
 
 
 # ProgressLogger - logs progress towards a goal to the given logger.
@@ -74,6 +97,7 @@ class Joerd:
         self.outputs = self._outputs(cfg, self.sources)
         self.num_threads = cfg.num_threads
         self.chunksize = cfg.chunksize
+        self.store = self._store(cfg)
 
     def process(self):
         logger = logging.getLogger('process')
@@ -118,13 +142,15 @@ class Joerd:
         logger.info("Need to download %d source files."
                     % len(need_to_download))
 
+        # make sure we've got a store
         p.map(_download, need_to_download,
               chunksize=self._chunksize(len(need_to_download)))
 
         logger.info("Starting render of %d tiles." % len(tiles))
 
         # now render the tiles
-        p.map(_render, tiles, chunksize=self._chunksize(len(tiles)))
+        p.map(_renderstar, [(t, self.store) for t in tiles],
+              chunksize=self._chunksize(len(tiles)))
 
         # clean up the Pool.
         p.close()
@@ -161,6 +187,12 @@ class Joerd:
             create_fn = getattr(module, 'create')
             outputs.append(create_fn(cfg.regions, sources, output))
         return outputs
+
+    def _store(self, cfg):
+        store_type = cfg.store['type']
+        module = import_module('joerd.store.%s' % store_type)
+        create_fn = getattr(module, 'create')
+        return create_fn(cfg.store)
 
 
 class JoerdArgumentParser(argparse.ArgumentParser):

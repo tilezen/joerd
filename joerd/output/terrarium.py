@@ -89,12 +89,13 @@ class TerrariumTile:
         return max((bbox[2] - bbox[0]) / 256.0,
                    (bbox[3] - bbox[1]) / 256.0)
 
-    def render(self):
+    def render(self, tmp_dir):
         logger = logging.getLogger('terrarium')
 
         bbox = _merc_bbox(self.z, self.x, self.y)
 
-        mid_dir = os.path.join(self.parent.output_dir, str(self.z), str(self.x))
+        mid_dir = os.path.join(tmp_dir, self.parent.output_dir,
+                               str(self.z), str(self.x))
         if not os.path.isdir(mid_dir):
             try:
                 os.makedirs(mid_dir)
@@ -105,8 +106,9 @@ class TerrariumTile:
                     raise
 
         tile = _tile_name(self.z, self.x, self.y)
-        tile_file = os.path.join(self.parent.output_dir, tile + ".tif")
-        logger.debug("Generating tile %r..." % tile_file)
+        tile_file = os.path.join(tmp_dir, self.parent.output_dir,
+                                 tile + ".tif")
+        logger.debug("Generating tile %r..." % tile)
 
         outfile = tile_file
         dst_bbox = bbox.bounds
@@ -166,7 +168,8 @@ class TerrariumTile:
         res = mem_ds.GetRasterBand(3).WriteArray(b)
         assert res == gdal.CPLE_None
 
-        png_file = os.path.join(self.parent.output_dir, tile + ".png")
+        png_file = os.path.join(tmp_dir, self.parent.output_dir,
+                                tile + ".png")
         png_drv = gdal.GetDriverByName("PNG")
         png_ds = png_drv.CreateCopy(png_file, mem_ds)
 
@@ -201,7 +204,7 @@ class TerrariumTile:
 
         source_names = [type(s).__name__ for s in self.sources]
         logger.info("Done generating tile %r from %s"
-                    % (tile_file, ", ".join(source_names)))
+                    % (tile, ", ".join(source_names)))
 
 
 class Terrarium:

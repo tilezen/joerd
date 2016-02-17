@@ -65,12 +65,12 @@ class SkadiTile:
     def max_resolution(self):
         return 1.0 / 3600;
 
-    def render(self):
+    def render(self, tmp_dir):
         logger = logging.getLogger('skadi')
 
         bbox = _bbox(self.x, self.y)
 
-        mid_dir = os.path.join(self.parent.output_dir,
+        mid_dir = os.path.join(tmp_dir, self.parent.output_dir,
                                ("N" if self.y >= 90 else "S") +
                                ("%02d" % abs(self.y - 90)))
         if not os.path.isdir(mid_dir):
@@ -84,7 +84,7 @@ class SkadiTile:
 
         tile = _tile_name(self.x, self.y)
         tile_file = os.path.join(mid_dir, tile + ".hgt")
-        logger.info("Generating tile %r..." % tile_file)
+        logger.info("Generating tile %r..." % tile)
 
         outfile = tile_file
         dst_bbox = bbox.bounds
@@ -117,7 +117,7 @@ class SkadiTile:
 
         assert os.path.isfile(tile_file)
 
-        logger.info("Done generating tile %r" % tile_file)
+        logger.info("Done generating tile %r" % tile)
 
 
 class Skadi:

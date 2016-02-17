@@ -19,7 +19,7 @@ class Configuration(object):
         self.chunksize = self._cfg('jobs chunksize')
         self.sqs_queue_name = self._cfg('cluster sqs_queue_name')
         self.block_size = self._cfg('cluster block_size')
-
+        self.store = self._cfg('store')
 
     def copy_with_regions(self, regions):
         """
@@ -66,7 +66,11 @@ def default_yml_config():
         'cluster': {
             'sqs_queue_name': None,
             'block_size': 2,
-        }
+        },
+        'store': {
+            'type': 'file',
+            'base_dir': '.',
+        },
     }
 
 
