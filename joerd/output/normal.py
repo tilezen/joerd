@@ -217,18 +217,22 @@ class NormalTile:
         img = numpy.dstack((geodesic_res_x * xgrad, geodesic_res_y * ygrad,
                             numpy.ones((mid_y_size, mid_x_size))))
 
-        def make_normal(v):
-            # first, we normalise to unit vectors. this puts each element of v
-            # in the range (-1, 1).
-            mag = math.sqrt(numpy.dot(v, v))
-            # then we squash that into the range (0, 1) and scale it out to
-            # (0, 255) for use as a uint8
-            v_scaled = 256.0 * 0.5 * (v / mag + 1.0)
-            # and finally clip it to (0, 255) just in case
-            numpy.clip(v_scaled, 0.0, 255.0, out=v_scaled)
-            return v_scaled
+        # first, we normalise to unit vectors. this puts each element of img
+        # in the range (-1, 1). the "einsum" stuff is serious black magic, but
+        # what it (should be) saying is "for each i,j in the rows and columns,
+        # the output is the sum of img[i,j,k]*img[i,j,k]" - i.e: the square.
+        norm = numpy.sqrt(numpy.einsum('ijk,ijk->ij', img, img))
 
-        img = numpy.apply_along_axis(make_normal, 2, img)
+        # the norm is now the "wrong shape" according to numpy, so we need to
+        # copy the norm value out into RGB components.
+        norm_copy = norm[:, :, numpy.newaxis]
+
+        # then we squash that into the range (0, 1) and scale it out to
+        # (0, 255) for use as a uint8.
+        scaled = (128.0 * (img / norm_copy + 1.0))
+
+        # and finally clip it to (0, 255) just in case
+        img = numpy.clip(scaled, 0.0, 255.0)
 
         # Create output as a 4-channel RGBA image, each (byte) channel
         # corresponds to x, y, z, h where x, y and z are the respective
