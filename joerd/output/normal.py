@@ -227,8 +227,9 @@ class NormalTile:
         # copy the norm value out into RGB components.
         norm_copy = norm[:, :, numpy.newaxis]
 
-        # then we squash that into the range (0, 1) and scale it out to
-        # (0, 255) for use as a uint8.
+        # dividing the img by norm_copy should give us RGB components with
+        # values between -1 and 1, but we need values between 0 and 255 for
+        # PNG channels. so we move and scale the values to fit in that range.
         scaled = (128.0 * (img / norm_copy + 1.0))
 
         # and finally clip it to (0, 255) just in case
