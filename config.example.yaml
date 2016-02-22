@@ -6,18 +6,18 @@ regions:
   #     left: -123.640
   #     bottom: 36.791
   #     right: -121.025
+  #   zoom_range: [0, 16]
   san-francisco-downtown:
     bbox:
       top: 37.7997
       left: -122.5109
       bottom: 37.7127
       right: -122.3636
+    zoom_range: [0, 16]
 outputs:
   - type: skadi
   - type: terrarium
-    zooms: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
   - type: normal
-    zooms: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
 sources:
   - type: etopo1
     url: https://www.ngdc.noaa.gov/mgg/global/relief/ETOPO1/data/bedrock/grid_registered/georeferenced_tiff/ETOPO1_Bed_g_geotiff.zip

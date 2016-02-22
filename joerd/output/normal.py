@@ -114,12 +114,13 @@ class NormalTile:
         return max((bbox[2] - bbox[0]) / 256.0,
                    (bbox[3] - bbox[1]) / 256.0)
 
-    def render(self):
+    def render(self, tmp_dir):
         logger = logging.getLogger('normal')
 
         bbox = _merc_bbox(self.z, self.x, self.y)
 
-        mid_dir = os.path.join(self.parent.output_dir, str(self.z), str(self.x))
+        mid_dir = os.path.join(tmp_dir, self.parent.output_dir,
+                               str(self.z), str(self.x))
         if not os.path.isdir(mid_dir):
             try:
                 os.makedirs(mid_dir)
@@ -130,8 +131,9 @@ class NormalTile:
                     raise
 
         tile = _tile_name(self.z, self.x, self.y)
-        tile_file = os.path.join(self.parent.output_dir, tile + ".png")
-        logger.debug("Generating tile %r..." % tile_file)
+        tile_file = os.path.join(tmp_dir, self.parent.output_dir,
+                                 tile + ".png")
+        logger.debug("Generating tile %r..." % tile)
 
         filter_size = 10
 
@@ -276,7 +278,7 @@ class NormalTile:
 
         source_names = [type(s).__name__ for s in self.sources]
         logger.info("Done generating tile %r from %s"
-                    % (tile_file, ", ".join(source_names)))
+                    % (tile, ", ".join(source_names)))
 
 
 class Normal:
@@ -285,7 +287,6 @@ class Normal:
         self.regions = regions
         self.sources = sources
         self.output_dir = options.get('output_dir', 'normal_tiles')
-        self.zooms = options.get('zooms', [13])
         self.enable_browser_png = options.get('enable_browser_png', False)
         self._setup_transforms()
 
@@ -322,10 +323,11 @@ class Normal:
         logger = logging.getLogger('normal')
         tiles = set()
 
-        for zoom in self.zooms:
-            for r in self.regions:
-                lx, ly = self.lonlat_to_xy(zoom, r.bounds[0], r.bounds[3])
-                ux, uy = self.lonlat_to_xy(zoom, r.bounds[2], r.bounds[1])
+        for r in self.regions:
+            rbox = r.bbox.bounds
+            for zoom in range(*r.zoom_range):
+                lx, ly = self.lonlat_to_xy(zoom, rbox[0], rbox[3])
+                ux, uy = self.lonlat_to_xy(zoom, rbox[2], rbox[1])
 
                 for x in range(lx, ux + 1):
                     for y in range(ly, uy + 1):

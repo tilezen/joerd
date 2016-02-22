@@ -11,6 +11,11 @@ import logging
 import logging.config
 import time
 import traceback
+import json
+import boto3
+from contextlib import contextmanager
+import shutil
+import tempfile
 
 
 def create_command_parser(fn):
@@ -32,11 +37,31 @@ def _download(d):
     assert os.path.isfile(d.output_file())
 
 
-def _render(t):
+# Equivalent of NamedTemporaryFile, but for directories. Will completely
+# remove the directory on exit.
+@contextmanager
+def _tmpdir():
+    path = tempfile.mkdtemp()
+
     try:
-        t.render()
+        yield path
+
+    finally:
+        shutil.rmtree(path, ignore_errors=True)
+
+
+def _render(t, store):
+    try:
+        with _tmpdir() as d:
+            t.render(d)
+            store.upload_all(d)
+
     except:
         raise Exception("".join(traceback.format_exception(*sys.exc_info())))
+
+
+def _renderstar(args):
+    _render(*args)
 
 
 # ProgressLogger - logs progress towards a goal to the given logger.
@@ -72,6 +97,7 @@ class Joerd:
         self.outputs = self._outputs(cfg, self.sources)
         self.num_threads = cfg.num_threads
         self.chunksize = cfg.chunksize
+        self.store = self._store(cfg)
 
     def process(self):
         logger = logging.getLogger('process')
@@ -116,13 +142,15 @@ class Joerd:
         logger.info("Need to download %d source files."
                     % len(need_to_download))
 
+        # make sure we've got a store
         p.map(_download, need_to_download,
               chunksize=self._chunksize(len(need_to_download)))
 
         logger.info("Starting render of %d tiles." % len(tiles))
 
         # now render the tiles
-        p.map(_render, tiles, chunksize=self._chunksize(len(tiles)))
+        p.map(_renderstar, [(t, self.store) for t in tiles],
+              chunksize=self._chunksize(len(tiles)))
 
         # clean up the Pool.
         p.close()
@@ -160,6 +188,12 @@ class Joerd:
             outputs.append(create_fn(cfg.regions, sources, output))
         return outputs
 
+    def _store(self, cfg):
+        store_type = cfg.store['type']
+        module = import_module('joerd.store.%s' % store_type)
+        create_fn = getattr(module, 'create')
+        return create_fn(cfg.store)
+
 
 class JoerdArgumentParser(argparse.ArgumentParser):
     def error(self, message):
@@ -173,6 +207,98 @@ def joerd_process(cfg):
     j.process()
 
 
+def joerd_server(global_cfg):
+    assert cfg.sqs_queue_name is not None, \
+        "Could not find SQS queue name in config, but this must be configured."
+
+    sqs = boto3.resource('sqs')
+    queue = sqs.Queue(cfg.sqs_queue_name)
+
+    while True:
+        for message in queue.get_messages():
+            region = json.loads(message.body)
+            cfg = global_cfg.copy_with_regions([region])
+            joerd_process(cfg)
+
+
+def joerd_enqueuer(cfg):
+    """
+    Split the regions in the input file into jobs suitable for enqueueing and
+    send them to the SQS queue for the server to work on.
+    """
+
+    assert cfg.sqs_queue_name is not None, \
+        "Could not find SQS queue name in config, but this must be configured."
+
+    logger = logging.getLogger('enqueuer')
+    block_size = cfg.block_size
+    bboxes = dict()
+    global_region_zoom = None
+
+    for r in cfg.regions.itervalues():
+        rbox = r.bbox.bounds
+        zrange = r.zoom_range
+
+        # split anything zoom 8 or greater into blocks
+        if zrange[1] >= 8:
+            lft = int(block_size * math.floor(rbox[0] / block_size))
+            bot = int(block_size * math.floor(rbox[1] / block_size))
+            rgt = int(block_size * math.ceil(rbox[2] / block_size))
+            top = int(block_size * math.ceil(rbox[3] / block_size))
+
+            # just in case, clip to the world
+            lft = max(0, lft)
+            bot = max(0, bot)
+            rgt = min(180, rgt)
+            top = min(90, top)
+
+            for x in range(lft, rgt, block_size):
+                for y in range(bot, top, block_size):
+                    # accumulate the max z for each block
+                    zmax = bboxes.get((x, y))
+                    bboxes[(x, y)] = max(zmax, zrange[1])
+
+        # for anything with a range < 8, we also do a "global" range
+        # starting at the min zoom seen.
+        if zrange[0] < 8:
+            global_region_zoom = min(global_region_zoom or 8, zrange[0])
+
+    num_jobs = len(bboxes)
+    if global_region_zoom is not None:
+        num_jobs += 1
+
+    logger.info("Sending %d jobs to the queue" % num_jobs)
+
+    # if there's a global region, then do the whole world down to that
+    # zoom.
+    if global_region_zoom is not None:
+        region = {
+            'zoom_range': [global_region_zoom, 8],
+            'bbox': {
+                'left': -180.0,
+                'bottom': -90.0,
+                'right': 180.0,
+                'top': 90.0,
+            }
+        }
+        sqs.send_message(MessageBody=json.dumps(region))
+
+    # send messages for all the other bboxes that need rendering.
+    for (x, y), max_z in bboxes.iteritems():
+        region = {
+            'zoom_range': [8, max_z],
+            'bbox': {
+                'left': x,
+                'bottom': y,
+                'right': x + block_size,
+                'top': y + block_size,
+            }
+        }
+        sqs.send_message(MessageBody=json.dumps(region))
+
+    logger.info("Done.")
+
+
 def joerd_main(argv=None):
     if argv is None:
         argv = sys.argv[1:]
@@ -182,6 +308,8 @@ def joerd_main(argv=None):
 
     parser_config = (
         ('process', create_command_parser(joerd_process)),
+        ('server', create_command_parser(joerd_server)),
+        ('enqueuer', create_command_parser(joerd_enqueuer)),
     )
 
     for name, func in parser_config:

@@ -16,6 +16,12 @@ import joerd.composite as composite
 HALF_ARC_SEC = (1.0/3600.0)*.5
 TILE_NAME_PATTERN = re.compile('^([NS])([0-9]{2})([EW])([0-9]{3})$')
 
+
+# Skadi tiles are at 1 arc second = 1,296,000 pixels around the circumference
+# of the whole world. This is about equivalent to a zoom of 12.3
+SKADI_NOMINAL_ZOOM = 12.3
+
+
 def _bbox(x, y):
     return BoundingBox(
         (x - 180) - HALF_ARC_SEC,
@@ -59,12 +65,12 @@ class SkadiTile:
     def max_resolution(self):
         return 1.0 / 3600;
 
-    def render(self):
+    def render(self, tmp_dir):
         logger = logging.getLogger('skadi')
 
         bbox = _bbox(self.x, self.y)
 
-        mid_dir = os.path.join(self.parent.output_dir,
+        mid_dir = os.path.join(tmp_dir, self.parent.output_dir,
                                ("N" if self.y >= 90 else "S") +
                                ("%02d" % abs(self.y - 90)))
         if not os.path.isdir(mid_dir):
@@ -78,7 +84,7 @@ class SkadiTile:
 
         tile = _tile_name(self.x, self.y)
         tile_file = os.path.join(mid_dir, tile + ".hgt")
-        logger.info("Generating tile %r..." % tile_file)
+        logger.info("Generating tile %r..." % tile)
 
         outfile = tile_file
         dst_bbox = bbox.bounds
@@ -111,7 +117,7 @@ class SkadiTile:
 
         assert os.path.isfile(tile_file)
 
-        logger.info("Done generating tile %r" % tile_file)
+        logger.info("Done generating tile %r" % tile)
 
 
 class Skadi:
@@ -123,7 +129,7 @@ class Skadi:
 
     def _intersects(self, bbox):
         for r in self.regions:
-            if r.intersects(bbox):
+            if r.intersects(bbox, SKADI_NOMINAL_ZOOM):
                 return True
         return False
 
