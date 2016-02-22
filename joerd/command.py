@@ -220,6 +220,10 @@ def joerd_server(global_cfg):
             cfg = global_cfg.copy_with_regions([region])
             joerd_process(cfg)
 
+            # remove the message from the queue - this indicates that it has
+            # completed successfully and it won't be retried.
+            message.delete()
+
 
 def joerd_enqueuer(cfg):
     """
