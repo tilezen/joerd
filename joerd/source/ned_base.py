@@ -3,6 +3,8 @@ import joerd.download as download
 import joerd.check as check
 import joerd.srs as srs
 import joerd.index as index
+import joerd.mask as mask
+import joerd.tmpdir as tmpdir
 from multiprocessing import Pool
 from contextlib import closing
 from shutil import copyfile
@@ -45,10 +47,10 @@ class NEDTile(object):
     def __hash__(self):
         return hash(self.__key())
 
-    def url(self):
-        return 'ftp://%s/%s/%s' % (self.parent.ftp_server,
-                                   self.parent.base_path,
-                                   self.zip_name())
+    def urls(self):
+        return ['ftp://%s/%s/%s' % (self.parent.ftp_server,
+                                    self.parent.base_path,
+                                    self.zip_name())]
 
     def verifier(self):
         return check.is_zip
@@ -60,9 +62,21 @@ class NEDTile(object):
         return os.path.join(self.parent.base_dir, self.img_name())
 
     def unpack(self, tmp):
-        with zipfile.ZipFile(tmp.name, 'r') as zfile:
-            zfile.extract(self.img_name(), self.parent.base_dir)
-            zfile.extract(self.img_name() + ".aux.xml", self.parent.base_dir)
+        img = self.img_name()
+
+        if self.parent.is_topobathy:
+            with zipfile.ZipFile(tmp.name, 'r') as zfile:
+                zfile.extract(img, self.parent.base_dir)
+                zfile.extract(img + ".aux.xml", self.parent.base_dir)
+
+        else:
+            with tmpdir.tmpdir() as d:
+                with zipfile.ZipFile(tmp.name, 'r') as zfile:
+                    zfile.extract(img, d)
+                    zfile.extract(img + ".aux.xml", self.parent.base_dir)
+
+                mask.negative(os.path.join(d, img),
+                              "HFA", self.output_file())
 
     def base_name(self):
         def fmt(v, neg, pos):
@@ -115,7 +129,7 @@ def _parse_ned_tile(fname, parent):
 
 class NEDBase(object):
 
-    def __init__(self, options={}):
+    def __init__(self, is_topobathy, options={}):
         self.num_download_threads = options.get('num_download_threads')
         self.base_dir = options['base_dir']
         self.ftp_server = options['ftp_server']
@@ -123,6 +137,7 @@ class NEDBase(object):
         self.pattern = re.compile(options['pattern'])
         self.download_options = download.options(options)
         self.tile_index = None
+        self.is_topobathy = is_topobathy
 
     def get_index(self):
         index_file = os.path.join(self.base_dir, 'index.yaml')

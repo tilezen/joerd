@@ -2,8 +2,8 @@ from joerd.util import BoundingBox
 import joerd.download as download
 import joerd.check as check
 import joerd.srs as srs
+import joerd.mask as mask
 from multiprocessing import Pool
-from contextlib import closing
 from shutil import copyfileobj
 import os.path
 import os
@@ -44,11 +44,11 @@ class GMTEDTile(object):
         return "%(y)s%(x)s_20101117_gmted_mea%(res)s.tif" % \
             dict(res=res, x=xname, y=yname)
 
-    def url(self):
+    def urls(self):
         dir = "%s%03d" % ("E" if self.x >= 0 else "W", abs(self.x))
         res = self._res()
         dname = "/%(res)sdarcsec/mea/%(dir)s/" % dict(res=res, dir=dir)
-        return self.parent.url + dname + self._file_name()
+        return [self.parent.url + dname + self._file_name()]
 
     def verifier(self):
         return check.is_gdal
@@ -61,8 +61,7 @@ class GMTEDTile(object):
         return os.path.join(self.parent.base_dir, fname)
 
     def unpack(self, tmp):
-        with open(self.output_file(), 'w') as out:
-            copyfileobj(tmp, out)
+        mask.negative(tmp.name, "GTiff", self.output_file())
 
 
 class GMTED(object):
@@ -117,11 +116,10 @@ class GMTED(object):
     def srs(self):
         return srs.wgs84()
 
-    def mask_negative(self):
-        return True
-
     def filter_type(self, src_res, dst_res):
-        return gdal.GRA_Lanczos if src_res > dst_res else gdal.GRA_Cubic
+        # seems like GRA_Lanczos has trouble with nodata, which is causing
+        # "ringing" near the edges of the data.
+        return gdal.GRA_Bilinear if src_res > dst_res else gdal.GRA_Cubic
 
     def _parse_bbox(self, ns_deg, is_ns, ew_deg, is_ew, res):
         bottom = int(ns_deg)

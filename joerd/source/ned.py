@@ -15,7 +15,7 @@ class NED(object):
         options = options.copy()
         options['pattern'] = NORMAL_PATTERN
         options['base_dir'] = options.get('base_dir', 'ned')
-        self.base = NEDBase(options)
+        self.base = NEDBase(False, options)
 
     def get_index(self):
         return self.base.get_index()
@@ -28,9 +28,6 @@ class NED(object):
 
     def filter_type(self, src_res, dst_res):
         return self.base.filter_type(src_res, dst_res)
-
-    def mask_negative(self):
-        return True
 
     def srs(self):
         return self.base.srs()

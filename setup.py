@@ -37,7 +37,7 @@ setup(name='joerd',
           'pyqtree',
           'geographiclib',
           'boto3',
-          'distutils',
+          'contextlib2',
       ],
       test_suite='tests',
       tests_require=[

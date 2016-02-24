@@ -4,7 +4,9 @@ import joerd.download as download
 import joerd.check as check
 import joerd.srs as srs
 import joerd.index as index
-from contextlib import closing
+import joerd.mask as mask
+import joerd.tmpdir as tmpdir
+from contextlib2 import closing, ExitStack
 from shutil import copyfile
 import os.path
 import os
@@ -43,8 +45,12 @@ class SRTMTile(object):
     def __hash__(self):
         return hash(self.__key())
 
-    def url(self):
-        return self.parent.url + "/" + self.link
+    def urls(self):
+        url_list = [self.parent.url + "/" + self.link]
+        if self.parent.mask_url:
+            mask_link = self.link.replace(".SRTMGL1.hgt", ".SRTMSWBD.raw")
+            url_list.append(self.parent.mask_url + "/" + mask_link)
+        return url_list
 
     def verifier(self):
         return check.is_zip
@@ -55,9 +61,19 @@ class SRTMTile(object):
     def output_file(self):
         return os.path.join(self.parent.base_dir, self.fname)
 
-    def unpack(self, tmp):
-        with zipfile.ZipFile(tmp.name, 'r') as zfile:
-            zfile.extract(self.fname, self.parent.base_dir)
+    def unpack(self, data_zip, mask_zip):
+        with tmpdir.tmpdir() as d:
+            with zipfile.ZipFile(data_zip.name, 'r') as zfile:
+                zfile.extract(self.fname, d)
+
+            mask_name = self.fname.replace(".hgt", ".raw")
+            with zipfile.ZipFile(mask_zip.name, 'r') as zfile:
+                zfile.extract(mask_name, d)
+
+            mask_file = os.path.join(d, mask_name)
+            # mask off the water using the mask raster raw file
+            mask.raw(os.path.join(d, self.fname), mask_file, 255,
+                     "SRTMHGT", self.output_file())
 
 
 def _parse_srtm_tile(link, parent):
@@ -71,6 +87,7 @@ class SRTM(object):
     def __init__(self, options={}):
         self.base_dir = options.get('base_dir', 'srtm')
         self.url = options['url']
+        self.mask_url = options.get('mask-url')
         self.download_options = download.options(options)
         self.tile_index = None
 
@@ -152,9 +169,6 @@ class SRTM(object):
 
     def filter_type(self, src_res, dst_res):
         return gdal.GRA_Lanczos if src_res > dst_res else gdal.GRA_Cubic
-
-    def mask_negative(self):
-        return True
 
     def srs(self):
         return srs.wgs84()

@@ -15,7 +15,7 @@ class NEDTopobathy(object):
         options = options.copy()
         options['pattern'] = TOPOBATHY_PATTERN
         options['base_dir'] = options.get('base_dir', 'ned_topobathy')
-        self.base = NEDBase(options)
+        self.base = NEDBase(True, options)
 
     def get_index(self):
         return self.base.get_index()
@@ -28,9 +28,6 @@ class NEDTopobathy(object):
 
     def filter_type(self, src_res, dst_res):
         return self.base.filter_type(src_res, dst_res)
-
-    def mask_negative(self):
-        return False
 
     def srs(self):
         return self.base.srs()
