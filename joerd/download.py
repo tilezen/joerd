@@ -1,4 +1,4 @@
-from contextlib import contextmanager, closing
+from contextlib2 import contextmanager, closing
 import urllib2
 import tempfile
 import os

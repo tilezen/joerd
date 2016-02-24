@@ -3,6 +3,7 @@ from osgeo import gdal
 from importlib import import_module
 from multiprocessing import Pool
 import joerd.download as download
+import joerd.tmpdir as tmpdir
 import sys
 import argparse
 import os
@@ -13,9 +14,7 @@ import time
 import traceback
 import json
 import boto3
-from contextlib import contextmanager
-import shutil
-import tempfile
+from contextlib2 import ExitStack
 
 
 def create_command_parser(fn):
@@ -28,31 +27,27 @@ def create_command_parser(fn):
 
 
 def _download(d):
-    options = d.options().copy()
-    options['verifier'] = d.verifier()
-
-    with download.get(d.url(), options) as tmp:
-        d.unpack(tmp)
-
-    assert os.path.isfile(d.output_file())
-
-
-# Equivalent of NamedTemporaryFile, but for directories. Will completely
-# remove the directory on exit.
-@contextmanager
-def _tmpdir():
-    path = tempfile.mkdtemp()
-
     try:
-        yield path
+        options = d.options().copy()
+        options['verifier'] = d.verifier()
 
-    finally:
-        shutil.rmtree(path, ignore_errors=True)
+        with ExitStack() as stack:
+            def _get(u):
+                return stack.enter_context(download.get(u, options))
+
+            tmps = [_get(url) for url in d.urls()]
+
+            d.unpack(*tmps)
+
+        assert os.path.isfile(d.output_file())
+
+    except:
+        raise Exception("".join(traceback.format_exception(*sys.exc_info())))
 
 
 def _render(t, store):
     try:
-        with _tmpdir() as d:
+        with tmpdir.tmpdir() as d:
             t.render(d)
             store.upload_all(d)
 

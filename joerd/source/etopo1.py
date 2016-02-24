@@ -2,7 +2,6 @@ from joerd.util import BoundingBox
 import joerd.download as download
 import joerd.check as check
 import joerd.srs as srs
-from contextlib import closing
 from shutil import copyfile
 import os.path
 import os
@@ -53,8 +52,8 @@ class ETOPO1(object):
     def output_file(self):
         return os.path.join(self.base_dir, self.target_name)
 
-    def url(self):
-        return self.etopo1_url
+    def urls(self):
+        return [self.etopo1_url]
 
     def options(self):
         return self.download_options
@@ -68,9 +67,6 @@ class ETOPO1(object):
 
     def srs(self):
         return srs.wgs84()
-
-    def mask_negative(self):
-        return False
 
     def filter_type(self, src_res, dst_res):
         return gdal.GRA_Lanczos

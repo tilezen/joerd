@@ -1,5 +1,5 @@
 from osgeo import gdal
-from contextlib import contextmanager, closing
+from contextlib2 import contextmanager, closing
 import subprocess
 import tempfile
 import logging

@@ -23,7 +23,7 @@ def _tx_bbox(tx, bbox, expand=0.0):
             bbox[3] + 0.5 * expand * yspan)
 
 
-def _mk_image(src_ds, dst_ds, mask_negative, filter_type):
+def _mk_image(src_ds, dst_ds, filter_type):
     src_srs_wkt = src_ds.GetProjection()
     src_gt = src_ds.GetGeoTransform()
     src_x_res = abs(src_gt[1])
@@ -42,13 +42,6 @@ def _mk_image(src_ds, dst_ds, mask_negative, filter_type):
     res = gdal.ReprojectImage(src_ds, dst_ds, src_srs_wkt,
                               dst_srs_wkt, f_type, 1024, 0.125)
     assert res == gdal.CPLE_None
-
-    if mask_negative:
-        dst_data = dst_band.ReadAsArray(0, 0, dst_x_size, dst_y_size)
-        dst_mask = (dst_data <= 0) | (dst_data == src_nodata)
-        mx = numpy.ma.masked_array(dst_data, mask=dst_mask)
-        res = dst_band.WriteArray(numpy.ma.filled(mx, dst_nodata))
-        assert res == gdal.CPLE_None
 
 
 _NUMPY_TYPES = {
@@ -117,8 +110,7 @@ def compose(tile, dst_ds, logger, dst_res):
             # the output image.
             with vrt.build([r.output_file() for r in rasters],
                            source.srs().ExportToWkt()) as src_ds:
-                _mk_image(src_ds, mem_ds, source.mask_negative(),
-                          _filter_type_func)
+                _mk_image(src_ds, mem_ds, _filter_type_func)
 
             # extract the output data, but only those which are not nodata,
             # and overwrite those pixels in the dst. the pixels which are
