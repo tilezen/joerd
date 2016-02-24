@@ -121,7 +121,9 @@ class GMTED(object):
         return True
 
     def filter_type(self, src_res, dst_res):
-        return gdal.GRA_Lanczos if src_res > dst_res else gdal.GRA_Cubic
+        # seems like GRA_Lanczos has trouble with nodata, which is causing
+        # "ringing" near the edges of the data.
+        return gdal.GRA_Bilinear if src_res > dst_res else gdal.GRA_Cubic
 
     def _parse_bbox(self, ns_deg, is_ns, ew_deg, is_ew, res):
         bottom = int(ns_deg)
