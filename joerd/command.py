@@ -1,7 +1,7 @@
 from config import make_config_from_argparse
 from osgeo import gdal
 from importlib import import_module
-from multiprocessing import Pool
+from multiprocessing import Pool, Array
 import joerd.download as download
 import joerd.tmpdir as tmpdir
 import sys
@@ -15,7 +15,8 @@ import traceback
 import json
 import boto3
 from contextlib2 import ExitStack
-
+import subprocess
+import ctypes
 
 def create_command_parser(fn):
     def create_parser_fn(parser):
@@ -25,6 +26,43 @@ def create_command_parser(fn):
         return parser
     return create_parser_fn
 
+def _remaining_disk(path):
+    df = subprocess.Popen(['df', '-k', '-P', path], stdout=subprocess.PIPE)
+    remaining = df.communicate()[0]
+    remaining = remaining.split('\n')[1]
+    remaining = remaining.split()[3]
+    return int(remaining) * 1024
+
+def _make_space(handles, path):
+    #assume unpacking will need 3x the space
+    needed = 0
+    for h in handles:
+        position = h.tell();
+        h.seek(0, os.SEEK_END)
+        needed += h.tell()
+        h.seek(position, os.SEEK_SET)
+    needed *= 3
+    #keep removing stuff until we have enough
+    _superfluous.acquire(block=True)
+    remaining = _remaining_disk(path)
+    for s in _superfluous:
+        if remaining >= needed:
+            return
+        if len(s):
+            try:
+                gained = os.path.getsize(s)
+                os.remove(s)
+                remaining += gained
+            except:
+                pass
+            s = ''
+    _superfluous.release()
+    raise Exception('Not enough space left on device to continue')
+
+def _init_processes(s):
+    # in this case its global for each separate process
+    global _superfluous
+    _superfluous = s
 
 def _download(d):
     try:
@@ -37,7 +75,11 @@ def _download(d):
 
             tmps = [_get(url) for url in d.urls()]
 
-            d.unpack(*tmps)
+            while True:
+                try:
+                    d.unpack(*tmps)
+                except:
+                    _make_space(tmps, os.path.dirname(d.output_file()))
 
         assert os.path.isfile(d.output_file())
 
@@ -126,16 +168,31 @@ class Joerd:
             tile.set_sources(tile_sources)
             progress.increment(1)
 
-        p = Pool(processes=self.num_threads)
-
         # grab a list of the files which aren't currently available
         need_to_download = []
+        need_on_disk = set()
         for download in downloads:
+            need_on_disk.add(download.output_file())
             if not os.path.isfile(download.output_file()):
                 need_to_download.append(download)
 
         logger.info("Need to download %d source files."
                     % len(need_to_download))
+
+        #grab a list of the files which we could delete if we need to
+        superfluous = []
+        for source in self.sources:
+            for existing in source.existing_files():
+                if existing not in need_on_disk:
+                    superfluous.append(existing)
+
+        logger.debug("%d source files are superfluous to this job"
+                    % len(superfluous))
+
+        # give each process a handle to the shared mem
+        shared = Array(ctypes.c_char_p, superfluous)
+        p = Pool(processes=self.num_threads, initializer=_init_processes,
+                 initargs=(shared,))
 
         # make sure we've got a store
         p.map(_download, need_to_download,
