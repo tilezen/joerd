@@ -61,7 +61,15 @@ class SRTMTile(object):
     def output_file(self):
         return os.path.join(self.parent.base_dir, self.fname)
 
-    def unpack(self, data_zip, mask_zip):
+    def unpack(self, data_zip, mask_zip=None):
+        # if there's no mask, then just extract the SRTM as-is.
+        if mask_zip is None:
+            with zipfile.ZipFile(data_zip.name, 'r') as zfile:
+                zfile.extract(self.fname, self.parent.base_dir)
+            return
+
+        # otherwise, make a temporary directory to keep the SRTM and
+        # mask in while compositing them.
         with tmpdir.tmpdir() as d:
             with zipfile.ZipFile(data_zip.name, 'r') as zfile:
                 zfile.extract(self.fname, d)
