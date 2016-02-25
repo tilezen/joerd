@@ -90,6 +90,7 @@ def _download(d):
             while True:
                 try:
                     d.unpack(*tmps)
+                    break
                 except Exception as e:
                     #TODO: only catch out of space exception
                     _logger.error(repr(e))
