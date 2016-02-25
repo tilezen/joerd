@@ -321,6 +321,8 @@ def joerd_main(argv=None):
     cfg = make_config_from_argparse(args.config)
 
     if cfg.logconfig is not None:
-        logging.config.fileConfig(cfg.logconfig)
+        config_dir = os.path.dirname(args.config)
+        logconfig_path = os.path.join(config_dir, cfg.logconfig)
+        logging.config.fileConfig(logconfig_path)
 
     args.func(cfg)
