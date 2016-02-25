@@ -11,6 +11,7 @@ import shutil
 import errno
 import sys
 import joerd.composite as composite
+import gzip
 
 
 HALF_ARC_SEC = (1.0/3600.0)*.5
@@ -83,10 +84,10 @@ class SkadiTile:
                     raise
 
         tile = _tile_name(self.x, self.y)
-        tile_file = os.path.join(mid_dir, tile + ".hgt")
+        hgt_file = os.path.join(mid_dir, tile + ".hgt")
+        tile_file = os.path.join(mid_dir, tile + ".hgt.gz")
         logger.info("Generating tile %r..." % tile)
 
-        outfile = tile_file
         dst_bbox = bbox.bounds
         dst_x_size = 3601
         dst_y_size = 3601
@@ -108,13 +109,18 @@ class SkadiTile:
 
         composite.compose(self, dst_ds, logger, min(dst_x_res, dst_y_res))
 
-        logger.info("Writing SRTMHGT: %r" % outfile)
+        logger.debug("Writing SRTMHGT: %r" % hgt_file)
         srtm_drv = gdal.GetDriverByName("SRTMHGT")
-        srtm_ds = srtm_drv.CreateCopy(outfile, dst_ds)
+        srtm_ds = srtm_drv.CreateCopy(hgt_file, dst_ds)
 
         del dst_ds
         del srtm_ds
 
+        logger.debug("Compressing HGT -> GZ: %r" % tile_file)
+        with gzip.open(tile_file, 'wb') as gz, open(hgt_file, 'rb') as hgt:
+            shutil.copyfileobj(hgt, gz)
+
+        os.remove(hgt_file)
         assert os.path.isfile(tile_file)
 
         logger.info("Done generating tile %r" % tile)
