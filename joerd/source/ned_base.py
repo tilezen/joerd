@@ -171,7 +171,7 @@ class NEDBase(object):
 
     def existing_files(self):
         for base, dirs, files in os.walk(self.base_dir):
-            for f in  files:
+            for f in files:
                 if f.endswith('img'):
                     yield os.path.join(base, f)
 

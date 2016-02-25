@@ -42,16 +42,18 @@ def lock_array(a, **opts):
         a.release()
 
 def _make_space(handles, path):
-    #assume unpacking will need 3x the space
-    needed = 0
-    for h in handles:
-        position = h.tell();
-        h.seek(0, os.SEEK_END)
-        needed += h.tell()
-        h.seek(position, os.SEEK_SET)
-    needed *= 3
-    #keep removing stuff until we have enough
+    #if theres nothing to do bail
     with lock_array(_superfluous, block=True) as superfluous:
+        if len(superfluous) and not superfluous[len(superfluous) - 1]:
+            raise Exception('Need more space but nothing superfluous to delete')
+        #assume unpacking will need 3x the space
+        needed = 0
+        for h in handles:
+            position = h.tell();
+            h.seek(0, os.SEEK_END)
+            needed += h.tell()
+            h.seek(position, os.SEEK_SET)
+        #keep removing stuff until we have enough
         remaining = _remaining_disk(path)
         for i in range(len(superfluous)):
             if remaining >= needed:
@@ -66,7 +68,9 @@ def _make_space(handles, path):
                     remaining += gained
                 except:
                     pass
-    raise Exception('Not enough space left on device to continue')
+    #still not enough
+    if remaining < needed:
+        raise Exception('Not enough space left on device to continue, need at least %d more bytes' % (needed - remaining))
 
 def _init_processes(s, l):
     # in this case its global for each separate process
@@ -89,7 +93,9 @@ def _download(d):
             while True:
                 try:
                     d.unpack(*tmps)
-                except:
+                except Exception as e:
+                    #TODO: only catch out of space exception
+                    _logger.error(repr(e))
                     _make_space(tmps, os.path.dirname(d.output_file()))
 
         assert os.path.isfile(d.output_file())
