@@ -41,18 +41,15 @@ def lock_array(a, **opts):
     finally:
         a.release()
 
-def _make_space(handles, path):
+def _make_space(tmps, path):
     #if theres nothing to do bail
     with lock_array(_superfluous, block=True) as superfluous:
         if len(superfluous) and not superfluous[len(superfluous) - 1]:
             raise Exception('Need more space but nothing superfluous to delete')
-        #assume unpacking will need 3x the space
+        #assume unpacking will need at least this much space
         needed = 0
-        for h in handles:
-            position = h.tell();
-            h.seek(0, os.SEEK_END)
-            needed += h.tell()
-            h.seek(position, os.SEEK_SET)
+        for t in tmps:
+            needed += os.path.getsize(t.name)
         #keep removing stuff until we have enough
         remaining = _remaining_disk(path)
         for i in range(len(superfluous)):
