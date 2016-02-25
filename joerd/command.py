@@ -14,7 +14,7 @@ import time
 import traceback
 import json
 import boto3
-from contextlib2 import ExitStack
+from contextlib2 import ExitStack, contextmanager
 import subprocess
 import ctypes
 
@@ -33,6 +33,14 @@ def _remaining_disk(path):
     remaining = remaining.split()[3]
     return int(remaining) * 1024
 
+@contextmanager
+def lock_array(a, **opts):
+    a.acquire(**opts)
+    try:
+        yield a
+    finally:
+        a.release()
+
 def _make_space(handles, path):
     #assume unpacking will need 3x the space
     needed = 0
@@ -43,26 +51,29 @@ def _make_space(handles, path):
         h.seek(position, os.SEEK_SET)
     needed *= 3
     #keep removing stuff until we have enough
-    _superfluous.acquire(block=True)
-    remaining = _remaining_disk(path)
-    for s in _superfluous:
-        if remaining >= needed:
-            return
-        if len(s):
-            try:
-                gained = os.path.getsize(s)
-                os.remove(s)
-                remaining += gained
-            except:
-                pass
-            s = ''
-    _superfluous.release()
+    with lock_array(_superfluous, block=True) as superfluous:
+        remaining = _remaining_disk(path)
+        for i in range(len(superfluous)):
+            if remaining >= needed:
+                return
+            s = superfluous[i]
+            superfluous[i] = ''
+            if s:
+                try:
+                    _logger.info('Removing %s to free up space' % s)
+                    gained = os.path.getsize(s)
+                    os.remove(s)
+                    remaining += gained
+                except:
+                    pass
     raise Exception('Not enough space left on device to continue')
 
-def _init_processes(s):
+def _init_processes(s, l):
     # in this case its global for each separate process
     global _superfluous
     _superfluous = s
+    global _logger
+    _logger = l
 
 def _download(d):
     try:
@@ -186,13 +197,13 @@ class Joerd:
                 if existing not in need_on_disk:
                     superfluous.append(existing)
 
-        logger.debug("%d source files are superfluous to this job"
+        logger.info("%d source files are superfluous to this job"
                     % len(superfluous))
 
         # give each process a handle to the shared mem
         shared = Array(ctypes.c_char_p, superfluous)
         p = Pool(processes=self.num_threads, initializer=_init_processes,
-                 initargs=(shared,))
+                 initargs=(shared,logger))
 
         # make sure we've got a store
         p.map(_download, need_to_download,
