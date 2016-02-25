@@ -96,6 +96,21 @@ def get(url, options={}):
             try:
                 f = urllib2.urlopen(req, timeout=timeout)
 
+                # try to get the filesize, if the server reports it.
+                if filesize is None:
+                    content_length = f.info().get('Content-Length')
+                    if content_length is not None:
+                        try:
+                            filesize = int(content_length)
+                        except ValueError:
+                            pass
+
+                # detect whether the server accepts Range requests.
+                accept_range = f.info().get('Accept-Ranges') == 'bytes'
+
+                # copy data from the server
+                shutil.copyfileobj(f, tmp)
+
             except (IOError, httplib.HTTPException) as e:
                 logger.debug("Got HTTP error: %s" % str(e))
                 continue
@@ -107,21 +122,6 @@ def get(url, options={}):
             except socket.timeout as e:
                 logger.debug("Got socket timeout: %s" % str(e))
                 continue
-
-            # try to get the filesize, if the server reports it.
-            if filesize is None:
-                content_length = f.info().get('Content-Length')
-                if content_length is not None:
-                    try:
-                        filesize = int(content_length)
-                    except ValueError:
-                        pass
-
-            # detect whether the server accepts Range requests.
-            accept_range = f.info().get('Accept-Ranges') == 'bytes'
-
-            # copy data from the server
-            shutil.copyfileobj(f, tmp)
 
             # update number of bytes read (this would be nicer if copyfileobj
             # returned it.
