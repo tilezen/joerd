@@ -1,7 +1,7 @@
 from config import make_config_from_argparse
 from osgeo import gdal
 from importlib import import_module
-from multiprocessing import Pool, Array
+from multiprocessing import Pool, Array, cpu_count
 import joerd.download as download
 import joerd.tmpdir as tmpdir
 import sys
@@ -45,11 +45,12 @@ def _make_space(tmps, path):
     #if theres nothing to do bail
     with lock_array(_superfluous, block=True) as superfluous:
         if len(superfluous) and not superfluous[len(superfluous) - 1]:
-            raise Exception('Need more space but nothing superfluous to delete')
+            raise Exception('Need more space but nothing superfluous to delete.')
         #assume unpacking will need at least this much space
         needed = 0
         for t in tmps:
             needed += os.path.getsize(t.name)
+        needed *= 3 * cpu_count()
         #keep removing stuff until we have enough
         remaining = _remaining_disk(path)
         for i in range(len(superfluous)):
@@ -59,7 +60,7 @@ def _make_space(tmps, path):
             superfluous[i] = ''
             if s:
                 try:
-                    _logger.info('Removing %s to free up space' % s)
+                    _logger.info('Removing %s to free up space.' % s)
                     gained = os.path.getsize(s)
                     os.remove(s)
                     remaining += gained
@@ -67,7 +68,7 @@ def _make_space(tmps, path):
                     pass
     #still not enough
     if remaining < needed:
-        raise Exception('Not enough space left on device to continue, need at least %d more bytes' % (needed - remaining))
+        raise Exception('Not enough space left on device to continue, need at least %d more bytes.' % (needed - remaining))
 
 def _init_processes(s, l):
     # in this case its global for each separate process
@@ -201,7 +202,7 @@ class Joerd:
                 if existing not in need_on_disk:
                     superfluous.append(existing)
 
-        logger.info("%d source files are superfluous to this job"
+        logger.info("%d source files are superfluous to this job."
                     % len(superfluous))
 
         # give each process a handle to the shared mem
