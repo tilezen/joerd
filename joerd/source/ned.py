@@ -20,6 +20,9 @@ class NED(object):
     def get_index(self):
         return self.base.get_index()
 
+    def existing_files(self):
+        return self.base.existing_files()
+
     def downloads_for(self, tile):
         return self.base.downloads_for(tile)
 

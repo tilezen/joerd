@@ -80,6 +80,12 @@ class GMTED(object):
         if not os.path.isdir(self.base_dir):
             os.makedirs(self.base_dir)
 
+    def existing_files(self):
+        for base, dirs, files in os.walk(self.base_dir):
+            for f in  files:
+                if f.endswith('tif'):
+                    yield os.path.join(base, f)
+
     def downloads_for(self, tile):
         tiles = set()
         # if the tile scale is greater than 20x the GMTED scale, then there's no

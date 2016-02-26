@@ -169,6 +169,12 @@ class NEDBase(object):
 
         return self.tile_index
 
+    def existing_files(self):
+        for base, dirs, files in os.walk(self.base_dir):
+            for f in files:
+                if f.endswith('img'):
+                    yield os.path.join(base, f)
+
     def downloads_for(self, tile):
         tiles = set()
         # if the tile scale is greater than 20x the NED scale, then there's no

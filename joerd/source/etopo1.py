@@ -31,6 +31,10 @@ class ETOPO1(object):
         if not os.path.isdir(self.base_dir):
             os.makedirs(self.base_dir)
 
+    def existing_files(self):
+        if os.path.exists(self.output_file()):
+            yield self.output_file()
+
     def downloads_for(self, tile):
         # There's just one thing to download, and it's this single world
         # tile.

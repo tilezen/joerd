@@ -1,7 +1,7 @@
 from config import make_config_from_argparse
 from osgeo import gdal
 from importlib import import_module
-from multiprocessing import Pool
+from multiprocessing import Pool, Array
 import joerd.download as download
 import joerd.tmpdir as tmpdir
 import sys
@@ -14,8 +14,9 @@ import time
 import traceback
 import json
 import boto3
-from contextlib2 import ExitStack
-
+from contextlib2 import ExitStack, contextmanager
+import subprocess
+import ctypes
 
 def create_command_parser(fn):
     def create_parser_fn(parser):
@@ -24,6 +25,59 @@ def create_command_parser(fn):
         parser.set_defaults(func=fn)
         return parser
     return create_parser_fn
+
+def _remaining_disk(path):
+    df = subprocess.Popen(['df', '-k', '-P', path], stdout=subprocess.PIPE)
+    remaining = df.communicate()[0]
+    remaining = remaining.split('\n')[1]
+    remaining = remaining.split()[3]
+    return int(remaining) * 1024
+
+@contextmanager
+def lock_array(a, **opts):
+    a.acquire(**opts)
+    try:
+        yield a
+    finally:
+        a.release()
+
+def _make_space(tmps, path):
+    #if theres nothing to do bail
+    with lock_array(_superfluous, block=True) as superfluous:
+        if len(superfluous) and not superfluous[len(superfluous) - 1]:
+            raise Exception('Need more space but nothing superfluous to delete.')
+        #assume unpacking will need at least this much space
+        needed = 0
+        for t in tmps:
+            needed += os.path.getsize(t.name)
+        #keep removing stuff until we have enough
+        remaining = _remaining_disk(path)
+        for i in range(len(superfluous)):
+            if remaining >= needed:
+                return
+            s = superfluous[i]
+            superfluous[i] = ''
+            if s:
+                try:
+                    _logger.info('Removing %s to free up space.' % s)
+                    gained = os.path.getsize(s)
+                    os.remove(s)
+                    remaining += gained
+                except:
+                    pass
+    #still not enough
+    if remaining < needed:
+        raise Exception('Not enough space left on device to continue, need at least %d more bytes.' % (needed - remaining))
+
+def _init_processes(s, l):
+    # in this case its global for each separate process
+    global _superfluous
+    _superfluous = s
+    global _logger
+    _logger = l
+
+    # make sure process will error if GDAL fails
+    gdal.UseExceptions()
 
 
 def _download(d):
@@ -37,7 +91,14 @@ def _download(d):
 
             tmps = [_get(url) for url in d.urls()]
 
-            d.unpack(*tmps)
+            while True:
+                try:
+                    d.unpack(*tmps)
+                    break
+                except Exception as e:
+                    #TODO: only catch out of space exception
+                    _logger.error(repr(e))
+                    _make_space(tmps, os.path.dirname(d.output_file()))
 
         assert os.path.isfile(d.output_file())
 
@@ -126,16 +187,31 @@ class Joerd:
             tile.set_sources(tile_sources)
             progress.increment(1)
 
-        p = Pool(processes=self.num_threads)
-
         # grab a list of the files which aren't currently available
         need_to_download = []
+        need_on_disk = set()
         for download in downloads:
+            need_on_disk.add(download.output_file())
             if not os.path.isfile(download.output_file()):
                 need_to_download.append(download)
 
         logger.info("Need to download %d source files."
                     % len(need_to_download))
+
+        #grab a list of the files which we could delete if we need to
+        superfluous = []
+        for source in self.sources:
+            for existing in source.existing_files():
+                if existing not in need_on_disk:
+                    superfluous.append(existing)
+
+        logger.info("%d source files are superfluous to this job."
+                    % len(superfluous))
+
+        # give each process a handle to the shared mem
+        shared = Array(ctypes.c_char_p, superfluous)
+        p = Pool(processes=self.num_threads, initializer=_init_processes,
+                 initargs=(shared,logger))
 
         # make sure we've got a store
         p.map(_download, need_to_download,
@@ -324,5 +400,8 @@ def joerd_main(argv=None):
         config_dir = os.path.dirname(args.config)
         logconfig_path = os.path.join(config_dir, cfg.logconfig)
         logging.config.fileConfig(logconfig_path)
+
+    # make sure process will error if GDAL fails
+    gdal.UseExceptions()
 
     args.func(cfg)
