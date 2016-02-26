@@ -1,7 +1,7 @@
 from config import make_config_from_argparse
 from osgeo import gdal
 from importlib import import_module
-from multiprocessing import Pool, Array, cpu_count
+from multiprocessing import Pool, Array
 import joerd.download as download
 import joerd.tmpdir as tmpdir
 import sys
@@ -50,7 +50,6 @@ def _make_space(tmps, path):
         needed = 0
         for t in tmps:
             needed += os.path.getsize(t.name)
-        needed *= 3 * cpu_count()
         #keep removing stuff until we have enough
         remaining = _remaining_disk(path)
         for i in range(len(superfluous)):
