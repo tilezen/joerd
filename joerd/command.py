@@ -76,6 +76,10 @@ def _init_processes(s, l):
     global _logger
     _logger = l
 
+    # make sure process will error if GDAL fails
+    gdal.UseExceptions()
+
+
 def _download(d):
     try:
         options = d.options().copy()
@@ -395,5 +399,8 @@ def joerd_main(argv=None):
         config_dir = os.path.dirname(args.config)
         logconfig_path = os.path.join(config_dir, cfg.logconfig)
         logging.config.fileConfig(logconfig_path)
+
+    # make sure process will error if GDAL fails
+    gdal.UseExceptions()
 
     args.func(cfg)
