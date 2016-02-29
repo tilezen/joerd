@@ -25,7 +25,7 @@ import time
 
 
 IS_SRTM_FILE = re.compile(
-    '^([NS])([0-9]{2})([EW])([0-9]{3}).SRTMGL1.hgt.zip$')
+    '^([NS])([0-9]{2})([EW])([0-9]{3}).SRTM(?:GL1.hgt|SWBD.raw).zip$')
 
 
 class SRTMTile(object):
@@ -47,8 +47,8 @@ class SRTMTile(object):
 
     def urls(self):
         url_list = [self.parent.url + "/" + self.link]
-        if self.parent.mask_url:
-            mask_link = self.link.replace(".SRTMGL1.hgt", ".SRTMSWBD.raw")
+        mask_link = self.link.replace(".SRTMGL1.hgt", ".SRTMSWBD.raw")
+        if self.parent.is_masked(mask_link):
             url_list.append(self.parent.mask_url + "/" + mask_link)
         return url_list
 
@@ -98,6 +98,7 @@ class SRTM(object):
         self.mask_url = options.get('mask-url')
         self.download_options = download.options(options)
         self.tile_index = None
+        self.mask_index = None
 
     # Pickling the tile index is probably not a good idea, since it is
     # an FFI / C object. Setting it to None should cause it to be
@@ -105,22 +106,35 @@ class SRTM(object):
     def __getstate__(self):
         odict = self.__dict__.copy()
         odict['tile_index'] = None
+        odict['mask_index'] = None
         return odict
 
     def get_index(self):
-        index_file = os.path.join(self.base_dir, 'index.yaml')
+        for name in ['tile', 'mask']:
+            self.get_one_index(name)
+
+    def get_one_index(self, name):
+        fname = 'index_%s.yaml' % name
+        index_file = os.path.join(self.base_dir, fname)
         # if index doesn't exist, or is more than 24h old
         if not os.path.isfile(index_file) or \
            time.time() > os.path.getmtime(index_file) + 86400:
-            self.download_index(index_file)
+            self.download_index(index_file, name)
 
-    def download_index(self, index_file):
+    def download_index(self, index_file, name):
         if not os.path.isdir(self.base_dir):
             os.makedirs(self.base_dir)
 
         logger = logging.getLogger('srtm')
-        logger.info('Fetching SRTM index...')
-        r = requests.get(self.url)
+        logger.info('Fetching SRTM %r index...' % name)
+
+        url = None
+        if name == 'tile':
+            url = self.url
+        if name == 'mask':
+            url = self.mask_url
+
+        r = requests.get(url)
         soup = BeautifulSoup(r.text, 'html.parser')
 
         links = []
@@ -136,12 +150,22 @@ class SRTM(object):
 
     def _ensure_tile_index(self):
         if self.tile_index is None:
-            index_file = os.path.join(self.base_dir, 'index.yaml')
+            index_file = os.path.join(self.base_dir, 'index_tile.yaml')
             bbox = (-180, -90, 180, 90)
             self.tile_index = index.create(index_file, bbox, _parse_srtm_tile,
                                            self)
 
         return self.tile_index
+
+    def _ensure_mask_index(self):
+        if self.mask_index is None:
+            index_file = os.path.join(self.base_dir, 'index_mask.yaml')
+            self.mask_index = set(yaml.load(open(index_file)))
+
+        return self.mask_index
+
+    def is_masked(self, filename):
+        return filename in self._ensure_mask_index()
 
     def existing_files(self):
         for base, dirs, files in os.walk(self.base_dir):
