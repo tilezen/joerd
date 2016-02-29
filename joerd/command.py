@@ -366,10 +366,11 @@ def joerd_enqueuer(cfg):
 
     # inset the boxes by an epsilon amount. this is so that they don't
     # intersect neighbouring boxes, causing them to be rendered twice.
-    # 0.0001 is about 1/10th of a zoom 18 tile (in x direction), so
+    # 0.00015 is about 1/7th of a zoom 18 tile (in x direction), so
     # should be large enough to avoid duplication, but small enough to
-    # ensure all the tiles we want are actually done.
-    epsilon = 0.0001
+    # ensure all the tiles we want are actually done, taking into
+    # account the overlap between SRTM source tiles.
+    epsilon = 0.00015
 
     # send messages for all the other bboxes that need rendering.
     for (x, y), max_z in bboxes.iteritems():
