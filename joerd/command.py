@@ -17,6 +17,7 @@ import boto3
 from contextlib2 import ExitStack, contextmanager
 import subprocess
 import ctypes
+import math
 
 def create_command_parser(fn):
     def create_parser_fn(parser):
@@ -227,6 +228,8 @@ class Joerd:
         p.close()
         p.join()
 
+        logger.info("All done!")
+
     def _chunksize(self, length):
         """
         Try to determine an appropriate chunk size. The bigger the chunk, the
@@ -279,14 +282,14 @@ def joerd_process(cfg):
 
 
 def joerd_server(global_cfg):
-    assert cfg.sqs_queue_name is not None, \
+    assert global_cfg.sqs_queue_name is not None, \
         "Could not find SQS queue name in config, but this must be configured."
 
     sqs = boto3.resource('sqs')
-    queue = sqs.Queue(cfg.sqs_queue_name)
+    queue = sqs.get_queue_by_name(QueueName=global_cfg.sqs_queue_name)
 
     while True:
-        for message in queue.get_messages():
+        for message in queue.receive_messages():
             region = json.loads(message.body)
             cfg = global_cfg.copy_with_regions([region])
             joerd_process(cfg)
@@ -310,7 +313,7 @@ def joerd_enqueuer(cfg):
     bboxes = dict()
     global_region_zoom = None
 
-    for r in cfg.regions.itervalues():
+    for r in cfg.regions:
         rbox = r.bbox.bounds
         zrange = r.zoom_range
 
@@ -322,8 +325,8 @@ def joerd_enqueuer(cfg):
             top = int(block_size * math.ceil(rbox[3] / block_size))
 
             # just in case, clip to the world
-            lft = max(0, lft)
-            bot = max(0, bot)
+            lft = max(-180, lft)
+            bot = max(-90, bot)
             rgt = min(180, rgt)
             top = min(90, top)
 
@@ -344,6 +347,9 @@ def joerd_enqueuer(cfg):
 
     logger.info("Sending %d jobs to the queue" % num_jobs)
 
+    sqs = boto3.resource('sqs')
+    queue = sqs.get_queue_by_name(QueueName=cfg.sqs_queue_name)
+
     # if there's a global region, then do the whole world down to that
     # zoom.
     if global_region_zoom is not None:
@@ -356,7 +362,7 @@ def joerd_enqueuer(cfg):
                 'top': 90.0,
             }
         }
-        sqs.send_message(MessageBody=json.dumps(region))
+        queue.send_message(MessageBody=json.dumps(region))
 
     # send messages for all the other bboxes that need rendering.
     for (x, y), max_z in bboxes.iteritems():
@@ -369,7 +375,7 @@ def joerd_enqueuer(cfg):
                 'top': y + block_size,
             }
         }
-        sqs.send_message(MessageBody=json.dumps(region))
+        queue.send_message(MessageBody=json.dumps(region))
 
     logger.info("Done.")
 
