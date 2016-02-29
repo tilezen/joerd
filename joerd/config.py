@@ -2,6 +2,7 @@ from yaml import load
 from util import BoundingBox
 from multiprocessing import cpu_count
 from joerd.region import Region
+import copy
 
 
 class Configuration(object):
