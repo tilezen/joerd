@@ -2,6 +2,16 @@ import boto3
 from os import walk
 import os.path
 
+# extension to mime type mappings to help with serving the S3 bucket as
+# a web site. if we add the content-type header on upload, then S3 will
+# repeat it back when the tiles are accessed.
+_MIME_TYPES = {
+    '.png': 'image/png',
+    '.tif': 'image/tif',
+    '.xml': 'application/xml',
+    '.gz': 'application/x-gzip',
+}
+
 # Stores files in S3
 class S3Store(object):
     def __init__(self, cfg):
@@ -54,8 +64,17 @@ class S3Store(object):
                 for f in files:
                     src_name = os.path.join(dirpath, f)
                     s3_key = os.path.join(suffix, f)
+
+                    ext = os.path.splitext(f)[1]
+                    mime = _MIME_TYPES.get(ext)
+
+                    extra_args = {}
+                    if mime:
+                        extra_args['Content-Type'] = mime
+
                     bucket.upload_file(src_name, s3_key,
-                                       Config=self.upload_config)
+                                       Config=self.upload_config,
+                                       ExtraArgs=extra_args)
 
 
 def create(cfg):
