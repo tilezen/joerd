@@ -50,15 +50,17 @@ def _parse_tile(tile_name):
     return None
 
 
-class SkadiTile:
+class SkadiTile(object):
     def __init__(self, parent, x, y):
         self.parent = parent
         self.x = x
         self.y = y
-        self.sources = []
 
     def set_sources(self, sources):
-        self.source = sources
+        logger = logging.getLogger('skadi')
+        logger.debug("Set sources on tile (x,y)=%r: %r"
+                     % ((self.x, self.y), [type(s).__name__ for s in sources]))
+        self.sources = sources
 
     def latlon_bbox(self):
         return _bbox(self.x, self.y)
