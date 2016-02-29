@@ -70,7 +70,7 @@ class S3Store(object):
 
                     extra_args = {}
                     if mime:
-                        extra_args['Content-Type'] = mime
+                        extra_args['ContentType'] = mime
 
                     bucket.upload_file(src_name, s3_key,
                                        Config=self.upload_config,
