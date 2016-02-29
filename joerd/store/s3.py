@@ -1,4 +1,5 @@
 import boto3
+from boto3.s3.transfer import TransferConfig
 from os import walk
 import os.path
 
@@ -57,6 +58,8 @@ class S3Store(object):
         if not d.endswith('/'):
             d = d + "/"
 
+        transfer_config = TransferConfig(**self.upload_config)
+
         for dirpath, dirs, files in walk(d):
             if dirpath.startswith(d):
                 suffix = dirpath[len(d):]
@@ -73,7 +76,7 @@ class S3Store(object):
                         extra_args['ContentType'] = mime
 
                     bucket.upload_file(src_name, s3_key,
-                                       Config=self.upload_config,
+                                       Config=transfer_config,
                                        ExtraArgs=extra_args)
 
 
