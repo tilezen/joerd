@@ -56,3 +56,7 @@ class S3Store(object):
                     s3_key = os.path.join(suffix, f)
                     bucket.upload_file(src_name, s3_key,
                                        Config=self.upload_config)
+
+
+def create(cfg):
+    return S3Store(cfg)
