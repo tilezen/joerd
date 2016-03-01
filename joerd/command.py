@@ -282,6 +282,8 @@ def joerd_process(cfg):
 
 
 def joerd_server(global_cfg):
+    logger = logging.getLogger('process')
+
     assert global_cfg.sqs_queue_name is not None, \
         "Could not find SQS queue name in config, but this must be configured."
 
@@ -291,12 +293,22 @@ def joerd_server(global_cfg):
     while True:
         for message in queue.receive_messages():
             region = json.loads(message.body)
+            logger.info("Got job, region = %r" % (region,))
             cfg = global_cfg.copy_with_regions([region])
-            joerd_process(cfg)
 
-            # remove the message from the queue - this indicates that it has
-            # completed successfully and it won't be retried.
-            message.delete()
+            try:
+                joerd_process(cfg)
+
+                # remove the message from the queue - this indicates that it has
+                # completed successfully and it won't be retried.
+                message.delete()
+
+            except (Exception, StandardError) as e:
+                logger.warning("During render of region %r, caught exception. "
+                               "This job failed, continuing to the next. "
+                               "Exception details: %s" %
+                               (region, "".join(traceback.format_exception(
+                                   *sys.exc_info()))))
 
 
 def joerd_enqueuer(cfg):
