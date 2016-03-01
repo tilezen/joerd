@@ -17,6 +17,7 @@ import boto3
 from contextlib2 import ExitStack, contextmanager
 import subprocess
 import ctypes
+import math
 
 def create_command_parser(fn):
     def create_parser_fn(parser):
@@ -227,6 +228,8 @@ class Joerd:
         p.close()
         p.join()
 
+        logger.info("All done!")
+
     def _chunksize(self, length):
         """
         Try to determine an appropriate chunk size. The bigger the chunk, the
@@ -279,21 +282,33 @@ def joerd_process(cfg):
 
 
 def joerd_server(global_cfg):
-    assert cfg.sqs_queue_name is not None, \
+    logger = logging.getLogger('process')
+
+    assert global_cfg.sqs_queue_name is not None, \
         "Could not find SQS queue name in config, but this must be configured."
 
     sqs = boto3.resource('sqs')
-    queue = sqs.Queue(cfg.sqs_queue_name)
+    queue = sqs.get_queue_by_name(QueueName=global_cfg.sqs_queue_name)
 
     while True:
-        for message in queue.get_messages():
+        for message in queue.receive_messages():
             region = json.loads(message.body)
+            logger.info("Got job, region = %r" % (region,))
             cfg = global_cfg.copy_with_regions([region])
-            joerd_process(cfg)
 
-            # remove the message from the queue - this indicates that it has
-            # completed successfully and it won't be retried.
-            message.delete()
+            try:
+                joerd_process(cfg)
+
+                # remove the message from the queue - this indicates that it has
+                # completed successfully and it won't be retried.
+                message.delete()
+
+            except (Exception, StandardError) as e:
+                logger.warning("During render of region %r, caught exception. "
+                               "This job failed, continuing to the next. "
+                               "Exception details: %s" %
+                               (region, "".join(traceback.format_exception(
+                                   *sys.exc_info()))))
 
 
 def joerd_enqueuer(cfg):
@@ -310,7 +325,7 @@ def joerd_enqueuer(cfg):
     bboxes = dict()
     global_region_zoom = None
 
-    for r in cfg.regions.itervalues():
+    for r in cfg.regions:
         rbox = r.bbox.bounds
         zrange = r.zoom_range
 
@@ -322,8 +337,8 @@ def joerd_enqueuer(cfg):
             top = int(block_size * math.ceil(rbox[3] / block_size))
 
             # just in case, clip to the world
-            lft = max(0, lft)
-            bot = max(0, bot)
+            lft = max(-180, lft)
+            bot = max(-90, bot)
             rgt = min(180, rgt)
             top = min(90, top)
 
@@ -344,6 +359,9 @@ def joerd_enqueuer(cfg):
 
     logger.info("Sending %d jobs to the queue" % num_jobs)
 
+    sqs = boto3.resource('sqs')
+    queue = sqs.get_queue_by_name(QueueName=cfg.sqs_queue_name)
+
     # if there's a global region, then do the whole world down to that
     # zoom.
     if global_region_zoom is not None:
@@ -356,20 +374,28 @@ def joerd_enqueuer(cfg):
                 'top': 90.0,
             }
         }
-        sqs.send_message(MessageBody=json.dumps(region))
+        queue.send_message(MessageBody=json.dumps(region))
+
+    # inset the boxes by an epsilon amount. this is so that they don't
+    # intersect neighbouring boxes, causing them to be rendered twice.
+    # 0.00015 is about 1/7th of a zoom 18 tile (in x direction), so
+    # should be large enough to avoid duplication, but small enough to
+    # ensure all the tiles we want are actually done, taking into
+    # account the overlap between SRTM source tiles.
+    epsilon = 0.00015
 
     # send messages for all the other bboxes that need rendering.
     for (x, y), max_z in bboxes.iteritems():
         region = {
             'zoom_range': [8, max_z],
             'bbox': {
-                'left': x,
-                'bottom': y,
-                'right': x + block_size,
-                'top': y + block_size,
+                'left': x + epsilon,
+                'bottom': y + epsilon,
+                'right': x + block_size - epsilon,
+                'top': y + block_size - epsilon,
             }
         }
-        sqs.send_message(MessageBody=json.dumps(region))
+        queue.send_message(MessageBody=json.dumps(region))
 
     logger.info("Done.")
 

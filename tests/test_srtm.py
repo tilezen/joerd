@@ -22,3 +22,10 @@ class TestSRTMSource(unittest.TestCase):
         bbox = s._parse_bbox(fname)
         self.assertTrue(bbox is not None)
         self.assertEqual((-122, 38, -121, 39), bbox.bounds)
+
+    def test_file_name_parsing_3(self):
+        fname = 'N37W116.SRTMSWBD.raw.zip'
+        s = srtm.create(FAKE_OPTIONS)
+        bbox = s._parse_bbox(fname)
+        self.assertTrue(bbox is not None)
+        self.assertEqual((-116, 37, -115, 38), bbox.bounds)

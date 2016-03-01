@@ -93,7 +93,7 @@ def _merc_bbox(z, x, y):
         MERCATOR_WORLD_SIZE * (0.5 - y / extent))
 
 
-class NormalTile:
+class NormalTile(object):
     def __init__(self, parent, z, x, y):
         self.parent = parent
         self.z = z
