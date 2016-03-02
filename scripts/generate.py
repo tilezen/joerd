@@ -80,15 +80,18 @@ if __name__ == '__main__':
                         type=parse_bbox)
     parser.add_argument("--global-region", help="Add a global, low-zoom job "
                         "to the output.", default=False)
+    parser.add_argument("--global-mask", help="Add a shape which covers the "
+                        "whole input bbox to generate every tile.",
+                        default=False)
 
     parser.add_argument("input-file", help="Config YAML file to read as "
                         "input. Its 'regions' section will be replaced.")
     parser.add_argument("output-file", help="Config YAML to write, with "
                         "replaced 'regions'.")
     parser.add_argument("shape-file", help="Shape file(s) to use. Jobs "
-                        "will not be generated where they do not "
-                        "intersect some item from one of these.",
-                        nargs='+')
+                        "will only be generated where they intersect some "
+                        "item from one of these.",
+                        nargs='*')
 
     args = vars(parser.parse_args())
 
@@ -107,6 +110,9 @@ if __name__ == '__main__':
     objs = []
     for shapefile in args['shape-file']:
         objs.extend(ogrWkt2Shapely(shapefile))
+
+    if args['global_mask']:
+        objs.append(box(*bbox))
 
     print "Building index..."
     index = pyqtree.Index(bbox=[-180,-90,180,90])
