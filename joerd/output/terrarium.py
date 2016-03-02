@@ -106,11 +106,8 @@ class TerrariumTile(object):
                     raise
 
         tile = _tile_name(self.z, self.x, self.y)
-        tile_file = os.path.join(tmp_dir, self.parent.output_dir,
-                                 tile + ".tif")
         logger.debug("Generating tile %r..." % tile)
 
-        outfile = tile_file
         dst_bbox = bbox.bounds
         dst_x_size = 256
         dst_y_size = 256
@@ -137,70 +134,82 @@ class TerrariumTile(object):
 
         composite.compose(self, dst_ds, logger, min(ll_x_res, ll_y_res))
 
-        # we want the output to be 3-channels R, G, B with:
-        #   uheight = height + 32768.0
-        #   R = int(height) / 256
-        #   G = int(height) % 256
-        #   B = int(frac(height) * 256)
-        # Looks like gdal doesn't handle "nodata" across multiple channels,
-        # so we'll use R=0, which corresponds to height < 32,513 which is
-        # lower than any depth on Earth, so we should be okay.
-        mem_drv = gdal.GetDriverByName("MEM")
-        mem_ds = mem_drv.Create('', dst_x_size, dst_y_size, 3, gdal.GDT_Byte)
-        mem_ds.SetGeoTransform(dst_gt)
-        mem_ds.SetProjection(dst_srs.ExportToWkt())
-        mem_ds.GetRasterBand(1).SetNoDataValue(0)
+        if self.parent.enable_png:
+            # we want the output to be 3-channels R, G, B with:
+            #   uheight = height + 32768.0
+            #   R = int(height) / 256
+            #   G = int(height) % 256
+            #   B = int(frac(height) * 256)
+            # Looks like gdal doesn't handle "nodata" across multiple channels,
+            # so we'll use R=0, which corresponds to height < 32,513 which is
+            # lower than any depth on Earth, so we should be okay.
+            mem_drv = gdal.GetDriverByName("MEM")
+            mem_ds = mem_drv.Create('', dst_x_size, dst_y_size, 3, gdal.GDT_Byte)
+            mem_ds.SetGeoTransform(dst_gt)
+            mem_ds.SetProjection(dst_srs.ExportToWkt())
+            mem_ds.GetRasterBand(1).SetNoDataValue(0)
 
-        pixels = dst_ds.GetRasterBand(1).ReadAsArray(0, 0, dst_x_size, dst_y_size)
-        # transform to uheight, clamping the range
-        pixels += 32768.0
-        numpy.clip(pixels, 0.0, 65535.0, out=pixels)
+            pixels = dst_ds.GetRasterBand(1).ReadAsArray(0, 0, dst_x_size, dst_y_size)
+            # transform to uheight, clamping the range
+            pixels += 32768.0
+            numpy.clip(pixels, 0.0, 65535.0, out=pixels)
 
-        r = (pixels / 256).astype(numpy.uint8)
-        res = mem_ds.GetRasterBand(1).WriteArray(r)
-        assert res == gdal.CPLE_None
+            r = (pixels / 256).astype(numpy.uint8)
+            res = mem_ds.GetRasterBand(1).WriteArray(r)
+            assert res == gdal.CPLE_None
 
-        g = (pixels % 256).astype(numpy.uint8)
-        res = mem_ds.GetRasterBand(2).WriteArray(g)
-        assert res == gdal.CPLE_None
+            g = (pixels % 256).astype(numpy.uint8)
+            res = mem_ds.GetRasterBand(2).WriteArray(g)
+            assert res == gdal.CPLE_None
 
-        b = ((pixels * 256) % 256).astype(numpy.uint8)
-        res = mem_ds.GetRasterBand(3).WriteArray(b)
-        assert res == gdal.CPLE_None
+            b = ((pixels * 256) % 256).astype(numpy.uint8)
+            res = mem_ds.GetRasterBand(3).WriteArray(b)
+            assert res == gdal.CPLE_None
 
-        png_file = os.path.join(tmp_dir, self.parent.output_dir,
-                                tile + ".png")
-        png_drv = gdal.GetDriverByName("PNG")
-        png_ds = png_drv.CreateCopy(png_file, mem_ds)
+            png_file = os.path.join(tmp_dir, self.parent.output_dir,
+                                    tile + ".png")
+            png_drv = gdal.GetDriverByName("PNG")
+            png_ds = png_drv.CreateCopy(png_file, mem_ds)
 
-        # TIFF compresses best if we stick to integer pixels, using LZW
-        # and the "2" type predictor. we might be able to keep some bits
-        # of precision with float32 and DISCARD_LSB, but that's only
-        # available in GDAL >= 2.0
-        tif_drv = gdal.GetDriverByName("GTiff")
-        tif_ds = tif_drv.Create(outfile, dst_x_size, dst_y_size, 1,
-                                gdal.GDT_Int16, options = [
-                                    'COMPRESS=LZW',
-                                    'PREDICTOR=2'
-                                ])
-        tif_ds.SetGeoTransform(dst_gt)
-        tif_ds.SetProjection(dst_srs.ExportToWkt())
-        tif_ds.GetRasterBand(1).SetNoDataValue(-32768)
+            # explicitly delete the datasources. the Python-GDAL docs suggest
+            # that this is a good idea not only to dispose of memory buffers
+            # but also to ensure that the backing file handles are closed.
+            del mem_ds
+            del png_ds
 
-        pixels = dst_ds.GetRasterBand(1).ReadAsArray(0, 0, dst_x_size, dst_y_size)
-        # transform to integer height, clamping the range
-        numpy.clip(pixels, -32768, 32767, out=pixels)
-        tif_ds.GetRasterBand(1).WriteArray(pixels.astype(numpy.int16))
+            assert os.path.isfile(png_file)
 
-        # explicitly delete the datasources. the Python-GDAL docs suggest that
-        # this is a good idea not only to dispose of memory buffers but also
-        # to ensure that the backing file handles are closed.
-        del tif_ds
+        if self.parent.enable_tif:
+            # TIFF compresses best if we stick to integer pixels, using LZW
+            # and the "2" type predictor. we might be able to keep some bits
+            # of precision with float32 and DISCARD_LSB, but that's only
+            # available in GDAL >= 2.0
+            tile_file = os.path.join(tmp_dir, self.parent.output_dir,
+                                     tile + ".tif")
+            outfile = tile_file
+            tif_drv = gdal.GetDriverByName("GTiff")
+            tif_ds = tif_drv.Create(outfile, dst_x_size, dst_y_size, 1,
+                                    gdal.GDT_Int16, options = [
+                                        'COMPRESS=LZW',
+                                        'PREDICTOR=2'
+                                    ])
+            tif_ds.SetGeoTransform(dst_gt)
+            tif_ds.SetProjection(dst_srs.ExportToWkt())
+            tif_ds.GetRasterBand(1).SetNoDataValue(-32768)
+
+            pixels = dst_ds.GetRasterBand(1).ReadAsArray(0, 0, dst_x_size, dst_y_size)
+            # transform to integer height, clamping the range
+            numpy.clip(pixels, -32768, 32767, out=pixels)
+            tif_ds.GetRasterBand(1).WriteArray(pixels.astype(numpy.int16))
+
+            # explicitly delete the datasources. the Python-GDAL docs suggest that
+            # this is a good idea not only to dispose of memory buffers but also
+            # to ensure that the backing file handles are closed.
+            del tif_ds
+
+            assert os.path.isfile(tile_file)
+
         del dst_ds
-        del mem_ds
-        del png_ds
-
-        assert os.path.isfile(tile_file)
 
         source_names = [type(s).__name__ for s in self.sources]
         logger.info("Done generating tile %r from %s"
@@ -213,7 +222,8 @@ class Terrarium:
         self.regions = regions
         self.sources = sources
         self.output_dir = options.get('output_dir', 'terrarium_tiles')
-        self.enable_browser_png = options.get('enable_browser_png', False)
+        self.enable_png = options.get('enable_png', True)
+        self.enable_tif = options.get('enable_tif', True)
         self._setup_transforms()
 
     def _setup_transforms(self):
