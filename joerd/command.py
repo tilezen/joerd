@@ -313,89 +313,20 @@ def joerd_server(global_cfg):
 
 def joerd_enqueuer(cfg):
     """
-    Split the regions in the input file into jobs suitable for enqueueing and
-    send them to the SQS queue for the server to work on.
+    Sends each region in the config file to the queue for processing by workers.
     """
 
     assert cfg.sqs_queue_name is not None, \
         "Could not find SQS queue name in config, but this must be configured."
 
     logger = logging.getLogger('enqueuer')
-    block_size = cfg.block_size
-    bboxes = dict()
-    global_region_zoom = None
 
-    for r in cfg.regions:
-        rbox = r.bbox.bounds
-        zrange = r.zoom_range
-
-        # split anything zoom 8 or greater into blocks
-        if zrange[1] >= 8:
-            lft = int(block_size * math.floor(rbox[0] / block_size))
-            bot = int(block_size * math.floor(rbox[1] / block_size))
-            rgt = int(block_size * math.ceil(rbox[2] / block_size))
-            top = int(block_size * math.ceil(rbox[3] / block_size))
-
-            # just in case, clip to the world
-            lft = max(-180, lft)
-            bot = max(-90, bot)
-            rgt = min(180, rgt)
-            top = min(90, top)
-
-            for x in range(lft, rgt, block_size):
-                for y in range(bot, top, block_size):
-                    # accumulate the max z for each block
-                    zmax = bboxes.get((x, y))
-                    bboxes[(x, y)] = max(zmax, zrange[1])
-
-        # for anything with a range < 8, we also do a "global" range
-        # starting at the min zoom seen.
-        if zrange[0] < 8:
-            global_region_zoom = min(global_region_zoom or 8, zrange[0])
-
-    num_jobs = len(bboxes)
-    if global_region_zoom is not None:
-        num_jobs += 1
-
-    logger.info("Sending %d jobs to the queue" % num_jobs)
-
+    logger.info("Sending %d jobs to the queue" % len(cfg.regions))
     sqs = boto3.resource('sqs')
     queue = sqs.get_queue_by_name(QueueName=cfg.sqs_queue_name)
 
-    # if there's a global region, then do the whole world down to that
-    # zoom.
-    if global_region_zoom is not None:
-        region = {
-            'zoom_range': [global_region_zoom, 8],
-            'bbox': {
-                'left': -180.0,
-                'bottom': -90.0,
-                'right': 180.0,
-                'top': 90.0,
-            }
-        }
-        queue.send_message(MessageBody=json.dumps(region))
-
-    # inset the boxes by an epsilon amount. this is so that they don't
-    # intersect neighbouring boxes, causing them to be rendered twice.
-    # 0.00015 is about 1/7th of a zoom 18 tile (in x direction), so
-    # should be large enough to avoid duplication, but small enough to
-    # ensure all the tiles we want are actually done, taking into
-    # account the overlap between SRTM source tiles.
-    epsilon = 0.00015
-
-    # send messages for all the other bboxes that need rendering.
-    for (x, y), max_z in bboxes.iteritems():
-        region = {
-            'zoom_range': [8, max_z],
-            'bbox': {
-                'left': x + epsilon,
-                'bottom': y + epsilon,
-                'right': x + block_size - epsilon,
-                'top': y + block_size - epsilon,
-            }
-        }
-        queue.send_message(MessageBody=json.dumps(region))
+    for r in cfg.regions.itervalues():
+        queue.send_message(MessageBody=json.dumps(r))
 
     logger.info("Done.")
 
