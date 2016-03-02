@@ -48,9 +48,13 @@ python setup.py install
 Using
 -----
 
-Joerd installs as a command line library, and there is currently only one command:
+Joerd installs as a command line library, and there are currently three commands:
 
 * `process` reads the regions of interest from your config file, downloads all the sources to satisfy requests in that region, and for each tile intersecting the regions of interest in configured outputs, builds a [VRT](http://www.gdal.org/gdal_vrttut.html) "virtual dataset" of all relevant source files and generates the output image(s).
+* `server` starts up Joerd as a server listening for jobs on an SQS queue. It is intended for use as part of a cluster to parallelise very large job runs.
+* `enqueuer` reads a config file and outputs each region listed in the `regions` of the configuration file as a separate job to an SQS queue. This is intended for filling the queue for `server` to get work out of.
+
+There is also a `script/generate.py` program to generate a configuration with lots of little jobs all split up.
 
 To run a command, type something like this:
 
