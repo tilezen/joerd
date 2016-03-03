@@ -34,7 +34,7 @@ Building
 Joerd is a Python command line tool using `setuptools`. To install on a Debian or Ubuntu system, you need to install its dependencies:
 
 ```sh
-sudo apt-get install python-gdal python-bs4 python-numpy gdal-bin python-setuptools
+sudo apt-get install python-gdal python-bs4 python-numpy gdal-bin python-setuptools python-shapely
 ```
 
 (NOTE: not sure if this works: I installed GDAL-2.0.1 manually here, but I don't think it really needs it.)
