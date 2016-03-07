@@ -23,6 +23,9 @@ def create_command_parser(fn):
     def create_parser_fn(parser):
         parser.add_argument('--config', required=True,
                             help='The path to the joerd config file.')
+        parser.add_argument('--jobs-file', required=False,
+                            help='The path to the list of jobs to run for the '
+                            'enqueuer.')
         parser.set_defaults(func=fn)
         return parser
     return create_parser_fn
@@ -318,15 +321,33 @@ def joerd_enqueuer(cfg):
 
     assert cfg.sqs_queue_name is not None, \
         "Could not find SQS queue name in config, but this must be configured."
+    assert cfg.jobs_file is not None, \
+        "Could not find jobs file name in config, but this must be configured."
 
     logger = logging.getLogger('enqueuer')
 
-    logger.info("Sending %d jobs to the queue" % len(cfg.regions))
+    jobs = list()
+    for job in open(cfg.jobs_file, 'r'):
+        jobs.append(json.loads(job))
+
+    logger.info("Sending %d jobs to the queue" % len(jobs))
     sqs = boto3.resource('sqs')
     queue = sqs.get_queue_by_name(QueueName=cfg.sqs_queue_name)
 
-    for r in cfg.yml['regions'].itervalues():
-        queue.send_message(MessageBody=json.dumps(r))
+    batch = []
+    idx = 0
+
+    for r in jobs:
+        if len(batch) == 10:
+            result = queue.send_messages(Entries=batch)
+            if 'Failed' in result and result['Failed']:
+                logger.warning("Failed to enqueue: %r" % result['Failed'])
+            batch = []
+        batch.append(dict(Id=str(idx), MessageBody=json.dumps(r)))
+        idx += 1
+
+    if len(batch) > 0:
+        queue.send_messages(Entries=batch)
 
     logger.info("Done.")
 
@@ -351,7 +372,7 @@ def joerd_main(argv=None):
     args = parser.parse_args(argv)
     assert os.path.exists(args.config), \
         'Config file %r does not exist.' % args.config
-    cfg = make_config_from_argparse(args.config)
+    cfg = make_config_from_argparse(args)
 
     if cfg.logconfig is not None:
         config_dir = os.path.dirname(args.config)
