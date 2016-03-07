@@ -325,7 +325,7 @@ def joerd_enqueuer(cfg):
     sqs = boto3.resource('sqs')
     queue = sqs.get_queue_by_name(QueueName=cfg.sqs_queue_name)
 
-    for r in cfg.regions.itervalues():
+    for r in cfg.yml['regions'].itervalues():
         queue.send_message(MessageBody=json.dumps(r))
 
     logger.info("Done.")
