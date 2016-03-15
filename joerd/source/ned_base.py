@@ -31,7 +31,11 @@ from itertools import groupby
 
 class NEDTile(object):
     def __init__(self, parent, state_code, region_name, year, bbox):
-        self.parent = parent
+        self.ftp_server = parent.ftp_server
+        self.base_path = parent.base_path
+        self.download_options = parent.download_options
+        self.base_dir = parent.base_dir
+        self.is_topobathy = parent.is_topobathy
         self.state_code = state_code
         self.region_name = region_name
         self.year = int(year)
@@ -48,32 +52,32 @@ class NEDTile(object):
         return hash(self.__key())
 
     def urls(self):
-        return ['ftp://%s/%s/%s' % (self.parent.ftp_server,
-                                    self.parent.base_path,
+        return ['ftp://%s/%s/%s' % (self.ftp_server,
+                                    self.base_path,
                                     self.zip_name())]
 
     def verifier(self):
         return check.is_zip
 
     def options(self):
-        return self.parent.download_options
+        return self.download_options
 
     def output_file(self):
-        return os.path.join(self.parent.base_dir, self.img_name())
+        return os.path.join(self.base_dir, self.img_name())
 
     def unpack(self, tmp):
         img = self.img_name()
 
-        if self.parent.is_topobathy:
+        if self.is_topobathy:
             with zipfile.ZipFile(tmp.name, 'r') as zfile:
-                zfile.extract(img, self.parent.base_dir)
-                zfile.extract(img + ".aux.xml", self.parent.base_dir)
+                zfile.extract(img, self.base_dir)
+                zfile.extract(img + ".aux.xml", self.base_dir)
 
         else:
             with tmpdir.tmpdir() as d:
                 with zipfile.ZipFile(tmp.name, 'r') as zfile:
                     zfile.extract(img, d)
-                    zfile.extract(img + ".aux.xml", self.parent.base_dir)
+                    zfile.extract(img + ".aux.xml", self.base_dir)
 
                 mask.negative(os.path.join(d, img),
                               "HFA", self.output_file())

@@ -20,7 +20,9 @@ from osgeo import gdal
 
 class GMTEDTile(object):
     def __init__(self, parent, x, y):
-        self.parent = parent
+        self.url = parent.url
+        self.download_options = parent.download_options
+        self.base_dir = parent.base_dir
         self.x = x
         self.y = y
 
@@ -48,17 +50,17 @@ class GMTEDTile(object):
         dir = "%s%03d" % ("E" if self.x >= 0 else "W", abs(self.x))
         res = self._res()
         dname = "/%(res)sdarcsec/mea/%(dir)s/" % dict(res=res, dir=dir)
-        return [self.parent.url + dname + self._file_name()]
+        return [self.url + dname + self._file_name()]
 
     def verifier(self):
         return check.is_gdal
 
     def options(self):
-        return self.parent.download_options
+        return self.download_options
 
     def output_file(self):
         fname = self._file_name()
-        return os.path.join(self.parent.base_dir, fname)
+        return os.path.join(self.base_dir, fname)
 
     def unpack(self, tmp):
         mask.negative(tmp.name, "GTiff", self.output_file())

@@ -30,8 +30,13 @@ IS_SRTM_FILE = re.compile(
 
 class SRTMTile(object):
     def __init__(self, parent, link, fname, bbox):
-        self.parent = parent
+        self.url = parent.url
+        self.mask_url = parent.mask_url
+        self.download_options = parent.download_options
+        self.base_dir = parent.base_dir
         self.link = link
+        self.mask_link = self.link.replace(".SRTMGL1.hgt", ".SRTMSWBD.raw")
+        self.is_masked = parent.is_masked(self.mask_link)
         self.fname = fname
         self.bbox = bbox
 
@@ -46,26 +51,26 @@ class SRTMTile(object):
         return hash(self.__key())
 
     def urls(self):
-        url_list = [self.parent.url + "/" + self.link]
+        url_list = [self.url + "/" + self.link]
         mask_link = self.link.replace(".SRTMGL1.hgt", ".SRTMSWBD.raw")
-        if self.parent.is_masked(mask_link):
-            url_list.append(self.parent.mask_url + "/" + mask_link)
+        if self.is_masked:
+            url_list.append(self.mask_url + "/" + mask_link)
         return url_list
 
     def verifier(self):
         return check.is_zip
 
     def options(self):
-        return self.parent.download_options
+        return self.download_options
 
     def output_file(self):
-        return os.path.join(self.parent.base_dir, self.fname)
+        return os.path.join(self.base_dir, self.fname)
 
     def unpack(self, data_zip, mask_zip=None):
         # if there's no mask, then just extract the SRTM as-is.
         if mask_zip is None:
             with zipfile.ZipFile(data_zip.name, 'r') as zfile:
-                zfile.extract(self.fname, self.parent.base_dir)
+                zfile.extract(self.fname, self.base_dir)
             return
 
         # otherwise, make a temporary directory to keep the SRTM and
