@@ -52,7 +52,7 @@ def _parse_tile(tile_name):
 
 class SkadiTile(object):
     def __init__(self, parent, x, y):
-        self.parent = parent
+        self.output_dir = parent.output_dir
         self.x = x
         self.y = y
 
@@ -73,7 +73,7 @@ class SkadiTile(object):
 
         bbox = _bbox(self.x, self.y)
 
-        mid_dir = os.path.join(tmp_dir, self.parent.output_dir,
+        mid_dir = os.path.join(tmp_dir, self.output_dir,
                                ("N" if self.y >= 90 else "S") +
                                ("%02d" % abs(self.y - 90)))
         if not os.path.isdir(mid_dir):

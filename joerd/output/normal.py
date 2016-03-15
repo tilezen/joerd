@@ -95,10 +95,11 @@ def _merc_bbox(z, x, y):
 
 class NormalTile(object):
     def __init__(self, parent, z, x, y):
-        self.parent = parent
+        self.output_dir = parent.output_dir
         self.z = z
         self.x = x
         self.y = y
+        self._latlon_bbox = parent.latlon_bbox(self.z, self.x, self.y)
 
     def set_sources(self, sources):
         logger = logging.getLogger('normal')
@@ -107,7 +108,7 @@ class NormalTile(object):
         self.sources = sources
 
     def latlon_bbox(self):
-        return self.parent.latlon_bbox(self.z, self.x, self.y)
+        return self._latlon_bbox
 
     def max_resolution(self):
         bbox = self.latlon_bbox().bounds
@@ -119,7 +120,7 @@ class NormalTile(object):
 
         bbox = _merc_bbox(self.z, self.x, self.y)
 
-        mid_dir = os.path.join(tmp_dir, self.parent.output_dir,
+        mid_dir = os.path.join(tmp_dir, self.output_dir,
                                str(self.z), str(self.x))
         if not os.path.isdir(mid_dir):
             try:
@@ -131,7 +132,7 @@ class NormalTile(object):
                     raise
 
         tile = _tile_name(self.z, self.x, self.y)
-        tile_file = os.path.join(tmp_dir, self.parent.output_dir,
+        tile_file = os.path.join(tmp_dir, self.output_dir,
                                  tile + ".png")
         logger.debug("Generating tile %r..." % tile)
 
@@ -187,7 +188,7 @@ class NormalTile(object):
 
         # figure out what the approximate scale of the output image is in
         # lat/lon coordinates. this is used to select the appropriate filter.
-        ll_bbox = self.parent.latlon_bbox(self.z, self.x, self.y)
+        ll_bbox = self._latlon_bbox
         ll_x_res = float(ll_bbox.bounds[2] - ll_bbox.bounds[0]) / dst_x_size
         ll_y_res = float(ll_bbox.bounds[3] - ll_bbox.bounds[1]) / dst_y_size
 
