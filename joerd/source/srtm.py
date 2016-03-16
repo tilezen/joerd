@@ -29,14 +29,14 @@ IS_SRTM_FILE = re.compile(
 
 
 class SRTMTile(object):
-    def __init__(self, parent, link, fname, bbox):
+    def __init__(self, parent, link, fname, bbox, is_masked):
         self.url = parent.url
         self.mask_url = parent.mask_url
         self.download_options = parent.download_options
         self.base_dir = parent.base_dir
         self.link = link
         self.mask_link = self.link.replace(".SRTMGL1.hgt", ".SRTMSWBD.raw")
-        self.is_masked = parent.is_masked(self.mask_link)
+        self.is_masked = is_masked
         self.fname = fname
         self.bbox = bbox
 
@@ -88,11 +88,17 @@ class SRTMTile(object):
             mask.raw(os.path.join(d, self.fname), mask_file, 255,
                      "SRTMHGT", self.output_file())
 
+    def freeze_dry(self):
+        return dict(type='srtm', link=self.link, is_masked=self.is_masked)
 
-def _parse_srtm_tile(link, parent):
+
+def _parse_srtm_tile(link, parent, is_masked=None):
     fname = link.replace(".SRTMGL1.hgt.zip", ".hgt")
     bbox = parent._parse_bbox(link)
-    return SRTMTile(parent, link, fname, bbox)
+    if is_masked is None:
+        mask_link = link.replace(".SRTMGL1.hgt", ".SRTMSWBD.raw")
+        is_masked = parent.is_masked(mask_link)
+    return SRTMTile(parent, link, fname, bbox, is_masked)
 
 
 class SRTM(object):
@@ -101,7 +107,7 @@ class SRTM(object):
         self.base_dir = options.get('base_dir', 'srtm')
         self.url = options['url']
         self.mask_url = options.get('mask-url')
-        self.download_options = download.options(options)
+        self.download_options = options
         self.tile_index = None
         self.mask_index = None
 
@@ -177,6 +183,11 @@ class SRTM(object):
             for f in  files:
                 if f.endswith('hgt'):
                     yield os.path.join(base, f)
+
+    def rehydrate(self, data):
+        assert data.get('type') == 'srtm', \
+            "Unable to rehydrate %r from SRTM." % data
+        return _parse_srtm_tile(data['link'], self, data['is_masked'])
 
     def downloads_for(self, tile):
         tiles = set()

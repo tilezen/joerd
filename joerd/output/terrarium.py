@@ -1,4 +1,5 @@
 from joerd.util import BoundingBox
+from joerd.region import RegionTile
 from tempfile import NamedTemporaryFile as Tmp
 from osgeo import osr, gdal
 import re
@@ -257,6 +258,20 @@ class Terrarium:
     def __setstate__(self, d):
         self.__dict__.update(d)
         self._setup_transforms()
+
+    def expand_tile(self, bbox, zoom_range):
+        tiles = []
+
+        for z in range(*zoom_range):
+            lx, ly = self.lonlat_to_xy(z, bbox[0], bbox[1])
+            ux, uy = self.lonlat_to_xy(z, bbox[2], bbox[3])
+            ll = self.latlon_bbox(z, lx, ly).bounds
+            ur = self.latlon_bbox(z, ux, uy).bounds
+            res = max((ll[2] - ll[0]) / 256.0,
+                      (ur[2] - ur[0]) / 256.0)
+            tiles.append(RegionTile((ll[0], ll[1], ur[2], ur[3]), res))
+
+        return tiles
 
     def generate_tiles(self):
         logger = logging.getLogger('terrarium')

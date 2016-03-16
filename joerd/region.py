@@ -1,3 +1,5 @@
+from joerd.util import BoundingBox
+
 class Region(object):
     """
     Represents a selection of space and a range of scales at which to render.
@@ -19,3 +21,15 @@ class Region(object):
         return self.bbox.intersects(bbox) and \
             zoom >= self.zoom_range[0] and \
             zoom < self.zoom_range[1]
+
+
+class RegionTile(object):
+    def __init__(self, bbox, max_res):
+        self.bbox = bbox
+        self.max_res = max_res
+
+    def latlon_bbox(self):
+        return BoundingBox(*self.bbox)
+
+    def max_resolution(self):
+        return self.max_res

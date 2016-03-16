@@ -4,6 +4,7 @@ from importlib import import_module
 from multiprocessing import Pool, Array
 import joerd.download as download
 import joerd.tmpdir as tmpdir
+from joerd.region import RegionTile
 import sys
 import argparse
 import os
@@ -18,6 +19,7 @@ from contextlib2 import ExitStack, contextmanager
 import subprocess
 import ctypes
 import math
+
 
 def create_command_parser(fn):
     def create_parser_fn(parser):
@@ -86,7 +88,7 @@ def _init_processes(s, l):
 
 def _download(d):
     try:
-        options = d.options().copy()
+        options = download.options(d.options()).copy()
         options['verifier'] = d.verifier()
 
         with ExitStack() as stack:
@@ -153,19 +155,43 @@ class ProgressLogger(object):
 class Joerd:
 
     def __init__(self, cfg):
+        self.regions = cfg.regions
         self.sources = self._sources(cfg)
         self.outputs = self._outputs(cfg, self.sources)
         self.num_threads = cfg.num_threads
         self.chunksize = cfg.chunksize
         self.store = self._store(cfg)
 
-    def process(self):
+    def list_downloads(self):
         logger = logging.getLogger('process')
 
         # fetch index for each source, which speeds up subsequent downloads or
         # queries about which source tiles are available.
-        for source in self.sources:
+        for source in self.sources.itervalues():
             source.get_index()
+
+        # take the list of regions, which are both spatial and zoom extents,
+        # and expand them for each output, making them concrete resolutions
+        # and spatial extents enough to cover the output tiles.
+        expanded_regions = list()
+        for r in self.regions:
+            bbox = r.bbox.bounds
+            for output in self.outputs:
+                expanded_regions.extend(output.expand_tile(bbox, r.zoom_range))
+
+        # the list of expanded regions can now be intersected with each source
+        # to find the ones which intersect, and give the set of download jobs.
+        downloads = set()
+        for tile in expanded_regions:
+            for source in self.sources.itervalues():
+                d = source.downloads_for(tile)
+                if d:
+                    downloads.update(d)
+
+        return downloads
+
+    def process(self):
+        logger = logging.getLogger('process')
 
         # get the list of all tiles to be generated
         tiles = []
@@ -183,7 +209,7 @@ class Joerd:
             # an empty set. to track those, only sources which intersect the
             # tile are tracked.
             tile_sources = []
-            for source in self.sources:
+            for source in self.sources.itervalues():
                 d = source.downloads_for(tile)
                 if d:
                     downloads.update(d)
@@ -204,7 +230,7 @@ class Joerd:
 
         #grab a list of the files which we could delete if we need to
         superfluous = []
-        for source in self.sources:
+        for source in self.sources.itervalues():
             for existing in source.existing_files():
                 if existing not in need_on_disk:
                     superfluous.append(existing)
@@ -248,12 +274,12 @@ class Joerd:
         return max(1, length / self.num_threads / 8)
 
     def _sources(self, cfg):
-        sources = []
+        sources = {}
         for source in cfg.sources:
             source_type = source['type']
             module = import_module('joerd.source.%s' % source_type)
             create_fn = getattr(module, 'create')
-            sources.append(create_fn(source))
+            sources[source_type] = create_fn(source)
         return sources
 
     def _outputs(self, cfg, sources):
@@ -290,28 +316,37 @@ def joerd_server(global_cfg):
     assert global_cfg.sqs_queue_name is not None, \
         "Could not find SQS queue name in config, but this must be configured."
 
+    j = Joerd(global_cfg)
     sqs = boto3.resource('sqs')
     queue = sqs.get_queue_by_name(QueueName=global_cfg.sqs_queue_name)
 
     while True:
         for message in queue.receive_messages():
-            region = json.loads(message.body)
-            logger.info("Got job, region = %r" % (region,))
-            cfg = global_cfg.copy_with_regions([region])
+            job = json.loads(message.body)
+            job_type = job.get('job')
 
-            try:
-                joerd_process(cfg)
+            if job_type == 'download':
+                try:
+                    data = job['data']
+                    typ = data['type']
+                    rehydrated = j.sources[typ].rehydrate(data)
+                    _download(rehydrated)
 
-                # remove the message from the queue - this indicates that it has
-                # completed successfully and it won't be retried.
-                message.delete()
+                    # remove the message from the queue - this indicates that
+                    # it has completed successfully and it won't be retried.
+                    message.delete()
 
-            except (Exception, StandardError) as e:
-                logger.warning("During render of region %r, caught exception. "
-                               "This job failed, continuing to the next. "
-                               "Exception details: %s" %
-                               (region, "".join(traceback.format_exception(
+                except (Exception, StandardError) as e:
+                    logger.warning("During download of job %r, caught "
+                                   "exception. This job failed, continuing "
+                                   "to the next. Exception details: %s" %
+                                   (job, "".join(traceback.format_exception(
                                    *sys.exc_info()))))
+
+
+            else:
+                logger.warning("Don't understand job type %r from job %r, " \
+                               "ignoring." % (job_type, job))
 
 
 def joerd_enqueuer(cfg):
@@ -352,6 +387,47 @@ def joerd_enqueuer(cfg):
     logger.info("Done.")
 
 
+def joerd_enqueue_downloads(cfg):
+    """
+    Sends a list of all the source files needed for rendering the configured
+    regions in the config file to the queue for downloading by workers.
+    """
+
+    assert cfg.sqs_queue_name is not None, \
+        "Could not find SQS queue name in config, but this must be configured."
+
+    logger = logging.getLogger('enqueuer')
+
+    j = Joerd(cfg)
+    downloads = j.list_downloads()
+
+    logger.info("Sending %d download jobs to the queue" % len(downloads))
+    sqs = boto3.resource('sqs')
+    queue = sqs.get_queue_by_name(QueueName=cfg.sqs_queue_name)
+
+    batch = []
+    idx = 0
+
+    for d in downloads:
+        data = d.freeze_dry()
+        job = dict(job='download', data=data)
+        batch.append(dict(Id=str(idx), MessageBody=json.dumps(job)))
+        idx += 1
+
+        if len(batch) == 10:
+            result = queue.send_messages(Entries=batch)
+            if 'Failed' in result and result['Failed']:
+                logger.warning("Failed to enqueue: %r" % result['Failed'])
+            batch = []
+
+    if len(batch) > 0:
+        result = queue.send_messages(Entries=batch)
+        if 'Failed' in result and result['Failed']:
+            logger.warning("Failed to enqueue: %r" % result['Failed'])
+
+    logger.info("Done.")
+
+
 def joerd_main(argv=None):
     if argv is None:
         argv = sys.argv[1:]
@@ -363,6 +439,7 @@ def joerd_main(argv=None):
         ('process', create_command_parser(joerd_process)),
         ('server', create_command_parser(joerd_server)),
         ('enqueuer', create_command_parser(joerd_enqueuer)),
+        ('enqueue-downloads', create_command_parser(joerd_enqueue_downloads)),
     )
 
     for name, func in parser_config:

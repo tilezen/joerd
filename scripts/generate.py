@@ -53,7 +53,7 @@ def make_regions(x, y, stride, sub_block_size):
                     left=(x+ix*sub_block_width+epsilon),
                     bottom=(y+iy*sub_block_width+epsilon),
                     right=(x+(ix+1)*sub_block_width-epsilon),
-                    top=(y+(iy*1)*sub_block_width-epsilon)),
+                    top=(y+(iy+1)*sub_block_width-epsilon)),
                 zoom_range=[14,16]))
 
     return regions

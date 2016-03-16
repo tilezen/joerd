@@ -41,6 +41,12 @@ class NEDTile(object):
         self.year = int(year)
         self.bbox = bbox
 
+    def freeze_dry(self):
+        typ = 'ned_topobathy' if self.is_topobathy else 'ned'
+        return dict(type=typ, state_code=self.state_code,
+                    region_name=self.region_name, year=self.year,
+                    bbox=self.bbox.bounds)
+
     def __key(self):
         return (self.state_code, self.region_name, self.year, self.bbox)
 
@@ -139,7 +145,7 @@ class NEDBase(object):
         self.ftp_server = options['ftp_server']
         self.base_path = options['base_path']
         self.pattern = re.compile(options['pattern'])
-        self.download_options = download.options(options)
+        self.download_options = options
         self.tile_index = None
         self.is_topobathy = is_topobathy
 
@@ -178,6 +184,13 @@ class NEDBase(object):
             for f in files:
                 if f.endswith('img'):
                     yield os.path.join(base, f)
+
+    def rehydrate(self, data):
+        typ = 'ned_topobathy' if self.is_topobathy else 'ned'
+        assert data.get('type') == typ, \
+            "Unable to rehydrate %r in NED(%r)." % (data, typ)
+        return NEDTile(self, data['state_code'], data['region_name'],
+                       data['year'], BoundingBox(*data['bbox']))
 
     def downloads_for(self, tile):
         tiles = set()

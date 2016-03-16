@@ -65,6 +65,9 @@ class GMTEDTile(object):
     def unpack(self, tmp):
         mask.negative(tmp.name, "GTiff", self.output_file())
 
+    def freeze_dry(self):
+        return dict(type='gmted', x=self.x, y=self.y)
+
 
 class GMTED(object):
 
@@ -74,7 +77,7 @@ class GMTED(object):
         self.url = options['url']
         self.xs = options['xs']
         self.ys = options['ys']
-        self.download_options = download.options(options)
+        self.download_options = options
 
     def get_index(self):
         # GMTED is a static set of files - there's no need for an index, but we
@@ -87,6 +90,11 @@ class GMTED(object):
             for f in  files:
                 if f.endswith('tif'):
                     yield os.path.join(base, f)
+
+    def rehydrate(self, data):
+        assert data.get('type') == 'gmted', \
+            "Unable to rehydrate %r from GMTED." % data
+        return GMTEDTile(self, data['x'], data['y'])
 
     def downloads_for(self, tile):
         tiles = set()

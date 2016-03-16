@@ -1,4 +1,5 @@
 from joerd.util import BoundingBox
+from joerd.region import RegionTile
 from tempfile import NamedTemporaryFile as Tmp
 from osgeo import osr, gdal
 import re
@@ -12,6 +13,7 @@ import errno
 import sys
 import joerd.composite as composite
 import gzip
+import math
 
 
 HALF_ARC_SEC = (1.0/3600.0)*.5
@@ -51,8 +53,8 @@ def _parse_tile(tile_name):
 
 
 class SkadiTile(object):
-    def __init__(self, parent, x, y):
-        self.output_dir = parent.output_dir
+    def __init__(self, output_dir, x, y):
+        self.output_dir = output_dir
         self.x = x
         self.y = y
 
@@ -61,6 +63,12 @@ class SkadiTile(object):
         logger.debug("Set sources on tile (x,y)=%r: %r"
                      % ((self.x, self.y), [type(s).__name__ for s in sources]))
         self.sources = sources
+
+    @classmethod
+    def from_json(cls, datadict):
+        return cls(datadict.get('output_dir'),
+                   datadict.get('x'),
+                   datadict.get('y'))
 
     def latlon_bbox(self):
         return _bbox(self.x, self.y)
@@ -141,6 +149,25 @@ class Skadi:
                 return True
         return False
 
+    def expand_tile(self, bbox, zoom_range):
+        tiles = []
+
+        if SKADI_NOMINAL_ZOOM >= zoom_range[0] and \
+           SKADI_NOMINAL_ZOOM < zoom_range[1]:
+            # Skadi tiles are the same size as SRTM tiles - just a little bit
+            # bigger than 1x1 degree.
+            xmin, ymin, xmax, ymax = bbox
+            xmin = math.floor(xmin) - HALF_ARC_SEC
+            ymin = math.floor(ymin) - HALF_ARC_SEC
+            xmax = math.ceil(xmax) + HALF_ARC_SEC
+            ymax = math.ceil(ymax) + HALF_ARC_SEC
+            res = 1.0 / 3600
+
+            # Skadi tiles are only at one resolution, so only return one tile
+            tiles.append(RegionTile((xmin, ymin, xmax, ymax), res))
+
+        return tiles
+
     def generate_tiles(self):
         logger = logging.getLogger('skadi')
         tiles = []
@@ -149,7 +176,7 @@ class Skadi:
             for y in range(0, 180):
                 bbox = _bbox(x, y)
                 if self._intersects(bbox):
-                    tiles.append(SkadiTile(self, x, y))
+                    tiles.append(SkadiTile(self.output_dir, x, y))
 
         logger.info("Generated %d tile jobs." % len(tiles))
         return tiles

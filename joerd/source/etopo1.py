@@ -22,7 +22,7 @@ class ETOPO1(object):
     def __init__(self, options={}):
         self.base_dir = options.get('base_dir', 'etopo1')
         self.etopo1_url = options['url']
-        self.download_options = download.options(options)
+        self.download_options = options
         self.target_name = 'ETOPO1_Bed_g_geotiff.tif'
 
     def get_index(self):
@@ -34,6 +34,15 @@ class ETOPO1(object):
     def existing_files(self):
         if os.path.exists(self.output_file()):
             yield self.output_file()
+
+    def freeze_dry(self):
+        # there's only one ETOPO1 tile
+        return dict(type='etopo1')
+
+    def rehydrate(self, data):
+        assert data.get('type') == 'etopo1', \
+            "Unable to rehydrate %r from ETOPO1." % data
+        return self
 
     def downloads_for(self, tile):
         # There's just one thing to download, and it's this single world

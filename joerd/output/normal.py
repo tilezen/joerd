@@ -1,4 +1,5 @@
 from joerd.util import BoundingBox
+from joerd.region import RegionTile
 from osgeo import osr, gdal
 import logging
 import os
@@ -94,18 +95,26 @@ def _merc_bbox(z, x, y):
 
 
 class NormalTile(object):
-    def __init__(self, parent, z, x, y):
-        self.output_dir = parent.output_dir
+    def __init__(self, output_dir, latlon_bbox, z, x, y):
+        self.output_dir = output_dir
+        self._latlon_bbox = latlon_bbox
         self.z = z
         self.x = x
         self.y = y
-        self._latlon_bbox = parent.latlon_bbox(self.z, self.x, self.y)
 
     def set_sources(self, sources):
         logger = logging.getLogger('normal')
         logger.debug("Set sources on tile z=%r: %r"
                      % (self.z, [type(s).__name__ for s in sources]))
         self.sources = sources
+
+    @classmethod
+    def from_json(cls, datadict):
+        return cls(datadict.get('output_dir'),
+                   datadict.get('_latlon_bbox'),
+                   datadict.get('z'),
+                   datadict.get('x'),
+                   datadict.get('y'))
 
     def latlon_bbox(self):
         return self._latlon_bbox
@@ -320,6 +329,20 @@ class Normal:
         self.__dict__.update(d)
         self._setup_transforms()
 
+    def expand_tile(self, bbox, zoom_range):
+        tiles = []
+
+        for z in range(*zoom_range):
+            lx, ly = self.lonlat_to_xy(z, bbox[0], bbox[1])
+            ux, uy = self.lonlat_to_xy(z, bbox[2], bbox[3])
+            ll = self.latlon_bbox(z, lx, ly).bounds
+            ur = self.latlon_bbox(z, ux, uy).bounds
+            res = max((ll[2] - ll[0]) / 256.0,
+                      (ur[2] - ur[0]) / 256.0)
+            tiles.append(RegionTile((ll[0], ll[1], ur[2], ur[3]), res))
+
+        return tiles
+
     def generate_tiles(self):
         logger = logging.getLogger('normal')
         tiles = set()
@@ -332,7 +355,8 @@ class Normal:
 
                 for x in range(lx, ux + 1):
                     for y in range(ly, uy + 1):
-                        tiles.add(NormalTile(self, zoom, x, y))
+                        bbox = self.latlon_bbox(zoom, x, y)
+                        tiles.add(NormalTile(self.output_dir, bbox, zoom, x, y))
 
         logger.info("Generated %d tile jobs." % len(tiles))
         return list(tiles)
