@@ -6,6 +6,7 @@ import joerd.srs as srs
 import joerd.index as index
 import joerd.mask as mask
 import joerd.tmpdir as tmpdir
+from joerd.mkdir_p import mkdir_p
 from contextlib2 import closing, ExitStack
 from shutil import copyfile
 import os.path
@@ -66,27 +67,32 @@ class SRTMTile(object):
     def output_file(self):
         return os.path.join(self.base_dir, self.fname)
 
-    def unpack(self, data_zip, mask_zip=None):
-        # if there's no mask, then just extract the SRTM as-is.
-        if mask_zip is None:
-            with zipfile.ZipFile(data_zip.name, 'r') as zfile:
-                zfile.extract(self.fname, self.base_dir)
-            return
+    def unpack(self, store, data_zip, mask_zip=None):
+        with store.upload_dir() as target:
+            target_dir = os.path.join(target, self.base_dir)
+            mkdir_p(target_dir)
 
-        # otherwise, make a temporary directory to keep the SRTM and
-        # mask in while compositing them.
-        with tmpdir.tmpdir() as d:
-            with zipfile.ZipFile(data_zip.name, 'r') as zfile:
-                zfile.extract(self.fname, d)
+            # if there's no mask, then just extract the SRTM as-is.
+            if mask_zip is None:
+                with zipfile.ZipFile(data_zip.name, 'r') as zfile:
+                    zfile.extract(self.fname, target_dir)
+                    return
 
-            mask_name = self.fname.replace(".hgt", ".raw")
-            with zipfile.ZipFile(mask_zip.name, 'r') as zfile:
-                zfile.extract(mask_name, d)
+            # otherwise, make a temporary directory to keep the SRTM and
+            # mask in while compositing them.
+            with tmpdir.tmpdir() as d:
+                with zipfile.ZipFile(data_zip.name, 'r') as zfile:
+                    zfile.extract(self.fname, d)
 
-            mask_file = os.path.join(d, mask_name)
-            # mask off the water using the mask raster raw file
-            mask.raw(os.path.join(d, self.fname), mask_file, 255,
-                     "SRTMHGT", self.output_file())
+                mask_name = self.fname.replace(".hgt", ".raw")
+                with zipfile.ZipFile(mask_zip.name, 'r') as zfile:
+                    zfile.extract(mask_name, d)
+
+                mask_file = os.path.join(d, mask_name)
+                # mask off the water using the mask raster raw file
+                output_file = os.path.join(target, self.output_file())
+                mask.raw(os.path.join(d, self.fname), mask_file, 255,
+                         "SRTMHGT", output_file)
 
     def freeze_dry(self):
         return dict(type='srtm', link=self.link, is_masked=self.is_masked)

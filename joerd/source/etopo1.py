@@ -2,6 +2,7 @@ from joerd.util import BoundingBox
 import joerd.download as download
 import joerd.check as check
 import joerd.srs as srs
+from joerd.mkdir_p import mkdir_p
 from shutil import copyfile
 import os.path
 import os
@@ -74,9 +75,13 @@ class ETOPO1(object):
     def verifier(self):
         return check.is_zip
 
-    def unpack(self, tmp):
-        with zipfile.ZipFile(tmp.name, 'r') as zfile:
-            zfile.extract(self.target_name, self.base_dir)
+    def unpack(self, store, tmp):
+        with store.upload_dir() as target:
+            target_dir = os.path.join(target, self.base_dir)
+            mkdir_p(target_dir)
+
+            with zipfile.ZipFile(tmp.name, 'r') as zfile:
+                zfile.extract(self.target_name, target_dir)
 
     def srs(self):
         return srs.wgs84()

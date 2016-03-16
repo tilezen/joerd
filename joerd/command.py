@@ -86,7 +86,9 @@ def _init_processes(s, l):
     gdal.UseExceptions()
 
 
-def _download(d):
+def _download(d, store):
+    logger = logging.getLogger('download')
+
     try:
         options = download.options(d.options()).copy()
         options['verifier'] = d.verifier()
@@ -99,14 +101,16 @@ def _download(d):
 
             while True:
                 try:
-                    d.unpack(*tmps)
+                    d.unpack(store, *tmps)
                     break
                 except Exception as e:
                     #TODO: only catch out of space exception
-                    _logger.error(repr(e))
-                    _make_space(tmps, os.path.dirname(d.output_file()))
+                    logger.error(repr(e))
+                    # disable attempt to make space for now - the code changes
+                    # make it non-functional.
+                    #_make_space(tmps, os.path.dirname(d.output_file()))
 
-        assert os.path.isfile(d.output_file())
+        assert store.exists(d.output_file())
 
     except:
         raise Exception("".join(traceback.format_exception(*sys.exc_info())))
@@ -160,7 +164,8 @@ class Joerd:
         self.outputs = self._outputs(cfg, self.sources)
         self.num_threads = cfg.num_threads
         self.chunksize = cfg.chunksize
-        self.store = self._store(cfg)
+        self.store = self._store(cfg.store)
+        self.source_store = self._store(cfg.source_store)
 
     def list_downloads(self):
         logger = logging.getLogger('process')
@@ -244,8 +249,8 @@ class Joerd:
                  initargs=(shared,logger))
 
         # make sure we've got a store
-        p.map(_download, need_to_download,
-              chunksize=self._chunksize(len(need_to_download)))
+        #p.map(_download, need_to_download,
+        #      chunksize=self._chunksize(len(need_to_download)))
 
         logger.info("Starting render of %d tiles." % len(tiles))
 
@@ -291,11 +296,11 @@ class Joerd:
             outputs.append(create_fn(cfg.regions, sources, output))
         return outputs
 
-    def _store(self, cfg):
-        store_type = cfg.store['type']
+    def _store(self, store_cfg):
+        store_type = store_cfg['type']
         module = import_module('joerd.store.%s' % store_type)
         create_fn = getattr(module, 'create')
-        return create_fn(cfg.store)
+        return create_fn(store_cfg)
 
 
 class JoerdArgumentParser(argparse.ArgumentParser):
@@ -330,7 +335,7 @@ def joerd_server(global_cfg):
                     data = job['data']
                     typ = data['type']
                     rehydrated = j.sources[typ].rehydrate(data)
-                    _download(rehydrated)
+                    _download(rehydrated, j.source_store)
 
                     # remove the message from the queue - this indicates that
                     # it has completed successfully and it won't be retried.

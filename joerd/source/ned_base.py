@@ -5,6 +5,7 @@ import joerd.srs as srs
 import joerd.index as index
 import joerd.mask as mask
 import joerd.tmpdir as tmpdir
+from joerd.mkdir_p import mkdir_p
 from multiprocessing import Pool
 from contextlib import closing
 from shutil import copyfile
@@ -71,22 +72,26 @@ class NEDTile(object):
     def output_file(self):
         return os.path.join(self.base_dir, self.img_name())
 
-    def unpack(self, tmp):
+    def unpack(self, store, tmp):
         img = self.img_name()
 
-        if self.is_topobathy:
-            with zipfile.ZipFile(tmp.name, 'r') as zfile:
-                zfile.extract(img, self.base_dir)
-                zfile.extract(img + ".aux.xml", self.base_dir)
+        with store.upload_dir() as target:
+            target_dir = os.path.join(target, self.base_dir)
+            mkdir_p(target_dir)
 
-        else:
-            with tmpdir.tmpdir() as d:
+            if self.is_topobathy:
                 with zipfile.ZipFile(tmp.name, 'r') as zfile:
-                    zfile.extract(img, d)
-                    zfile.extract(img + ".aux.xml", self.base_dir)
+                    zfile.extract(img, target_dir)
+                    zfile.extract(img + ".aux.xml", target_dir)
 
-                mask.negative(os.path.join(d, img),
-                              "HFA", self.output_file())
+            else:
+                with tmpdir.tmpdir() as d:
+                    with zipfile.ZipFile(tmp.name, 'r') as zfile:
+                        zfile.extract(img, d)
+                        zfile.extract(img + ".aux.xml", target_dir)
+
+                    output_file = os.path.join(target, self.output_file())
+                    mask.negative(os.path.join(d, img), "HFA", output_file)
 
     def base_name(self):
         def fmt(v, neg, pos):

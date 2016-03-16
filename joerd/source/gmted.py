@@ -3,6 +3,7 @@ import joerd.download as download
 import joerd.check as check
 import joerd.srs as srs
 import joerd.mask as mask
+from joerd.mkdir_p import mkdir_p
 from multiprocessing import Pool
 from shutil import copyfileobj
 import os.path
@@ -62,8 +63,11 @@ class GMTEDTile(object):
         fname = self._file_name()
         return os.path.join(self.base_dir, fname)
 
-    def unpack(self, tmp):
-        mask.negative(tmp.name, "GTiff", self.output_file())
+    def unpack(self, store, tmp):
+        with store.upload_dir() as target:
+            mkdir_p(os.path.join(target, self.base_dir))
+            output_file = os.path.join(target, self.output_file())
+            mask.negative(tmp.name, "GTiff", output_file)
 
     def freeze_dry(self):
         return dict(type='gmted', x=self.x, y=self.y)
