@@ -108,13 +108,8 @@ class NormalTile(object):
                      % (self.z, [type(s).__name__ for s in sources]))
         self.sources = sources
 
-    @classmethod
-    def from_json(cls, datadict):
-        return cls(datadict.get('output_dir'),
-                   datadict.get('_latlon_bbox'),
-                   datadict.get('z'),
-                   datadict.get('x'),
-                   datadict.get('y'))
+    def freeze_dry(self):
+        return dict(type='normal', z=self.z, x=self.x, y=self.y)
 
     def latlon_bbox(self):
         return self._latlon_bbox
@@ -373,6 +368,17 @@ class Normal:
         tx = int(extent * ((x / MERCATOR_WORLD_SIZE) + 0.5))
         ty = int(extent * (0.5 - (y / MERCATOR_WORLD_SIZE)))
         return (tx, ty)
+
+    def rehydrate(self, data):
+        typ = data.get('type')
+        assert typ == 'normal', "Unable to rehydrate tile of type %r in " \
+            "normal output. Job was: %r" % (typ, data)
+
+        z = data['z']
+        x = data['x']
+        y = data['y']
+        bbox = self.latlon_bbox(z, x, y)
+        return NormalTile(self.output_dir, bbox, z, x, y)
 
 
 def create(regions, sources, options):

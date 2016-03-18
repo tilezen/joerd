@@ -85,6 +85,9 @@ class TerrariumTile(object):
                      % (self.z, [type(s).__name__ for s in sources]))
         self.sources = sources
 
+    def freeze_dry(self):
+        return dict(type='terrarium', z=self.z, x=self.x, y=self.y)
+
     def latlon_bbox(self):
         return self._latlon_bbox
 
@@ -303,6 +306,15 @@ class Terrarium:
         ty = int(extent * (0.5 - (y / MERCATOR_WORLD_SIZE)))
         return (tx, ty)
 
+    def rehydrate(self, data):
+        typ = data.get('type')
+        assert typ == 'terrarium', "Unable to rehydrate tile of type %r in " \
+            "terrarium output. Job was: %r" % (typ, data)
+
+        z = data['z']
+        x = data['x']
+        y = data['y']
+        return TerrariumTile(self, z, x, y)
 
 def create(regions, sources, options):
     return Terrarium(regions, sources, options)

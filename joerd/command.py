@@ -5,6 +5,7 @@ from multiprocessing import Pool, Array
 import joerd.download as download
 import joerd.tmpdir as tmpdir
 from joerd.region import RegionTile
+from joerd.mkdir_p import mkdir_p
 import sys
 import argparse
 import os
@@ -172,7 +173,7 @@ class Joerd:
 
         # fetch index for each source, which speeds up subsequent downloads or
         # queries about which source tiles are available.
-        for source in self.sources.itervalues():
+        for name, source in self.sources:
             source.get_index()
 
         # take the list of regions, which are both spatial and zoom extents,
@@ -181,14 +182,14 @@ class Joerd:
         expanded_regions = list()
         for r in self.regions:
             bbox = r.bbox.bounds
-            for output in self.outputs:
+            for output in self.outputs.itervalues():
                 expanded_regions.extend(output.expand_tile(bbox, r.zoom_range))
 
         # the list of expanded regions can now be intersected with each source
         # to find the ones which intersect, and give the set of download jobs.
         downloads = set()
         for tile in expanded_regions:
-            for source in self.sources.itervalues():
+            for name, source in self.sources:
                 d = source.downloads_for(tile)
                 if d:
                     downloads.update(d)
@@ -200,7 +201,7 @@ class Joerd:
 
         # get the list of all tiles to be generated
         tiles = []
-        for output in self.outputs:
+        for output in self.outputs.itervalues():
             tiles.extend(output.generate_tiles())
 
         logger.info("Will generate %d tiles." % len(tiles))
@@ -214,7 +215,7 @@ class Joerd:
             # an empty set. to track those, only sources which intersect the
             # tile are tracked.
             tile_sources = []
-            for source in self.sources.itervalues():
+            for name, source in self.sources:
                 d = source.downloads_for(tile)
                 if d:
                     downloads.update(d)
@@ -235,7 +236,7 @@ class Joerd:
 
         #grab a list of the files which we could delete if we need to
         superfluous = []
-        for source in self.sources.itervalues():
+        for name, source in self.sources:
             for existing in source.existing_files():
                 if existing not in need_on_disk:
                     superfluous.append(existing)
@@ -279,21 +280,21 @@ class Joerd:
         return max(1, length / self.num_threads / 8)
 
     def _sources(self, cfg):
-        sources = {}
+        sources = []
         for source in cfg.sources:
             source_type = source['type']
             module = import_module('joerd.source.%s' % source_type)
             create_fn = getattr(module, 'create')
-            sources[source_type] = create_fn(source)
+            sources.append((source_type, create_fn(source)))
         return sources
 
     def _outputs(self, cfg, sources):
-        outputs = []
+        outputs = {}
         for output in cfg.outputs:
             output_type = output['type']
             module = import_module('joerd.output.%s' % output_type)
             create_fn = getattr(module, 'create')
-            outputs.append(create_fn(cfg.regions, sources, output))
+            outputs[output_type] = create_fn(cfg.regions, sources, output)
         return outputs
 
     def _store(self, store_cfg):
@@ -315,6 +316,83 @@ def joerd_process(cfg):
     j.process()
 
 
+def _find_source_by_name(j, name):
+    for n, source in j.sources:
+        if n == name:
+            return source
+    raise Exception("Unable to find source called %r" % name)
+
+
+def _run_job_download(j, job):
+    data = job['data']
+    typ = data['type']
+    src = _find_source_by_name(j, typ)
+    rehydrated = src.rehydrate(data)
+    _download(rehydrated, j.source_store)
+
+
+class MockSource(object):
+    def __init__(self, src, vrts):
+        self.src = src
+        self.vrts = vrts
+
+    def __getattr__(self, method_name):
+        def return_vrts(self, tile):
+            return self.vrts
+
+        if method_name == 'vrts_for':
+            return return_vrts.__get__(self)
+        else:
+            return self.src.__getattribute__(method_name)
+
+
+def _download_local_vrts(d, source_store, input_vrts):
+    vrts = []
+    for rasters in input_vrts:
+        v = []
+        for r in rasters:
+            filename = os.path.join(d, r)
+            mkdir_p(os.path.dirname(filename))
+            source_store.get(r, filename)
+            assert os.path.exists(filename), "Tried to get %r from " \
+                "store and store it to %r, but that doesn't seem to " \
+                "have worked." % (r, filename)
+            v.append(filename)
+        if v:
+            vrts.append(v)
+
+    return vrts
+
+
+def _run_job_render(j, job):
+    logger = logging.getLogger('process')
+
+    data = job['data']
+    typ = data['type']
+
+    # composite operation needs to look up the sources, so we
+    # need to wrap each source in a fake source which overrides
+    # the 'vrts_for' lookup with the sources we baked into the
+    # job.
+    sources = job.get('sources')
+    assert sources, "Got tile render job with no sources! Job was: " \
+        "%r" % job
+
+    rehydrated = j.outputs[typ].rehydrate(data)
+
+    with tmpdir.tmpdir() as d:
+        mock_sources = []
+        for s in sources:
+            src = _find_source_by_name(j, s['source'])
+            vrts = _download_local_vrts(d, j.source_store, s['vrts'])
+            if vrts:
+                mock_sources.append(MockSource(src, vrts))
+
+        rehydrated.set_sources(mock_sources)
+
+        _render(rehydrated, j.store)
+
+
 def joerd_server(global_cfg):
     logger = logging.getLogger('process')
 
@@ -332,22 +410,34 @@ def joerd_server(global_cfg):
 
             if job_type == 'download':
                 try:
-                    data = job['data']
-                    typ = data['type']
-                    rehydrated = j.sources[typ].rehydrate(data)
-                    _download(rehydrated, j.source_store)
+                    _run_job_download(j, job)
 
                     # remove the message from the queue - this indicates that
                     # it has completed successfully and it won't be retried.
                     message.delete()
 
-                except (Exception, StandardError) as e:
+                except StandardError as e:
                     logger.warning("During download of job %r, caught "
                                    "exception. This job failed, continuing "
                                    "to the next. Exception details: %s" %
                                    (job, "".join(traceback.format_exception(
-                                   *sys.exc_info()))))
+                                       *sys.exc_info()))))
 
+
+            elif job_type == 'render':
+                try:
+                    _run_job_render(j, job)
+
+                    # remove the message from the queue - this indicates that
+                    # it has completed successfully and it won't be retried.
+                    message.delete()
+
+                except StandardError as e:
+                    logger.warning("During render of job %r, caught "
+                                   "exception. This job failed, continuing "
+                                   "to the next. Exception details: %s" %
+                                   (job, "".join(traceback.format_exception(
+                                       *sys.exc_info()))))
 
             else:
                 logger.warning("Don't understand job type %r from job %r, " \
@@ -361,33 +451,54 @@ def joerd_enqueuer(cfg):
 
     assert cfg.sqs_queue_name is not None, \
         "Could not find SQS queue name in config, but this must be configured."
-    assert cfg.jobs_file is not None, \
-        "Could not find jobs file name in config, but this must be configured."
 
     logger = logging.getLogger('enqueuer')
 
-    jobs = list()
-    for job in open(cfg.jobs_file, 'r'):
-        jobs.append(json.loads(job))
+    j = Joerd(cfg)
 
-    logger.info("Sending %d jobs to the queue" % len(jobs))
+    logger.info("Streaming jobs to the queue")
     sqs = boto3.resource('sqs')
     queue = sqs.get_queue_by_name(QueueName=cfg.sqs_queue_name)
 
     batch = []
     idx = 0
+    next_log_idx = 0
 
-    for r in jobs:
-        if len(batch) == 10:
-            result = queue.send_messages(Entries=batch)
-            if 'Failed' in result and result['Failed']:
-                logger.warning("Failed to enqueue: %r" % result['Failed'])
-            batch = []
-        batch.append(dict(Id=str(idx), MessageBody=json.dumps(r)))
-        idx += 1
+    for output in j.outputs.itervalues():
+        for tile in output.generate_tiles():
+            sources = []
+            for name, s in j.sources:
+                v = s.vrts_for(tile)
+                if v:
+                    vrts = []
+                    for rasters in v:
+                        files = [r.output_file() for r in rasters]
+                        if files:
+                            vrts.append(files)
+                    if vrts:
+                        sources.append(dict(source=name, vrts=vrts))
+
+            assert sources, "Was expecting at least one source for tile %r, " \
+                "but it has none." % tile
+
+            job = dict(job='render', data=tile.freeze_dry(), sources=sources)
+            batch.append(dict(Id=str(idx), MessageBody=json.dumps(job)))
+            idx += 1
+
+            if len(batch) == 10:
+                result = queue.send_messages(Entries=batch)
+                if 'Failed' in result and result['Failed']:
+                    logger.warning("Failed to enqueue: %r" % result['Failed'])
+                batch = []
+
+            if idx >= next_log_idx:
+                logger.info("Sent %d jobs to queue." % idx)
+                next_log_idx += 1000
 
     if len(batch) > 0:
-        queue.send_messages(Entries=batch)
+        result = queue.send_messages(Entries=batch)
+        if 'Failed' in result and result['Failed']:
+            logger.warning("Failed to enqueue: %r" % result['Failed'])
 
     logger.info("Done.")
 

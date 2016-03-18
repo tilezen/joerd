@@ -108,8 +108,7 @@ def compose(tile, dst_ds, logger, dst_res):
 
             # build a VRT of just the overlapping tiles, then generate
             # the output image.
-            with vrt.build([r.output_file() for r in rasters],
-                           source.srs().ExportToWkt()) as src_ds:
+            with vrt.build(rasters, source.srs().ExportToWkt()) as src_ds:
                 _mk_image(src_ds, mem_ds, _filter_type_func)
 
             # extract the output data, but only those which are not nodata,

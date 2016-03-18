@@ -7,7 +7,7 @@ import copy
 
 class Configuration(object):
 
-    def __init__(self, yml, jobs_file=None):
+    def __init__(self, yml):
         self.yml = yml
         self.regions = []
         for name, settings in self._cfg('regions').iteritems():
@@ -22,7 +22,6 @@ class Configuration(object):
         self.block_size = self._cfg('cluster block_size')
         self.store = self._cfg('store')
         self.source_store = self._cfg('source_store')
-        self.jobs_file = jobs_file
 
     def copy_with_regions(self, regions):
         """
@@ -97,4 +96,4 @@ def make_config_from_argparse(config, opencfg=open):
     with opencfg(config.config) as config_fp:
         yml_data = load(config_fp.read())
         cfg = merge_cfg(cfg, yml_data)
-    return Configuration(cfg, config.jobs_file)
+    return Configuration(cfg)

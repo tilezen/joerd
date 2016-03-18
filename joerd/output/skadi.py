@@ -64,11 +64,8 @@ class SkadiTile(object):
                      % ((self.x, self.y), [type(s).__name__ for s in sources]))
         self.sources = sources
 
-    @classmethod
-    def from_json(cls, datadict):
-        return cls(datadict.get('output_dir'),
-                   datadict.get('x'),
-                   datadict.get('y'))
+    def freeze_dry(self):
+        return dict(type='skadi', x=self.x, y=self.y)
 
     def latlon_bbox(self):
         return _bbox(self.x, self.y)
@@ -180,6 +177,15 @@ class Skadi:
 
         logger.info("Generated %d tile jobs." % len(tiles))
         return tiles
+
+    def rehydrate(self, data):
+        typ = data.get('type')
+        assert typ == 'skadi', "Unable to rehydrate tile of type %r in " \
+            "skadi output. Job was: %r" % (typ, data)
+
+        x = data['x']
+        y = data['y']
+        return SkadiTile(self.output_dir, x, y)
 
 
 def create(regions, sources, options):
