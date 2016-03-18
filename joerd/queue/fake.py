@@ -1,4 +1,11 @@
 class Queue(object):
+    """
+    A fake queue, which doesn't store or communicate any messages at all, but
+    calls the server to have them processed immediately.
+
+    This is useful for testing and running locally.
+    """
+
     def __init__(self, server):
         self.server = server
 

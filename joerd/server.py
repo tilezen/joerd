@@ -10,6 +10,10 @@ import sys
 
 
 def _download(d, store):
+    """
+    Download a source file from the internet and store it in the given store.
+    """
+
     logger = logging.getLogger('download')
 
     try:
@@ -36,6 +40,15 @@ def _download(d, store):
 
 
 def _download_local_vrts(d, source_store, input_vrts):
+    """
+    The input VRTs are stored in the source_store, but GDAL doesn't know about
+    any store other than the filesystem. This function downloads all the files
+    referenced in the VRTs to a local, temporary directory and rewrites the
+    vrts to include the local paths instead of the remote ones.
+
+    It returns the list of list of rewritten VRT paths.
+    """
+
     vrts = []
     for rasters in input_vrts:
         v = []
@@ -54,6 +67,11 @@ def _download_local_vrts(d, source_store, input_vrts):
 
 
 def _render(t, store):
+    """
+    Renders a tile, sending output to a temporary directory and puts the
+    result(s) in the store.
+    """
+
     try:
         with tmpdir.tmpdir() as d:
             t.render(d)
@@ -64,6 +82,12 @@ def _render(t, store):
 
 
 class MockSource(object):
+    """
+    Used to wrap a source and override its `vrts_for` method so that VRTs which
+    have been downloaded from a source store to the local filesystem can be
+    used.
+    """
+
     def __init__(self, src, vrts):
         self.src = src
         self.vrts = vrts
@@ -79,6 +103,11 @@ class MockSource(object):
 
 
 class Server:
+    """
+    Joerd "server" or worker class. It can list the downloads required for a
+    configured region or run a job. Jobs can be either downloads of a single
+    source file or renders of a single output tile.
+    """
 
     def __init__(self, cfg):
         self.regions = cfg.regions

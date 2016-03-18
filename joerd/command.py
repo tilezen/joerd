@@ -15,6 +15,10 @@ import math
 
 
 def _make_queue(j, config):
+    """
+    Makes a queue object by looking up the plugin module mentioned in the type
+    parameter of the configuration.
+    """
     typ = config['type']
     create_fn = plugin('queue', typ, 'create')
     return create_fn(j, config)
@@ -39,11 +43,17 @@ class JoerdArgumentParser(argparse.ArgumentParser):
         sys.exit(2)
 
 
-def joerd_server(global_cfg):
+def joerd_server(cfg):
+    """
+    Runs a server in an infinite loop.
+
+    This grabs jobs from the queue and processes them. Jobs which cannot be
+    processed due to an error are ignored and the next job is processed.
+    """
     logger = logging.getLogger('process')
 
-    j = Server(global_cfg)
-    queue = _make_queue(j, global_cfg.queue_config)
+    j = Server(cfg)
+    queue = _make_queue(j, cfg.queue_config)
 
     while True:
         for message in queue.receive_messages():
@@ -66,7 +76,11 @@ def joerd_server(global_cfg):
 
 def joerd_enqueue_renders(cfg):
     """
-    Sends each region in the config file to the queue for processing by workers.
+    Sends each output tile configured for the regions in the config file to
+    the queue for processing by workers.
+
+    Note that downloading to the store should have happened before this is
+    run, as the render process has no way to download files.
     """
 
     logger = logging.getLogger('enqueuer')

@@ -3,6 +3,11 @@ import json
 
 
 class Message(object):
+    """
+    A wrapper around the SQS message, basically to unpack the JSON body and
+    hold a message handle so that delete can be called on success.
+    """
+
     def __init__(msg):
         self.msg = msg
         self.body = json.loads(self.msg.body)
@@ -12,6 +17,12 @@ class Message(object):
 
 
 class Queue(object):
+    """
+    A queue which uses SQS behind the scenes to send and receive messages.
+
+    This encodes each job as a JSON payload in the native SQS message type.
+    """
+
     def __init__(config):
         queue_name = config.get('queue_name')
         assert queue_name is not None, \
