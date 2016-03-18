@@ -5,7 +5,7 @@ import joerd.srs as srs
 import joerd.index as index
 import joerd.mask as mask
 import joerd.tmpdir as tmpdir
-from multiprocessing import Pool
+from joerd.mkdir_p import mkdir_p
 from contextlib import closing
 from shutil import copyfile
 from ftplib import FTP
@@ -31,11 +31,21 @@ from itertools import groupby
 
 class NEDTile(object):
     def __init__(self, parent, state_code, region_name, year, bbox):
-        self.parent = parent
+        self.ftp_server = parent.ftp_server
+        self.base_path = parent.base_path
+        self.download_options = parent.download_options
+        self.base_dir = parent.base_dir
+        self.is_topobathy = parent.is_topobathy
         self.state_code = state_code
         self.region_name = region_name
         self.year = int(year)
         self.bbox = bbox
+
+    def freeze_dry(self):
+        typ = 'ned_topobathy' if self.is_topobathy else 'ned'
+        return dict(type=typ, state_code=self.state_code,
+                    region_name=self.region_name, year=self.year,
+                    bbox=self.bbox.bounds)
 
     def __key(self):
         return (self.state_code, self.region_name, self.year, self.bbox)
@@ -48,35 +58,39 @@ class NEDTile(object):
         return hash(self.__key())
 
     def urls(self):
-        return ['ftp://%s/%s/%s' % (self.parent.ftp_server,
-                                    self.parent.base_path,
+        return ['ftp://%s/%s/%s' % (self.ftp_server,
+                                    self.base_path,
                                     self.zip_name())]
 
     def verifier(self):
         return check.is_zip
 
     def options(self):
-        return self.parent.download_options
+        return self.download_options
 
     def output_file(self):
-        return os.path.join(self.parent.base_dir, self.img_name())
+        return os.path.join(self.base_dir, self.img_name())
 
-    def unpack(self, tmp):
+    def unpack(self, store, tmp):
         img = self.img_name()
 
-        if self.parent.is_topobathy:
-            with zipfile.ZipFile(tmp.name, 'r') as zfile:
-                zfile.extract(img, self.parent.base_dir)
-                zfile.extract(img + ".aux.xml", self.parent.base_dir)
+        with store.upload_dir() as target:
+            target_dir = os.path.join(target, self.base_dir)
+            mkdir_p(target_dir)
 
-        else:
-            with tmpdir.tmpdir() as d:
+            if self.is_topobathy:
                 with zipfile.ZipFile(tmp.name, 'r') as zfile:
-                    zfile.extract(img, d)
-                    zfile.extract(img + ".aux.xml", self.parent.base_dir)
+                    zfile.extract(img, target_dir)
+                    zfile.extract(img + ".aux.xml", target_dir)
 
-                mask.negative(os.path.join(d, img),
-                              "HFA", self.output_file())
+            else:
+                with tmpdir.tmpdir() as d:
+                    with zipfile.ZipFile(tmp.name, 'r') as zfile:
+                        zfile.extract(img, d)
+                        zfile.extract(img + ".aux.xml", target_dir)
+
+                    output_file = os.path.join(target, self.output_file())
+                    mask.negative(os.path.join(d, img), "HFA", output_file)
 
     def base_name(self):
         def fmt(v, neg, pos):
@@ -135,7 +149,7 @@ class NEDBase(object):
         self.ftp_server = options['ftp_server']
         self.base_path = options['base_path']
         self.pattern = re.compile(options['pattern'])
-        self.download_options = download.options(options)
+        self.download_options = options
         self.tile_index = None
         self.is_topobathy = is_topobathy
 
@@ -174,6 +188,13 @@ class NEDBase(object):
             for f in files:
                 if f.endswith('img'):
                     yield os.path.join(base, f)
+
+    def rehydrate(self, data):
+        typ = 'ned_topobathy' if self.is_topobathy else 'ned'
+        assert data.get('type') == typ, \
+            "Unable to rehydrate %r in NED(%r)." % (data, typ)
+        return NEDTile(self, data['state_code'], data['region_name'],
+                       data['year'], BoundingBox(*data['bbox']))
 
     def downloads_for(self, tile):
         tiles = set()

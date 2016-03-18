@@ -50,9 +50,9 @@ Using
 
 Joerd installs as a command line library, and there are currently three commands:
 
-* `process` reads the regions of interest from your config file, downloads all the sources to satisfy requests in that region, and for each tile intersecting the regions of interest in configured outputs, builds a [VRT](http://www.gdal.org/gdal_vrttut.html) "virtual dataset" of all relevant source files and generates the output image(s).
-* `server` starts up Joerd as a server listening for jobs on an SQS queue. It is intended for use as part of a cluster to parallelise very large job runs.
-* `enqueuer` reads a config file and outputs each region listed in the `regions` of the configuration file as a separate job to an SQS queue. This is intended for filling the queue for `server` to get work out of.
+* `server` starts up Joerd as a server listening for jobs on a queue. It is intended for use as part of a cluster to parallelise very large job runs.
+* `enqueue-downloads` reads a config file and outputs a job to the queue for each source file needed by an output file in any configured region listed in the `regions` of the configuration file. This is intended for filling the queue for `server` to get work out of, but can also be used for local testing along with the `fake` queue type.
+* `enqueue-renders` reads a config file and outputs a job to the queue for each output file in each region listed in the `regions` of the configuration file. This is intended for filling the queue for `server` to get work out of, but can also be used for local testing with the `fake` queue type.
 
 There is also a `script/generate.py` program to generate a configuration with lots of little jobs all split up.
 
@@ -73,10 +73,16 @@ Where `<command>` is one of the commands above (currently only `process`). The c
   * `gmted` downloads data from GMTED, a global topology dataset at 30 or 15 arc-seconds.
   * `srtm` downloads data from SRTM, an almost-global 3 arc-second topology dataset.
 * `logging` has a single section, `config`, which gives the location of a Python logging config file.
-* `jobs` controls how Joerd runs jobs. The defaults are reasonable, so this whole section may be omitted. Current subsections are:
-  * `num_threads` is how many threads to use when downloading files or generating output images. Defaults to the number of CPUs on the host computer.
-  * `chunksize` is how many jobs to assign to a single thread at once. The default is a heuristic which tries to balance large chunk size for greater throughput and small chunk size for better load balance.
-
+* `cluster` contains the queue configuration.
+  * `queue` is used for all job communication, and can be either `sqs` or `fake`:
+    * `type` should be either `sqs` to use SQS for communicating jobs, or `fake` to run jobs immediately (i.e: not queue them at all).
+	* `queue_name` (`sqs` only) the name of the SQS queue to use.
+* `store` is the store used to put output tiles after they have been rendered. The store should indicate a `type` and some extra configuration as sub-keys:
+  * `type` should be either `s3` to store files in Amazon S3, or `file` to store them on the local file system.
+  * `base_dir` (`file` only) the filesystem path to use as a prefix for stored files.
+  * `bucket_name` (`s3` only) the name of the bucket to store into.
+  * `upload_config` (`s3` only) a dictionary of additional parameters to pass to the upload function.
+* `source_store` is the store to download source files to when processing a download job, and retrieve them from when processing a render job. Note that _all_ the source files needed by the render jobs must be present in the source store before the render jobs are run. Configuration is the same as for `store`.
 License
 -------
 

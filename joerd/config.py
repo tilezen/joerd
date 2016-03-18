@@ -1,6 +1,5 @@
 from yaml import load
 from util import BoundingBox
-from multiprocessing import cpu_count
 from joerd.region import Region
 import copy
 
@@ -16,11 +15,10 @@ class Configuration(object):
         self.sources = self._cfg('sources')
         self.outputs = self._cfg('outputs')
         self.logconfig = self._cfg('logging config')
-        self.num_threads = self._cfg('jobs num_threads')
-        self.chunksize = self._cfg('jobs chunksize')
-        self.sqs_queue_name = self._cfg('cluster sqs_queue_name')
+        self.queue_config = self._cfg('cluster queue')
         self.block_size = self._cfg('cluster block_size')
         self.store = self._cfg('store')
+        self.source_store = self._cfg('source_store')
 
     def copy_with_regions(self, regions):
         """
@@ -60,15 +58,17 @@ def default_yml_config():
         'logging': {
             'config': None
         },
-        'jobs': {
-            'num_threads': cpu_count(),
-            'chunksize': None,
-        },
         'cluster': {
-            'sqs_queue_name': None,
+            'queue': {
+                'type': 'fake',
+            },
             'block_size': 2,
         },
         'store': {
+            'type': 'file',
+            'base_dir': '.',
+        },
+        'source_store': {
             'type': 'file',
             'base_dir': '.',
         },
@@ -85,10 +85,10 @@ def merge_cfg(dest, source):
     return dest
 
 
-def make_config_from_argparse(config_path, opencfg=open):
+def make_config_from_argparse(config, opencfg=open):
     # opencfg for testing
     cfg = default_yml_config()
-    with opencfg(config_path) as config_fp:
+    with opencfg(config.config) as config_fp:
         yml_data = load(config_fp.read())
         cfg = merge_cfg(cfg, yml_data)
     return Configuration(cfg)

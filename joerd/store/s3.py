@@ -2,6 +2,8 @@ import boto3
 from boto3.s3.transfer import TransferConfig
 from os import walk
 import os.path
+from contextlib2 import contextmanager
+from joerd.tmpdir import tmpdir
 
 # extension to mime type mappings to help with serving the S3 bucket as
 # a web site. if we add the content-type header on upload, then S3 will
@@ -78,6 +80,36 @@ class S3Store(object):
                     bucket.upload_file(src_name, s3_key,
                                        Config=transfer_config,
                                        ExtraArgs=extra_args)
+
+    @contextmanager
+    def upload_dir(self):
+        with tmpdir() as t:
+            yield t
+            self.upload_all(t)
+
+    def exists(self, filename):
+        bucket = self._get_bucket()
+        exists = False
+        try:
+            obj = bucket.Object(filename)
+            obj.load()
+        except ClientError as e:
+            code = e.response['Error']['Code']
+            # 403 is returned instead of 404 when the bucket doesn't allow
+            # LIST operations, so treat that as missing as well.
+            if code == "404" or code == "403":
+                exists = False
+            else:
+                raise e
+        else:
+            exists = True
+
+        return exists
+
+    def get(source, dest):
+        bucket = self._get_bucket()
+        obj = bucket.Object(filename)
+        obj.download_file(dest)
 
 
 def create(cfg):

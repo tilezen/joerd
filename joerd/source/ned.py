@@ -35,6 +35,9 @@ class NED(object):
     def srs(self):
         return self.base.srs()
 
+    def rehydrate(self, tile):
+        return self.base.rehydrate(tile)
+
 
 def create(options):
     return NED(options)

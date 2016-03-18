@@ -1,4 +1,5 @@
 from joerd.util import BoundingBox
+from joerd.region import RegionTile
 from tempfile import NamedTemporaryFile as Tmp
 from osgeo import osr, gdal
 import re
@@ -70,10 +71,13 @@ def _merc_bbox(z, x, y):
 
 class TerrariumTile(object):
     def __init__(self, parent, z, x, y):
-        self.parent = parent
+        self.output_dir = parent.output_dir
+        self.enable_png = parent.enable_png
+        self.enable_tif = parent.enable_tif
         self.z = z
         self.x = x
         self.y = y
+        self._latlon_bbox = parent.latlon_bbox(self.z, self.x, self.y)
 
     def set_sources(self, sources):
         logger = logging.getLogger('terrarium')
@@ -81,8 +85,11 @@ class TerrariumTile(object):
                      % (self.z, [type(s).__name__ for s in sources]))
         self.sources = sources
 
+    def freeze_dry(self):
+        return dict(type='terrarium', z=self.z, x=self.x, y=self.y)
+
     def latlon_bbox(self):
-        return self.parent.latlon_bbox(self.z, self.x, self.y)
+        return self._latlon_bbox
 
     def max_resolution(self):
         bbox = self.latlon_bbox().bounds
@@ -94,7 +101,7 @@ class TerrariumTile(object):
 
         bbox = _merc_bbox(self.z, self.x, self.y)
 
-        mid_dir = os.path.join(tmp_dir, self.parent.output_dir,
+        mid_dir = os.path.join(tmp_dir, self.output_dir,
                                str(self.z), str(self.x))
         if not os.path.isdir(mid_dir):
             try:
@@ -128,13 +135,13 @@ class TerrariumTile(object):
 
         # figure out what the approximate scale of the output image is in
         # lat/lon coordinates. this is used to select the appropriate filter.
-        ll_bbox = self.parent.latlon_bbox(self.z, self.x, self.y)
+        ll_bbox = self.latlon_bbox()
         ll_x_res = float(ll_bbox.bounds[2] - ll_bbox.bounds[0]) / dst_x_size
         ll_y_res = float(ll_bbox.bounds[3] - ll_bbox.bounds[1]) / dst_y_size
 
         composite.compose(self, dst_ds, logger, min(ll_x_res, ll_y_res))
 
-        if self.parent.enable_png:
+        if self.enable_png:
             # we want the output to be 3-channels R, G, B with:
             #   uheight = height + 32768.0
             #   R = int(height) / 256
@@ -166,7 +173,7 @@ class TerrariumTile(object):
             res = mem_ds.GetRasterBand(3).WriteArray(b)
             assert res == gdal.CPLE_None
 
-            png_file = os.path.join(tmp_dir, self.parent.output_dir,
+            png_file = os.path.join(tmp_dir, self.output_dir,
                                     tile + ".png")
             png_drv = gdal.GetDriverByName("PNG")
             png_ds = png_drv.CreateCopy(png_file, mem_ds)
@@ -179,12 +186,12 @@ class TerrariumTile(object):
 
             assert os.path.isfile(png_file)
 
-        if self.parent.enable_tif:
+        if self.enable_tif:
             # TIFF compresses best if we stick to integer pixels, using LZW
             # and the "2" type predictor. we might be able to keep some bits
             # of precision with float32 and DISCARD_LSB, but that's only
             # available in GDAL >= 2.0
-            tile_file = os.path.join(tmp_dir, self.parent.output_dir,
+            tile_file = os.path.join(tmp_dir, self.output_dir,
                                      tile + ".tif")
             outfile = tile_file
             tif_drv = gdal.GetDriverByName("GTiff")
@@ -255,6 +262,20 @@ class Terrarium:
         self.__dict__.update(d)
         self._setup_transforms()
 
+    def expand_tile(self, bbox, zoom_range):
+        tiles = []
+
+        for z in range(*zoom_range):
+            lx, ly = self.lonlat_to_xy(z, bbox[0], bbox[1])
+            ux, uy = self.lonlat_to_xy(z, bbox[2], bbox[3])
+            ll = self.latlon_bbox(z, lx, ly).bounds
+            ur = self.latlon_bbox(z, ux, uy).bounds
+            res = max((ll[2] - ll[0]) / 256.0,
+                      (ur[2] - ur[0]) / 256.0)
+            tiles.append(RegionTile((ll[0], ll[1], ur[2], ur[3]), res))
+
+        return tiles
+
     def generate_tiles(self):
         logger = logging.getLogger('terrarium')
         tiles = set()
@@ -285,6 +306,15 @@ class Terrarium:
         ty = int(extent * (0.5 - (y / MERCATOR_WORLD_SIZE)))
         return (tx, ty)
 
+    def rehydrate(self, data):
+        typ = data.get('type')
+        assert typ == 'terrarium', "Unable to rehydrate tile of type %r in " \
+            "terrarium output. Job was: %r" % (typ, data)
+
+        z = data['z']
+        x = data['x']
+        y = data['y']
+        return TerrariumTile(self, z, x, y)
 
 def create(regions, sources, options):
     return Terrarium(regions, sources, options)

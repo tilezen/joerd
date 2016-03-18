@@ -2,6 +2,7 @@ from joerd.util import BoundingBox
 import joerd.download as download
 import joerd.check as check
 import joerd.srs as srs
+from joerd.mkdir_p import mkdir_p
 from shutil import copyfile
 import os.path
 import os
@@ -22,7 +23,7 @@ class ETOPO1(object):
     def __init__(self, options={}):
         self.base_dir = options.get('base_dir', 'etopo1')
         self.etopo1_url = options['url']
-        self.download_options = download.options(options)
+        self.download_options = options
         self.target_name = 'ETOPO1_Bed_g_geotiff.tif'
 
     def get_index(self):
@@ -34,6 +35,15 @@ class ETOPO1(object):
     def existing_files(self):
         if os.path.exists(self.output_file()):
             yield self.output_file()
+
+    def freeze_dry(self):
+        # there's only one ETOPO1 tile
+        return dict(type='etopo1')
+
+    def rehydrate(self, data):
+        assert data.get('type') == 'etopo1', \
+            "Unable to rehydrate %r from ETOPO1." % data
+        return self
 
     def downloads_for(self, tile):
         # There's just one thing to download, and it's this single world
@@ -65,9 +75,13 @@ class ETOPO1(object):
     def verifier(self):
         return check.is_zip
 
-    def unpack(self, tmp):
-        with zipfile.ZipFile(tmp.name, 'r') as zfile:
-            zfile.extract(self.target_name, self.base_dir)
+    def unpack(self, store, tmp):
+        with store.upload_dir() as target:
+            target_dir = os.path.join(target, self.base_dir)
+            mkdir_p(target_dir)
+
+            with zipfile.ZipFile(tmp.name, 'r') as zfile:
+                zfile.extract(self.target_name, target_dir)
 
     def srs(self):
         return srs.wgs84()

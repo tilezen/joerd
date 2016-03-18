@@ -6,6 +6,7 @@ import joerd.srs as srs
 import joerd.index as index
 import joerd.mask as mask
 import joerd.tmpdir as tmpdir
+from joerd.mkdir_p import mkdir_p
 from contextlib2 import closing, ExitStack
 from shutil import copyfile
 import os.path
@@ -29,9 +30,14 @@ IS_SRTM_FILE = re.compile(
 
 
 class SRTMTile(object):
-    def __init__(self, parent, link, fname, bbox):
-        self.parent = parent
+    def __init__(self, parent, link, fname, bbox, is_masked):
+        self.url = parent.url
+        self.mask_url = parent.mask_url
+        self.download_options = parent.download_options
+        self.base_dir = parent.base_dir
         self.link = link
+        self.mask_link = self.link.replace(".SRTMGL1.hgt", ".SRTMSWBD.raw")
+        self.is_masked = is_masked
         self.fname = fname
         self.bbox = bbox
 
@@ -46,48 +52,59 @@ class SRTMTile(object):
         return hash(self.__key())
 
     def urls(self):
-        url_list = [self.parent.url + "/" + self.link]
+        url_list = [self.url + "/" + self.link]
         mask_link = self.link.replace(".SRTMGL1.hgt", ".SRTMSWBD.raw")
-        if self.parent.is_masked(mask_link):
-            url_list.append(self.parent.mask_url + "/" + mask_link)
+        if self.is_masked:
+            url_list.append(self.mask_url + "/" + mask_link)
         return url_list
 
     def verifier(self):
         return check.is_zip
 
     def options(self):
-        return self.parent.download_options
+        return self.download_options
 
     def output_file(self):
-        return os.path.join(self.parent.base_dir, self.fname)
+        return os.path.join(self.base_dir, self.fname)
 
-    def unpack(self, data_zip, mask_zip=None):
-        # if there's no mask, then just extract the SRTM as-is.
-        if mask_zip is None:
-            with zipfile.ZipFile(data_zip.name, 'r') as zfile:
-                zfile.extract(self.fname, self.parent.base_dir)
-            return
+    def unpack(self, store, data_zip, mask_zip=None):
+        with store.upload_dir() as target:
+            target_dir = os.path.join(target, self.base_dir)
+            mkdir_p(target_dir)
 
-        # otherwise, make a temporary directory to keep the SRTM and
-        # mask in while compositing them.
-        with tmpdir.tmpdir() as d:
-            with zipfile.ZipFile(data_zip.name, 'r') as zfile:
-                zfile.extract(self.fname, d)
+            # if there's no mask, then just extract the SRTM as-is.
+            if mask_zip is None:
+                with zipfile.ZipFile(data_zip.name, 'r') as zfile:
+                    zfile.extract(self.fname, target_dir)
+                    return
 
-            mask_name = self.fname.replace(".hgt", ".raw")
-            with zipfile.ZipFile(mask_zip.name, 'r') as zfile:
-                zfile.extract(mask_name, d)
+            # otherwise, make a temporary directory to keep the SRTM and
+            # mask in while compositing them.
+            with tmpdir.tmpdir() as d:
+                with zipfile.ZipFile(data_zip.name, 'r') as zfile:
+                    zfile.extract(self.fname, d)
 
-            mask_file = os.path.join(d, mask_name)
-            # mask off the water using the mask raster raw file
-            mask.raw(os.path.join(d, self.fname), mask_file, 255,
-                     "SRTMHGT", self.output_file())
+                mask_name = self.fname.replace(".hgt", ".raw")
+                with zipfile.ZipFile(mask_zip.name, 'r') as zfile:
+                    zfile.extract(mask_name, d)
+
+                mask_file = os.path.join(d, mask_name)
+                # mask off the water using the mask raster raw file
+                output_file = os.path.join(target, self.output_file())
+                mask.raw(os.path.join(d, self.fname), mask_file, 255,
+                         "SRTMHGT", output_file)
+
+    def freeze_dry(self):
+        return dict(type='srtm', link=self.link, is_masked=self.is_masked)
 
 
-def _parse_srtm_tile(link, parent):
+def _parse_srtm_tile(link, parent, is_masked=None):
     fname = link.replace(".SRTMGL1.hgt.zip", ".hgt")
     bbox = parent._parse_bbox(link)
-    return SRTMTile(parent, link, fname, bbox)
+    if is_masked is None:
+        mask_link = link.replace(".SRTMGL1.hgt", ".SRTMSWBD.raw")
+        is_masked = parent.is_masked(mask_link)
+    return SRTMTile(parent, link, fname, bbox, is_masked)
 
 
 class SRTM(object):
@@ -96,7 +113,7 @@ class SRTM(object):
         self.base_dir = options.get('base_dir', 'srtm')
         self.url = options['url']
         self.mask_url = options.get('mask-url')
-        self.download_options = download.options(options)
+        self.download_options = options
         self.tile_index = None
         self.mask_index = None
 
@@ -172,6 +189,11 @@ class SRTM(object):
             for f in  files:
                 if f.endswith('hgt'):
                     yield os.path.join(base, f)
+
+    def rehydrate(self, data):
+        assert data.get('type') == 'srtm', \
+            "Unable to rehydrate %r from SRTM." % data
+        return _parse_srtm_tile(data['link'], self, data['is_masked'])
 
     def downloads_for(self, tile):
         tiles = set()

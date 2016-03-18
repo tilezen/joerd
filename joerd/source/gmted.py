@@ -3,7 +3,7 @@ import joerd.download as download
 import joerd.check as check
 import joerd.srs as srs
 import joerd.mask as mask
-from multiprocessing import Pool
+from joerd.mkdir_p import mkdir_p
 from shutil import copyfileobj
 import os.path
 import os
@@ -20,7 +20,9 @@ from osgeo import gdal
 
 class GMTEDTile(object):
     def __init__(self, parent, x, y):
-        self.parent = parent
+        self.url = parent.url
+        self.download_options = parent.download_options
+        self.base_dir = parent.base_dir
         self.x = x
         self.y = y
 
@@ -48,20 +50,26 @@ class GMTEDTile(object):
         dir = "%s%03d" % ("E" if self.x >= 0 else "W", abs(self.x))
         res = self._res()
         dname = "/%(res)sdarcsec/mea/%(dir)s/" % dict(res=res, dir=dir)
-        return [self.parent.url + dname + self._file_name()]
+        return [self.url + dname + self._file_name()]
 
     def verifier(self):
         return check.is_gdal
 
     def options(self):
-        return self.parent.download_options
+        return self.download_options
 
     def output_file(self):
         fname = self._file_name()
-        return os.path.join(self.parent.base_dir, fname)
+        return os.path.join(self.base_dir, fname)
 
-    def unpack(self, tmp):
-        mask.negative(tmp.name, "GTiff", self.output_file())
+    def unpack(self, store, tmp):
+        with store.upload_dir() as target:
+            mkdir_p(os.path.join(target, self.base_dir))
+            output_file = os.path.join(target, self.output_file())
+            mask.negative(tmp.name, "GTiff", output_file)
+
+    def freeze_dry(self):
+        return dict(type='gmted', x=self.x, y=self.y)
 
 
 class GMTED(object):
@@ -72,7 +80,7 @@ class GMTED(object):
         self.url = options['url']
         self.xs = options['xs']
         self.ys = options['ys']
-        self.download_options = download.options(options)
+        self.download_options = options
 
     def get_index(self):
         # GMTED is a static set of files - there's no need for an index, but we
@@ -85,6 +93,11 @@ class GMTED(object):
             for f in  files:
                 if f.endswith('tif'):
                     yield os.path.join(base, f)
+
+    def rehydrate(self, data):
+        assert data.get('type') == 'gmted', \
+            "Unable to rehydrate %r from GMTED." % data
+        return GMTEDTile(self, data['x'], data['y'])
 
     def downloads_for(self, tile):
         tiles = set()

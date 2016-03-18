@@ -6,6 +6,7 @@ from shapely.geometry import box
 import pyqtree
 import argparse
 import math
+import json
 
 
 # convert OGR readable format to WKT representation
@@ -52,7 +53,7 @@ def make_regions(x, y, stride, sub_block_size):
                     left=(x+ix*sub_block_width+epsilon),
                     bottom=(y+iy*sub_block_width+epsilon),
                     right=(x+(ix+1)*sub_block_width-epsilon),
-                    top=(y+(iy*1)*sub_block_width-epsilon)),
+                    top=(y+(iy+1)*sub_block_width-epsilon)),
                 zoom_range=[14,16]))
 
     return regions
@@ -86,8 +87,9 @@ if __name__ == '__main__':
 
     parser.add_argument("input-file", help="Config YAML file to read as "
                         "input. Its 'regions' section will be replaced.")
-    parser.add_argument("output-file", help="Config YAML to write, with "
-                        "replaced 'regions'.")
+    parser.add_argument("output-file", help="Config jobs list to write. "
+                        "This is a file with one job per line, each job is "
+                        "a serialised JSON object.")
     parser.add_argument("shape-file", help="Shape file(s) to use. Jobs "
                         "will only be generated where they intersect some "
                         "item from one of these.",
@@ -150,7 +152,6 @@ if __name__ == '__main__':
             total += 1
 
     print "Done, writing new config."
-    conf['regions'] = dict(enumerate(regions))
-
     with open(args['output-file'], 'w') as fh:
-        dump(conf, fh)
+        for r in regions:
+            fh.write(json.dumps(r) + "\n")
