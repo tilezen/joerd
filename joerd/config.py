@@ -1,6 +1,5 @@
 from yaml import load
 from util import BoundingBox
-from multiprocessing import cpu_count
 from joerd.region import Region
 import copy
 
@@ -16,8 +15,6 @@ class Configuration(object):
         self.sources = self._cfg('sources')
         self.outputs = self._cfg('outputs')
         self.logconfig = self._cfg('logging config')
-        self.num_threads = self._cfg('jobs num_threads')
-        self.chunksize = self._cfg('jobs chunksize')
         self.queue_config = self._cfg('cluster queue')
         self.block_size = self._cfg('cluster block_size')
         self.store = self._cfg('store')
@@ -60,10 +57,6 @@ def default_yml_config():
         'outputs': [],
         'logging': {
             'config': None
-        },
-        'jobs': {
-            'num_threads': cpu_count(),
-            'chunksize': None,
         },
         'cluster': {
             'queue': {

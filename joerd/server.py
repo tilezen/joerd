@@ -113,8 +113,6 @@ class Server:
         self.regions = cfg.regions
         self.sources = self._sources(cfg)
         self.outputs = self._outputs(cfg, self.sources)
-        self.num_threads = cfg.num_threads
-        self.chunksize = cfg.chunksize
         self.store = self._store(cfg.store)
         self.source_store = self._store(cfg.source_store)
 

@@ -4,7 +4,6 @@ import joerd.check as check
 import joerd.srs as srs
 import joerd.mask as mask
 from joerd.mkdir_p import mkdir_p
-from multiprocessing import Pool
 from shutil import copyfileobj
 import os.path
 import os

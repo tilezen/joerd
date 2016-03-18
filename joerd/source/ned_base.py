@@ -6,7 +6,6 @@ import joerd.index as index
 import joerd.mask as mask
 import joerd.tmpdir as tmpdir
 from joerd.mkdir_p import mkdir_p
-from multiprocessing import Pool
 from contextlib import closing
 from shutil import copyfile
 from ftplib import FTP
