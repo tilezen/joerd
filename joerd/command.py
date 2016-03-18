@@ -196,89 +196,6 @@ class Joerd:
 
         return downloads
 
-    def process(self):
-        logger = logging.getLogger('process')
-
-        # get the list of all tiles to be generated
-        tiles = []
-        for output in self.outputs.itervalues():
-            tiles.extend(output.generate_tiles())
-
-        logger.info("Will generate %d tiles." % len(tiles))
-
-        # gather the set of all downloads - upstream source tiles - for all the
-        # tiles that will be generated.
-        downloads = set()
-        progress = ProgressLogger(logger, len(tiles))
-        for tile in tiles:
-            # each tile intersects a set of downloads for each source, perhaps
-            # an empty set. to track those, only sources which intersect the
-            # tile are tracked.
-            tile_sources = []
-            for name, source in self.sources:
-                d = source.downloads_for(tile)
-                if d:
-                    downloads.update(d)
-                    tile_sources.append(source)
-            tile.set_sources(tile_sources)
-            progress.increment(1)
-
-        # grab a list of the files which aren't currently available
-        need_to_download = []
-        need_on_disk = set()
-        for download in downloads:
-            need_on_disk.add(download.output_file())
-            if not os.path.isfile(download.output_file()):
-                need_to_download.append(download)
-
-        logger.info("Need to download %d source files."
-                    % len(need_to_download))
-
-        #grab a list of the files which we could delete if we need to
-        superfluous = []
-        for name, source in self.sources:
-            for existing in source.existing_files():
-                if existing not in need_on_disk:
-                    superfluous.append(existing)
-
-        logger.info("%d source files are superfluous to this job."
-                    % len(superfluous))
-
-        # give each process a handle to the shared mem
-        shared = Array(ctypes.c_char_p, superfluous)
-        p = Pool(processes=self.num_threads, initializer=_init_processes,
-                 initargs=(shared,logger))
-
-        # make sure we've got a store
-        #p.map(_download, need_to_download,
-        #      chunksize=self._chunksize(len(need_to_download)))
-
-        logger.info("Starting render of %d tiles." % len(tiles))
-
-        # now render the tiles
-        p.map(_renderstar, [(t, self.store) for t in tiles],
-              chunksize=self._chunksize(len(tiles)))
-
-        # clean up the Pool.
-        p.close()
-        p.join()
-
-        logger.info("All done!")
-
-    def _chunksize(self, length):
-        """
-        Try to determine an appropriate chunk size. The bigger the chunk, the
-        lower the overheads, but potentially worse load balance between the
-        different threads. A compromise is a fixed fraction of the maximum
-        chunk size - in this case, an eighth.
-
-        Chunksize can be overridden in the config, in which case this
-        heuristic is ignored.
-        """
-        if self.chunksize is not None:
-              return self.chunksize
-        return max(1, length / self.num_threads / 8)
-
     def _sources(self, cfg):
         sources = []
         for source in cfg.sources:
@@ -309,11 +226,6 @@ class JoerdArgumentParser(argparse.ArgumentParser):
         sys.stderr.write('error: %s\n' % message)
         self.print_help()
         sys.exit(2)
-
-
-def joerd_process(cfg):
-    j = Joerd(cfg)
-    j.process()
 
 
 def _find_source_by_name(j, name):
@@ -543,7 +455,6 @@ def joerd_main(argv=None):
     subparsers = parser.add_subparsers()
 
     parser_config = (
-        ('process', create_command_parser(joerd_process)),
         ('server', create_command_parser(joerd_server)),
         ('enqueuer', create_command_parser(joerd_enqueuer)),
         ('enqueue-downloads', create_command_parser(joerd_enqueue_downloads)),
