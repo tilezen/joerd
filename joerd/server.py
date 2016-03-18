@@ -1,11 +1,10 @@
 from joerd.mkdir_p import mkdir_p
 import joerd.tmpdir as tmpdir
 import joerd.download as download
-from importlib import import_module
+from joerd.plugin import plugin
 from contextlib2 import ExitStack, contextmanager
 import logging
 import traceback
-import json
 import os.path
 import sys
 
@@ -122,8 +121,7 @@ class Server:
         sources = []
         for source in cfg.sources:
             source_type = source['type']
-            module = import_module('joerd.source.%s' % source_type)
-            create_fn = getattr(module, 'create')
+            create_fn = plugin('source', source_type, 'create')
             sources.append((source_type, create_fn(source)))
         return sources
 
@@ -131,15 +129,13 @@ class Server:
         outputs = {}
         for output in cfg.outputs:
             output_type = output['type']
-            module = import_module('joerd.output.%s' % output_type)
-            create_fn = getattr(module, 'create')
+            create_fn = plugin('output', output_type, 'create')
             outputs[output_type] = create_fn(cfg.regions, sources, output)
         return outputs
 
     def _store(self, store_cfg):
         store_type = store_cfg['type']
-        module = import_module('joerd.store.%s' % store_type)
-        create_fn = getattr(module, 'create')
+        create_fn = plugin('store', store_type, 'create')
         return create_fn(store_cfg)
 
     def _find_source_by_name(self, name):
@@ -188,10 +184,9 @@ class Server:
         rehydrated = self.outputs[typ].rehydrate(data)
         self._render(rehydrated, sources)
 
-    def dispatch_job(self, message_body):
+    def dispatch_job(self, job):
         logger = logging.getLogger('process')
 
-        job = json.loads(message_body)
         job_type = job.get('job')
 
         if job_type == 'download':

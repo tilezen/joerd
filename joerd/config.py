@@ -18,7 +18,7 @@ class Configuration(object):
         self.logconfig = self._cfg('logging config')
         self.num_threads = self._cfg('jobs num_threads')
         self.chunksize = self._cfg('jobs chunksize')
-        self.sqs_queue_name = self._cfg('cluster sqs_queue_name')
+        self.queue_config = self._cfg('cluster queue')
         self.block_size = self._cfg('cluster block_size')
         self.store = self._cfg('store')
         self.source_store = self._cfg('source_store')
@@ -66,7 +66,9 @@ def default_yml_config():
             'chunksize': None,
         },
         'cluster': {
-            'sqs_queue_name': None,
+            'queue': {
+                'type': 'fake',
+            },
             'block_size': 2,
         },
         'store': {

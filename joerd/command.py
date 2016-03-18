@@ -1,6 +1,7 @@
 from config import make_config_from_argparse
 from osgeo import gdal
 from joerd.server import Server
+from joerd.plugin import plugin
 import sys
 import argparse
 import os
@@ -10,8 +11,13 @@ import logging.config
 import time
 import traceback
 import json
-import boto3
 import math
+
+
+def _make_queue(j, config):
+    typ = config['type']
+    create_fn = plugin('queue', typ, 'create')
+    return create_fn(j, config)
 
 
 def create_command_parser(fn):
@@ -36,17 +42,15 @@ class JoerdArgumentParser(argparse.ArgumentParser):
 def joerd_server(global_cfg):
     logger = logging.getLogger('process')
 
-    assert global_cfg.sqs_queue_name is not None, \
-        "Could not find SQS queue name in config, but this must be configured."
-
     j = Server(global_cfg)
-    sqs = boto3.resource('sqs')
-    queue = sqs.get_queue_by_name(QueueName=global_cfg.sqs_queue_name)
+    queue = _make_queue(j, global_cfg.queue_config)
 
     while True:
         for message in queue.receive_messages():
+            job = message.body
+
             try:
-                j.dispatch_job(message.body)
+                j.dispatch_job(job)
 
             except StandardError as e:
                 logger.warning("During processing of job %r, caught "
@@ -60,21 +64,17 @@ def joerd_server(global_cfg):
                 message.delete()
 
 
-def joerd_enqueuer(cfg):
+def joerd_enqueue_renders(cfg):
     """
     Sends each region in the config file to the queue for processing by workers.
     """
-
-    assert cfg.sqs_queue_name is not None, \
-        "Could not find SQS queue name in config, but this must be configured."
 
     logger = logging.getLogger('enqueuer')
 
     j = Server(cfg)
 
     logger.info("Streaming jobs to the queue")
-    sqs = boto3.resource('sqs')
-    queue = sqs.get_queue_by_name(QueueName=cfg.sqs_queue_name)
+    queue = _make_queue(j, cfg.queue_config)
 
     batch = []
     idx = 0
@@ -98,23 +98,29 @@ def joerd_enqueuer(cfg):
                 "but it has none." % tile
 
             job = dict(job='render', data=tile.freeze_dry(), sources=sources)
-            batch.append(dict(Id=str(idx), MessageBody=json.dumps(job)))
+            batch.append(job)
             idx += 1
 
-            if len(batch) == 10:
-                result = queue.send_messages(Entries=batch)
-                if 'Failed' in result and result['Failed']:
-                    logger.warning("Failed to enqueue: %r" % result['Failed'])
-                batch = []
+            if len(batch) == queue.batch_size():
+                try:
+                    queue.send_messages(batch)
+                except StandardError as e:
+                    logger.warning("Failed to enqueue batch: %s" \
+                                   % "".join(traceback.format_exception(
+                                       *sys.exc_info())))
+                    batch = []
 
             if idx >= next_log_idx:
                 logger.info("Sent %d jobs to queue." % idx)
                 next_log_idx += 1000
 
     if len(batch) > 0:
-        result = queue.send_messages(Entries=batch)
-        if 'Failed' in result and result['Failed']:
-            logger.warning("Failed to enqueue: %r" % result['Failed'])
+        try:
+            queue.send_messages(batch)
+        except StandardError as e:
+            logger.warning("Failed to enqueue batch: %s" \
+                           % "".join(traceback.format_exception(
+                               *sys.exc_info())))
 
     logger.info("Done.")
 
@@ -125,37 +131,37 @@ def joerd_enqueue_downloads(cfg):
     regions in the config file to the queue for downloading by workers.
     """
 
-    assert cfg.sqs_queue_name is not None, \
-        "Could not find SQS queue name in config, but this must be configured."
-
     logger = logging.getLogger('enqueuer')
 
     j = Server(cfg)
     downloads = j.list_downloads()
 
     logger.info("Sending %d download jobs to the queue" % len(downloads))
-    sqs = boto3.resource('sqs')
-    queue = sqs.get_queue_by_name(QueueName=cfg.sqs_queue_name)
+    queue = _make_queue(j, cfg.queue_config)
 
     batch = []
-    idx = 0
 
     for d in downloads:
         data = d.freeze_dry()
         job = dict(job='download', data=data)
-        batch.append(dict(Id=str(idx), MessageBody=json.dumps(job)))
-        idx += 1
+        batch.append(job)
 
-        if len(batch) == 10:
-            result = queue.send_messages(Entries=batch)
-            if 'Failed' in result and result['Failed']:
-                logger.warning("Failed to enqueue: %r" % result['Failed'])
+        if len(batch) == queue.batch_size():
+            try:
+                queue.send_messages(batch)
+            except StandardError as e:
+                logger.warning("Failed to enqueue batch: %s" \
+                               % "".join(traceback.format_exception(
+                                   *sys.exc_info())))
             batch = []
 
     if len(batch) > 0:
-        result = queue.send_messages(Entries=batch)
-        if 'Failed' in result and result['Failed']:
-            logger.warning("Failed to enqueue: %r" % result['Failed'])
+        try:
+            queue.send_messages(batch)
+        except StandardError as e:
+            logger.warning("Failed to enqueue batch: %s" \
+                           % "".join(traceback.format_exception(
+                               *sys.exc_info())))
 
     logger.info("Done.")
 
@@ -169,7 +175,7 @@ def joerd_main(argv=None):
 
     parser_config = (
         ('server', create_command_parser(joerd_server)),
-        ('enqueuer', create_command_parser(joerd_enqueuer)),
+        ('enqueue-renders', create_command_parser(joerd_enqueue_renders)),
         ('enqueue-downloads', create_command_parser(joerd_enqueue_downloads)),
     )
 
