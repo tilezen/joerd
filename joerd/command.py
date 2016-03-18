@@ -393,6 +393,21 @@ def _run_job_render(j, job):
         _render(rehydrated, j.store)
 
 
+def _dispatch_job(j, message_body):
+    job = json.loads(message_body)
+    job_type = job.get('job')
+
+    if job_type == 'download':
+        _run_job_download(j, job)
+
+    elif job_type == 'render':
+        _run_job_render(j, job)
+
+    else:
+        raise Exception("Don't understand job type %r from job %r, " \
+                        "ignoring." % (job_type, job))
+
+
 def joerd_server(global_cfg):
     logger = logging.getLogger('process')
 
@@ -405,43 +420,19 @@ def joerd_server(global_cfg):
 
     while True:
         for message in queue.receive_messages():
-            job = json.loads(message.body)
-            job_type = job.get('job')
+            try:
+                _dispatch_job(j, message.body)
 
-            if job_type == 'download':
-                try:
-                    _run_job_download(j, job)
-
-                    # remove the message from the queue - this indicates that
-                    # it has completed successfully and it won't be retried.
-                    message.delete()
-
-                except StandardError as e:
-                    logger.warning("During download of job %r, caught "
-                                   "exception. This job failed, continuing "
-                                   "to the next. Exception details: %s" %
-                                   (job, "".join(traceback.format_exception(
-                                       *sys.exc_info()))))
-
-
-            elif job_type == 'render':
-                try:
-                    _run_job_render(j, job)
-
-                    # remove the message from the queue - this indicates that
-                    # it has completed successfully and it won't be retried.
-                    message.delete()
-
-                except StandardError as e:
-                    logger.warning("During render of job %r, caught "
-                                   "exception. This job failed, continuing "
-                                   "to the next. Exception details: %s" %
-                                   (job, "".join(traceback.format_exception(
-                                       *sys.exc_info()))))
-
+            except StandardError as e:
+                logger.warning("During processing of job %r, caught "
+                               "exception. This job failed, continuing "
+                               "to the next. Exception details: %s" %
+                               (job, "".join(traceback.format_exception(
+                                   *sys.exc_info()))))
             else:
-                logger.warning("Don't understand job type %r from job %r, " \
-                               "ignoring." % (job_type, job))
+                # remove the message from the queue - this indicates that
+                # it has completed successfully and it won't be retried.
+                message.delete()
 
 
 def joerd_enqueuer(cfg):
