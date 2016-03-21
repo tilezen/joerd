@@ -16,6 +16,7 @@ regions:
     zoom_range: [0, 16]
 outputs:
   - type: skadi
+  - type: tiff
   - type: terrarium
   - type: normal
 sources:
