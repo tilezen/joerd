@@ -56,6 +56,9 @@ class TiffTile(mercator.MercatorTile):
             tif_drv = gdal.GetDriverByName("GTiff")
             tif_ds = tif_drv.Create(outfile, dst_x_size, dst_y_size, 1,
                                     gdal.GDT_Int16, options = [
+                                        'TILED=YES',
+                                        'BLOCKXSIZE=256',
+                                        'BLOCKYSIZE=256',
                                         'COMPRESS=LZW',
                                         'PREDICTOR=2'
                                     ])
