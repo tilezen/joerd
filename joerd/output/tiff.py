@@ -20,7 +20,7 @@ import numpy
 class TiffTile(mercator.MercatorTile):
     def __init__(self, parent, z, x, y):
         super(TiffTile, self).__init__(
-            z, x, y, 256,
+            z, x, y, 512,
             parent.mercator.latlon_bbox(z, x, y),
             parent.mercator.mercator_bbox(z, x, y))
         self.output_dir = parent.output_dir
@@ -96,8 +96,8 @@ class Tiff:
             ux, uy = self.mercator.lonlat_to_xy(z, bbox[2], bbox[3])
             ll = self.mercator.latlon_bbox(z, lx, ly).bounds
             ur = self.mercator.latlon_bbox(z, ux, uy).bounds
-            res = max((ll[2] - ll[0]) / 256.0,
-                      (ur[2] - ur[0]) / 256.0)
+            res = max((ll[2] - ll[0]) / 512.0,
+                      (ur[2] - ur[0]) / 512.0)
             tiles.append(RegionTile((ll[0], ll[1], ur[2], ur[3]), res))
 
         return tiles
@@ -106,9 +106,16 @@ class Tiff:
         logger = logging.getLogger('tiff')
         tiles = set()
 
+        # so here's where this whole thing with zooms breaks down: the tiles
+        # from this provider are 512x512 (i.e: "retina") and a tile at zoom
+        # z is equivalent in resolution to a normal tile at z+1. the "zooms"
+        # in the config are easier-to-understand proxies for resolutions, so
+        # this code should shift them by -1, clipping at zero, to maintain
+        # the same resolution basis.
         for r in self.regions:
             rbox = r.bbox.bounds
-            for zoom in range(*r.zoom_range):
+            for zoom in range(max(0, r.zoom_range[0] - 1),
+                              max(0, r.zoom_range[1] - 1)):
                 lx, ly = self.mercator.lonlat_to_xy(zoom, rbox[0], rbox[3])
                 ux, uy = self.mercator.lonlat_to_xy(zoom, rbox[2], rbox[1])
 
