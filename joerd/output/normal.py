@@ -1,5 +1,6 @@
 from joerd.util import BoundingBox
 from joerd.region import RegionTile
+from joerd.mkdir_p import mkdir_p
 from osgeo import osr, gdal
 import logging
 import os
@@ -7,18 +8,11 @@ import os.path
 import errno
 import sys
 import joerd.composite as composite
+import joerd.mercator as mercator
 import numpy
 import math
 from geographiclib.geodesic import Geodesic
 import bisect
-
-
-# first tried using the minimum value for this, but it doesn't seem to stay
-# stable, and the slightest change is enough to make it != nodata, which sets
-# it to "some" data.
-# so now using a nice "round" number, which should be less prone to precision
-# truncation issues (since all the precision bits are zero).
-FLT_NODATA = -3.0e38
 
 
 # Generate a table of heights suitable for use as hypsometric tinting. These
@@ -60,82 +54,27 @@ def _height_mapping_func(h):
     return 255 - bisect.bisect_left(HEIGHT_TABLE, h)
 
 
-def _tile_name(z, x, y):
-    return '%d/%d/%d' % (z, x, y)
-
-
-MERCATOR_WORLD_SIZE = 40075016.68
-
-
-def _tx_bbox(tx, bbox, expand=0.0):
-    xs = []
-    ys = []
-    for i in range(0,4):
-        ix = float(bbox[i & 2])
-        iy = float(bbox[(i & 1) * 2 + 1])
-        x, y, z = tx.TransformPoint(ix, iy)
-        xs.append(x)
-        ys.append(y)
-    bbox = (min(xs), min(ys), max(xs), max(ys))
-    xspan = bbox[2] - bbox[0]
-    yspan = bbox[3] - bbox[1]
-    return (bbox[0] - 0.5 * expand * xspan,
-            bbox[1] - 0.5 * expand * yspan,
-            bbox[2] + 0.5 * expand * xspan,
-            bbox[3] + 0.5 * expand * yspan)
-
-
-def _merc_bbox(z, x, y):
-    extent = float(1 << z)
-    return BoundingBox(
-        MERCATOR_WORLD_SIZE * (x / extent - 0.5),
-        MERCATOR_WORLD_SIZE * (0.5 - (y + 1) / extent),
-        MERCATOR_WORLD_SIZE * ((x + 1) / extent - 0.5),
-        MERCATOR_WORLD_SIZE * (0.5 - y / extent))
-
-
-class NormalTile(object):
-    def __init__(self, output_dir, latlon_bbox, z, x, y):
-        self.output_dir = output_dir
-        self._latlon_bbox = latlon_bbox
-        self.z = z
-        self.x = x
-        self.y = y
-
-    def set_sources(self, sources):
-        logger = logging.getLogger('normal')
-        logger.debug("Set sources on tile z=%r: %r"
-                     % (self.z, [type(s).__name__ for s in sources]))
-        self.sources = sources
+class NormalTile(mercator.MercatorTile):
+    def __init__(self, parent, z, x, y):
+        super(NormalTile, self).__init__(
+            z, x, y, 256,
+            parent.mercator.latlon_bbox(z, x, y),
+            parent.mercator.mercator_bbox(z, x, y))
+        self.output_dir = parent.output_dir
 
     def freeze_dry(self):
         return dict(type='normal', z=self.z, x=self.x, y=self.y)
 
-    def latlon_bbox(self):
-        return self._latlon_bbox
-
-    def max_resolution(self):
-        bbox = self.latlon_bbox().bounds
-        return max((bbox[2] - bbox[0]) / 256.0,
-                   (bbox[3] - bbox[1]) / 256.0)
-
     def render(self, tmp_dir):
         logger = logging.getLogger('normal')
 
-        bbox = _merc_bbox(self.z, self.x, self.y)
+        bbox = self._mercator_bbox
 
         mid_dir = os.path.join(tmp_dir, self.output_dir,
                                str(self.z), str(self.x))
-        if not os.path.isdir(mid_dir):
-            try:
-                os.makedirs(mid_dir)
-            except OSError as e:
-                # swallow the error if the directory exists - it's
-                # probably another thread creating it.
-                if e.errno != errno.EEXIST or not os.path.isdir(mid_dir):
-                    raise
+        mkdir_p(mid_dir)
 
-        tile = _tile_name(self.z, self.x, self.y)
+        tile = self.tile_name()
         tile_file = os.path.join(tmp_dir, self.output_dir,
                                  tile + ".png")
         logger.debug("Generating tile %r..." % tile)
@@ -164,16 +103,16 @@ class NormalTile(object):
         # clip bounding box back to the edges of the world. GDAL can handle
         # wrapping around the world, but it doesn't give the results that
         # would be expected.
-        if mid_min_x < -0.5 * MERCATOR_WORLD_SIZE:
+        if mid_min_x < -0.5 * mercator.MERCATOR_WORLD_SIZE:
             filter_lft_margin = 0
             mid_min_x = dst_bbox[0]
-        if mid_min_y < -0.5 * MERCATOR_WORLD_SIZE:
+        if mid_min_y < -0.5 * mercator.MERCATOR_WORLD_SIZE:
             filter_bot_margin = 0
             mid_min_y = dst_bbox[1]
-        if mid_max_x > 0.5 * MERCATOR_WORLD_SIZE:
+        if mid_max_x > 0.5 * mercator.MERCATOR_WORLD_SIZE:
             filter_rgt_margin = 0
             mid_max_x = dst_bbox[2]
-        if mid_max_y > 0.5 * MERCATOR_WORLD_SIZE:
+        if mid_max_y > 0.5 * mercator.MERCATOR_WORLD_SIZE:
             filter_top_margin = 0
             mid_max_y = dst_bbox[3]
 
@@ -188,7 +127,7 @@ class NormalTile(object):
                   mid_bbox[3], 0, -dst_y_res)
         mid_ds.SetGeoTransform(mid_gt)
         mid_ds.SetProjection(dst_srs.ExportToWkt())
-        mid_ds.GetRasterBand(1).SetNoDataValue(FLT_NODATA)
+        mid_ds.GetRasterBand(1).SetNoDataValue(mercator.FLT_NODATA)
 
         # figure out what the approximate scale of the output image is in
         # lat/lon coordinates. this is used to select the appropriate filter.
@@ -293,45 +232,16 @@ class Normal:
         self.sources = sources
         self.output_dir = options.get('output_dir', 'normal_tiles')
         self.enable_browser_png = options.get('enable_browser_png', False)
-        self._setup_transforms()
-
-    def _setup_transforms(self):
-        # cache these transforms, as they are mildly expensive to create and
-        # are used a lot when intersecting mercator tiles against latlon
-        # sources.
-        self.merc_srs = osr.SpatialReference()
-        self.merc_srs.ImportFromEPSG(3857)
-        self.latlon_srs = osr.SpatialReference()
-        self.latlon_srs.ImportFromEPSG(4326)
-
-        self.tx = osr.CoordinateTransformation(self.merc_srs, self.latlon_srs)
-        self.tx_inv = osr.CoordinateTransformation(self.latlon_srs,
-                                                   self.merc_srs)
-
-    # The Normal object is pickled to send it to other processes when we
-    # generate tiles in parallel, but the OSR / GDAL objects can't be pickled.
-    # So we must exclude them from the pickling process and regenerate them
-    # at the other side.
-    def __getstate__(self):
-        odict = self.__dict__.copy()
-        del odict['merc_srs']
-        del odict['latlon_srs']
-        del odict['tx']
-        del odict['tx_inv']
-        return odict
-
-    def __setstate__(self, d):
-        self.__dict__.update(d)
-        self._setup_transforms()
+        self.mercator = mercator.Mercator()
 
     def expand_tile(self, bbox, zoom_range):
         tiles = []
 
         for z in range(*zoom_range):
-            lx, ly = self.lonlat_to_xy(z, bbox[0], bbox[1])
-            ux, uy = self.lonlat_to_xy(z, bbox[2], bbox[3])
-            ll = self.latlon_bbox(z, lx, ly).bounds
-            ur = self.latlon_bbox(z, ux, uy).bounds
+            lx, ly = self.mercator.lonlat_to_xy(z, bbox[0], bbox[1])
+            ux, uy = self.mercator.lonlat_to_xy(z, bbox[2], bbox[3])
+            ll = self.mercator.latlon_bbox(z, lx, ly).bounds
+            ur = self.mercator.latlon_bbox(z, ux, uy).bounds
             res = max((ll[2] - ll[0]) / 256.0,
                       (ur[2] - ur[0]) / 256.0)
             tiles.append(RegionTile((ll[0], ll[1], ur[2], ur[3]), res))
@@ -345,29 +255,22 @@ class Normal:
         for r in self.regions:
             rbox = r.bbox.bounds
             for zoom in range(*r.zoom_range):
-                lx, ly = self.lonlat_to_xy(zoom, rbox[0], rbox[3])
-                ux, uy = self.lonlat_to_xy(zoom, rbox[2], rbox[1])
+                lx, ly = self.mercator.lonlat_to_xy(zoom, rbox[0], rbox[3])
+                ux, uy = self.mercator.lonlat_to_xy(zoom, rbox[2], rbox[1])
 
                 for x in range(lx, ux + 1):
                     for y in range(ly, uy + 1):
                         bbox = self.latlon_bbox(zoom, x, y)
-                        tiles.add(NormalTile(self.output_dir, bbox, zoom, x, y))
+                        tiles.add(NormalTile(self, zoom, x, y))
 
         logger.info("Generated %d tile jobs." % len(tiles))
         return list(tiles)
 
     def latlon_bbox(self, z, x, y):
-        merc = _merc_bbox(z, x, y)
+        return self.mercator.latlon_bbox(z, x, y)
 
-        return BoundingBox(*_tx_bbox(self.tx, merc.bounds))
-
-    def lonlat_to_xy(self, zoom, lon, lat):
-        x, y, z = self.tx_inv.TransformPoint(float(lon), float(lat))
-
-        extent = 1 << zoom
-        tx = int(extent * ((x / MERCATOR_WORLD_SIZE) + 0.5))
-        ty = int(extent * (0.5 - (y / MERCATOR_WORLD_SIZE)))
-        return (tx, ty)
+    def mercator_bbox(self, z, x, y):
+        return self.mercator.mercator_bbox(z, x, y)
 
     def rehydrate(self, data):
         typ = data.get('type')
@@ -377,8 +280,7 @@ class Normal:
         z = data['z']
         x = data['x']
         y = data['y']
-        bbox = self.latlon_bbox(z, x, y)
-        return NormalTile(self.output_dir, bbox, z, x, y)
+        return NormalTile(self, z, x, y)
 
 
 def create(regions, sources, options):
