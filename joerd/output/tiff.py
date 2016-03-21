@@ -17,19 +17,19 @@ import joerd.mercator as mercator
 import numpy
 
 
-class TerrariumTile(mercator.MercatorTile):
+class TiffTile(mercator.MercatorTile):
     def __init__(self, parent, z, x, y):
-        super(TerrariumTile, self).__init__(
+        super(TiffTile, self).__init__(
             z, x, y, 256,
             parent.mercator.latlon_bbox(z, x, y),
             parent.mercator.mercator_bbox(z, x, y))
         self.output_dir = parent.output_dir
 
     def freeze_dry(self):
-        return dict(type='terrarium', z=self.z, x=self.x, y=self.y)
+        return dict(type='tiff', z=self.z, x=self.x, y=self.y)
 
     def render(self, tmp_dir):
-        logger = logging.getLogger('terrarium')
+        logger = logging.getLogger('tiff')
 
         bbox = self._mercator_bbox
 
@@ -46,61 +46,46 @@ class TerrariumTile(mercator.MercatorTile):
             dst_x_size = dst_ds.RasterXSize
             dst_y_size = dst_ds.RasterYSize
 
-            # we want the output to be 3-channels R, G, B with:
-            #   uheight = height + 32768.0
-            #   R = int(height) / 256
-            #   G = int(height) % 256
-            #   B = int(frac(height) * 256)
-            # Looks like gdal doesn't handle "nodata" across multiple channels,
-            # so we'll use R=0, which corresponds to height < 32,513 which is
-            # lower than any depth on Earth, so we should be okay.
-            mem_drv = gdal.GetDriverByName("MEM")
-            mem_ds = mem_drv.Create('', dst_x_size, dst_y_size, 3, gdal.GDT_Byte)
-            mem_ds.SetGeoTransform(dst_gt)
-            mem_ds.SetProjection(dst_srs)
-            mem_ds.GetRasterBand(1).SetNoDataValue(0)
+            # TIFF compresses best if we stick to integer pixels, using LZW
+            # and the "2" type predictor. we might be able to keep some bits
+            # of precision with float32 and DISCARD_LSB, but that's only
+            # available in GDAL >= 2.0
+            tile_file = os.path.join(tmp_dir, self.output_dir,
+                                     tile + ".tif")
+            outfile = tile_file
+            tif_drv = gdal.GetDriverByName("GTiff")
+            tif_ds = tif_drv.Create(outfile, dst_x_size, dst_y_size, 1,
+                                    gdal.GDT_Int16, options = [
+                                        'COMPRESS=LZW',
+                                        'PREDICTOR=2'
+                                    ])
+            tif_ds.SetGeoTransform(dst_gt)
+            tif_ds.SetProjection(dst_srs)
+            tif_ds.GetRasterBand(1).SetNoDataValue(-32768)
 
             pixels = dst_ds.GetRasterBand(1).ReadAsArray(0, 0, dst_x_size, dst_y_size)
-            # transform to uheight, clamping the range
-            pixels += 32768.0
-            numpy.clip(pixels, 0.0, 65535.0, out=pixels)
+            # transform to integer height, clamping the range
+            numpy.clip(pixels, -32768, 32767, out=pixels)
+            tif_ds.GetRasterBand(1).WriteArray(pixels.astype(numpy.int16))
 
-            r = (pixels / 256).astype(numpy.uint8)
-            res = mem_ds.GetRasterBand(1).WriteArray(r)
-            assert res == gdal.CPLE_None
+            # explicitly delete the datasources. the Python-GDAL docs suggest that
+            # this is a good idea not only to dispose of memory buffers but also
+            # to ensure that the backing file handles are closed.
+            del tif_ds
 
-            g = (pixels % 256).astype(numpy.uint8)
-            res = mem_ds.GetRasterBand(2).WriteArray(g)
-            assert res == gdal.CPLE_None
-
-            b = ((pixels * 256) % 256).astype(numpy.uint8)
-            res = mem_ds.GetRasterBand(3).WriteArray(b)
-            assert res == gdal.CPLE_None
-
-            png_file = os.path.join(tmp_dir, self.output_dir,
-                                    tile + ".png")
-            png_drv = gdal.GetDriverByName("PNG")
-            png_ds = png_drv.CreateCopy(png_file, mem_ds)
-
-            # explicitly delete the datasources. the Python-GDAL docs suggest
-            # that this is a good idea not only to dispose of memory buffers
-            # but also to ensure that the backing file handles are closed.
-            del mem_ds
-            del png_ds
-
-            assert os.path.isfile(png_file)
+            assert os.path.isfile(tile_file)
 
         source_names = [type(s).__name__ for s in self.sources]
         logger.info("Done generating tile %r from %s"
                     % (tile, ", ".join(source_names)))
 
 
-class Terrarium:
+class Tiff:
 
     def __init__(self, regions, sources, options={}):
         self.regions = regions
         self.sources = sources
-        self.output_dir = options.get('output_dir', 'terrarium_tiles')
+        self.output_dir = options.get('output_dir', 'tiff_tiles')
         self.mercator = mercator.Mercator()
 
     def expand_tile(self, bbox, zoom_range):
@@ -118,7 +103,7 @@ class Terrarium:
         return tiles
 
     def generate_tiles(self):
-        logger = logging.getLogger('terrarium')
+        logger = logging.getLogger('tiff')
         tiles = set()
 
         for r in self.regions:
@@ -129,20 +114,20 @@ class Terrarium:
 
                 for x in range(lx, ux + 1):
                     for y in range(ly, uy + 1):
-                        tiles.add(TerrariumTile(self, zoom, x, y))
+                        tiles.add(TiffTile(self, zoom, x, y))
 
         logger.info("Generated %d tile jobs." % len(tiles))
         return list(tiles)
 
     def rehydrate(self, data):
         typ = data.get('type')
-        assert typ == 'terrarium', "Unable to rehydrate tile of type %r in " \
-            "terrarium output. Job was: %r" % (typ, data)
+        assert typ == 'tiff', "Unable to rehydrate tile of type %r in " \
+            "tiff output. Job was: %r" % (typ, data)
 
         z = data['z']
         x = data['x']
         y = data['y']
-        return TerrariumTile(self, z, x, y)
+        return TiffTile(self, z, x, y)
 
 def create(regions, sources, options):
-    return Terrarium(regions, sources, options)
+    return Tiff(regions, sources, options)
