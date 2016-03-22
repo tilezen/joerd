@@ -28,7 +28,7 @@ def _download(d, store):
 
             try:
                 d.unpack(store, *tmps)
-                break
+
             except Exception as e:
                 logger.error(repr(e))
                 raise e
