@@ -49,7 +49,7 @@ class Queue(object):
 
     def receive_messages(self):
         for msg in self.queue.receive_messages():
-            yield SQSMessage(msg)
+            yield Message(msg)
 
 
 def create(j, cfg):
