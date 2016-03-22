@@ -23,7 +23,7 @@ class Queue(object):
     This encodes each job as a JSON payload in the native SQS message type.
     """
 
-    def __init__(config):
+    def __init__(self, config):
         queue_name = config.get('queue_name')
         assert queue_name is not None, \
             "Could not find SQS queue name in config, but this must be " \
