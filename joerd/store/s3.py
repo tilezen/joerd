@@ -4,6 +4,9 @@ from os import walk
 import os.path
 from contextlib2 import contextmanager
 from joerd.tmpdir import tmpdir
+import traceback
+import sys
+
 
 # extension to mime type mappings to help with serving the S3 bucket as
 # a web site. if we add the content-type header on upload, then S3 will
@@ -14,6 +17,7 @@ _MIME_TYPES = {
     '.xml': 'application/xml',
     '.gz': 'application/x-gzip',
 }
+
 
 # Stores files in S3
 class S3Store(object):
@@ -107,9 +111,14 @@ class S3Store(object):
         return exists
 
     def get(self, source, dest):
-        bucket = self._get_bucket()
-        obj = bucket.Object(source)
-        obj.download_file(dest)
+        try:
+            bucket = self._get_bucket()
+            obj = bucket.Object(source)
+            obj.download_file(dest)
+        except:
+            raise Exception("Failed to download %r, due to: %s"
+                            % (source, "".join(traceback.format_exception(
+                                *sys.exc_info()))))
 
 
 def create(cfg):
