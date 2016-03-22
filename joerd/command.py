@@ -155,7 +155,15 @@ def joerd_enqueue_downloads(cfg):
 
     batch = []
 
+    # env var to turn on/off skipping existing files. this can be useful when
+    # re-running the jobs for a particular area.
+    skip_existing = os.getenv('SKIP_EXISTING', False)
+
     for d in downloads:
+        # skip any files which already exist.
+        if skip_existing and j.source_store.exists(d.output_file()):
+            next
+
         data = d.freeze_dry()
         job = dict(job='download', data=data)
         batch.append(job)
