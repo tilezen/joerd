@@ -8,7 +8,7 @@ import joerd.mask as mask
 import joerd.tmpdir as tmpdir
 from joerd.mkdir_p import mkdir_p
 from contextlib2 import closing, ExitStack
-from shutil import copyfile
+from shutil import copyfile, move
 import os.path
 import os
 import requests
@@ -67,6 +67,28 @@ class SRTMTile(object):
     def output_file(self):
         return os.path.join(self.base_dir, self.fname)
 
+    def _alternative_names(self):
+        names = [self.fname]
+        # encountered in N42E049.SRTMGL1.hgt.zip
+        names.append(self.fname.replace(".hgt", ".SRTMGL1.hgt"))
+        return names
+
+    def _unpack_hgt(self, zip_name, target_dir):
+        with zipfile.ZipFile(zip_name, 'r') as zfile:
+            exists = set([i.filename for i in zfile.infolist()])
+            names = set(self._alternative_names())
+
+            for n in names & exists:
+                zfile.extract(n, target_dir)
+                if n != self.fname:
+                    move(os.path.join(target_dir, n),
+                         os.path.join(target_dir, self.fname))
+                return
+
+            raise Exception("None of the alternative names %r were found "
+                            "in the SRTM zipfile %r. Contents are: %r" %
+                            (names, zip_name, exists))
+
     def unpack(self, store, data_zip, mask_zip=None):
         with store.upload_dir() as target:
             target_dir = os.path.join(target, self.base_dir)
@@ -74,15 +96,13 @@ class SRTMTile(object):
 
             # if there's no mask, then just extract the SRTM as-is.
             if mask_zip is None:
-                with zipfile.ZipFile(data_zip.name, 'r') as zfile:
-                    zfile.extract(self.fname, target_dir)
-                    return
+                self._unpack_hgt(data_zip.name, target_dir)
+                return
 
             # otherwise, make a temporary directory to keep the SRTM and
             # mask in while compositing them.
             with tmpdir.tmpdir() as d:
-                with zipfile.ZipFile(data_zip.name, 'r') as zfile:
-                    zfile.extract(self.fname, d)
+                self._unpack_hgt(data_zip.name, d)
 
                 mask_name = self.fname.replace(".hgt", ".raw")
                 with zipfile.ZipFile(mask_zip.name, 'r') as zfile:

@@ -31,7 +31,10 @@ def _download(d, store):
 
             except Exception as e:
                 logger.error(repr(e))
-                raise e
+                raise Exception("Failed to download %r: %s" %
+                                (d.output_file(),
+                                 "".join(traceback.format_exception(
+                                     *sys.exc_info()))))
 
         assert store.exists(d.output_file())
 
