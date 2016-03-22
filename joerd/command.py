@@ -122,7 +122,7 @@ def joerd_enqueue_renders(cfg):
                     logger.warning("Failed to enqueue batch: %s" \
                                    % "".join(traceback.format_exception(
                                        *sys.exc_info())))
-                    batch = []
+                batch = []
 
             if idx >= next_log_idx:
                 logger.info("Sent %d jobs to queue." % idx)
