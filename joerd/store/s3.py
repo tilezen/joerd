@@ -108,7 +108,7 @@ class S3Store(object):
 
     def get(self, source, dest):
         bucket = self._get_bucket()
-        obj = bucket.Object(filename)
+        obj = bucket.Object(source)
         obj.download_file(dest)
 
 
