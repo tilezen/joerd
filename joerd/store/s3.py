@@ -106,7 +106,7 @@ class S3Store(object):
 
         return exists
 
-    def get(source, dest):
+    def get(self, source, dest):
         bucket = self._get_bucket()
         obj = bucket.Object(filename)
         obj.download_file(dest)
