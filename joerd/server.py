@@ -26,12 +26,12 @@ def _download(d, store):
 
             tmps = [_get(url) for url in d.urls()]
 
-            while True:
-                try:
-                    d.unpack(store, *tmps)
-                    break
-                except Exception as e:
-                    logger.error(repr(e))
+            try:
+                d.unpack(store, *tmps)
+                break
+            except Exception as e:
+                logger.error(repr(e))
+                raise e
 
         assert store.exists(d.output_file())
 
