@@ -8,7 +8,7 @@ class Message(object):
     hold a message handle so that delete can be called on success.
     """
 
-    def __init__(msg):
+    def __init__(self, msg):
         self.msg = msg
         self.body = json.loads(self.msg.body)
 
