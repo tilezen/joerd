@@ -2,6 +2,7 @@ from joerd.util import BoundingBox
 import joerd.composite as composite
 from contextlib2 import contextmanager
 from osgeo import osr, gdal
+import math
 
 
 # first tried using the minimum value for this, but it doesn't seem to stay
@@ -140,11 +141,20 @@ class Mercator(object):
         return BoundingBox(*_tx_bbox(self.tx, merc.bounds))
 
     def lonlat_to_xy(self, zoom, lon, lat):
+        # clip lat to +/- 85.051129 because that's all that spherical mercator
+        # can support. otherwise we get "tolerance condition error".
+        lat = min(max(lat, -85.051129), 85.051129)
+
         x, y, z = self.tx_inv.TransformPoint(float(lon), float(lat))
 
         extent = 1 << zoom
-        tx = int(extent * ((x / MERCATOR_WORLD_SIZE) + 0.5))
-        ty = int(extent * (0.5 - (y / MERCATOR_WORLD_SIZE)))
+        tx = int(math.floor(extent * ((x / MERCATOR_WORLD_SIZE) + 0.5)))
+        ty = int(math.floor(extent * (0.5 - (y / MERCATOR_WORLD_SIZE))))
+
+        # and clip the result to lie in the allowable domain 0 <= coord < extent
+        tx = min(max(0, tx), extent - 1)
+        ty = min(max(0, ty), extent - 1)
+
         return (tx, ty)
 
     def mercator_bbox(self, z, x, y):

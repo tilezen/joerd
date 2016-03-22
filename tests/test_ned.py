@@ -5,6 +5,7 @@ import joerd.source.ned_topobathy as ned_topo
 
 
 FAKE_OPTIONS = dict(
+    base_dir='',
     ftp_server='',
     base_path=''
 )
@@ -46,6 +47,7 @@ class TestNEDSource(unittest.TestCase):
         self.assertTrue(bbox is None)
 
     def test_roundtrip_name(self):
+        n = ned.create(FAKE_OPTIONS)
         for fname in [
                 'ned19_n45x50_w097x75_sd_marshallco_2010.zip',
                 'ned19_n47x25_w097x50_nd_redriver_g_2008.zip',
@@ -78,7 +80,7 @@ class TestNEDSource(unittest.TestCase):
                 'ned19_n42x25_w096x00_ia_south_westcentral_2008.zip',
                 'ned19_n43x00_w083x50_mi_oaklandco_2008.zip',
         ]:
-            t = ned_base._parse_ned_tile(fname, None)
+            t = ned_base._parse_ned_tile(fname, n.base)
             self.assertTrue(t is not None, fname)
             f = t.zip_name()
             self.assertEqual(fname, f)
