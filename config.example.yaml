@@ -30,6 +30,9 @@ sources:
   - type: srtm
     url: http://e4ftl01.cr.usgs.gov/SRTM/SRTMGL1.003/2000.02.11/
     mask-url: http://e4ftl01.cr.usgs.gov/SRTM/SRTMSWBD.003/2000.02.11/
+  - type: ned13
+    ftp_server: rockyftp.cr.usgs.gov
+    base_path: vdelivery/Datasets/Staged/NED/13/IMG
   - type: ned
     ftp_server: rockyftp.cr.usgs.gov
     base_path: vdelivery/Datasets/Staged/NED/19/IMG
