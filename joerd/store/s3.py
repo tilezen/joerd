@@ -20,28 +20,6 @@ _MIME_TYPES = {
 }
 
 
-@contextmanager
-def _retry(tries, backoff=1):
-    """
-    Yield up to `tries` times, waiting `backoff` seconds after the first
-    failure and twice as long each failure thereafter.
-    """
-
-    try_num = 0
-    while True:
-        try:
-            yield
-            break
-
-        except StandardError:
-            try_num += 1
-            if try_num > tries:
-                raise
-
-        time.sleep(backoff)
-        backoff *= 2
-
-
 # Stores files in S3
 class S3Store(object):
     def __init__(self, cfg):
@@ -108,10 +86,26 @@ class S3Store(object):
 
             # retry up to 6 times, waiting 32 (=2^5) seconds before the final
             # attempt.
-            with _retry(6):
+            self.retry_upload_file(bucket, src_name, s3_key, transfer_config,
+                                   extra_args, tries)
+
+    def retry_upload_file(self, bucket, src_name, s3_key, transfer_config,
+                          extra_args, tries, backoff=1):
+        try_num = 0
+        while True:
+            try:
                 bucket.upload_file(src_name, s3_key,
                                    Config=transfer_config,
                                    ExtraArgs=extra_args)
+                break
+
+            except StandardError:
+                try_num += 1
+                if try_num > tries:
+                    raise
+
+            time.sleep(backoff)
+            backoff *= 2
 
     @contextmanager
     def upload_dir(self):
