@@ -19,6 +19,28 @@ _MIME_TYPES = {
 }
 
 
+@contextmanager
+def _retry(tries, backoff=1):
+    """
+    Yield up to `tries` times, waiting `backoff` seconds after the first
+    failure and twice as long each failure thereafter.
+    """
+
+    try_num = 0
+    while True:
+        try:
+            yield
+            break
+
+        except StandardError:
+            try_num += 1
+            if try_num > tries:
+                raise
+
+        time.sleep(backoff)
+        backoff *= 2
+
+
 # Stores files in S3
 class S3Store(object):
     def __init__(self, cfg):
@@ -69,21 +91,26 @@ class S3Store(object):
         for dirpath, dirs, files in walk(d):
             if dirpath.startswith(d):
                 suffix = dirpath[len(d):]
+                self._upload_files(dirpath, suffix, files, transfer_config)
 
-                for f in files:
-                    src_name = os.path.join(dirpath, f)
-                    s3_key = os.path.join(suffix, f)
+    def _upload_files(self, dirpath, suffix, files, transfer_config):
+        for f in files:
+            src_name = os.path.join(dirpath, f)
+            s3_key = os.path.join(suffix, f)
 
-                    ext = os.path.splitext(f)[1]
-                    mime = _MIME_TYPES.get(ext)
+            ext = os.path.splitext(f)[1]
+            mime = _MIME_TYPES.get(ext)
 
-                    extra_args = {}
-                    if mime:
-                        extra_args['ContentType'] = mime
+            extra_args = {}
+            if mime:
+                extra_args['ContentType'] = mime
 
-                    bucket.upload_file(src_name, s3_key,
-                                       Config=transfer_config,
-                                       ExtraArgs=extra_args)
+            # retry up to 6 times, waiting 32 (=2^5) seconds before the final
+            # attempt.
+            with _retry(6):
+                bucket.upload_file(src_name, s3_key,
+                                   Config=transfer_config,
+                                   ExtraArgs=extra_args)
 
     @contextmanager
     def upload_dir(self):
