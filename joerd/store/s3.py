@@ -91,6 +91,8 @@ class S3Store(object):
 
     def retry_upload_file(self, bucket, src_name, s3_key, transfer_config,
                           extra_args, tries, backoff=1):
+        logger = logging.getLogger('s3')
+
         try_num = 0
         while True:
             try:
@@ -99,8 +101,12 @@ class S3Store(object):
                                    ExtraArgs=extra_args)
                 break
 
-            except StandardError:
+            except StandardError as e:
                 try_num += 1
+                logger.warning("Try %d of %d: Failed to upload %s due to: %s" \
+                               % (try_num, tries, s3_key,
+                                  "".join(traceback.format_exception(
+                                      *sys.exc_info()))))
                 if try_num > tries:
                     raise
 
