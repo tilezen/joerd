@@ -84,6 +84,7 @@ class S3Store(object):
 
             # retry up to 6 times, waiting 32 (=2^5) seconds before the final
             # attempt.
+            tries = 6
             self.retry_upload_file(src_name, s3_key, transfer_config,
                                    extra_args, tries)
 
