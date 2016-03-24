@@ -6,6 +6,8 @@ from contextlib2 import contextmanager
 from joerd.tmpdir import tmpdir
 import traceback
 import sys
+import time
+import logging
 
 
 # extension to mime type mappings to help with serving the S3 bucket as
@@ -57,8 +59,6 @@ class S3Store(object):
         return self.bucket
 
     def upload_all(self, d):
-        bucket = self._get_bucket()
-
         # strip trailing slashes so that we're sure that the path we create by
         # removing this as a prefix does not start with a /.
         if not d.endswith('/'):
@@ -69,21 +69,50 @@ class S3Store(object):
         for dirpath, dirs, files in walk(d):
             if dirpath.startswith(d):
                 suffix = dirpath[len(d):]
+                self._upload_files(dirpath, suffix, files, transfer_config)
 
-                for f in files:
-                    src_name = os.path.join(dirpath, f)
-                    s3_key = os.path.join(suffix, f)
+    def _upload_files(self, dirpath, suffix, files, transfer_config):
+        for f in files:
+            src_name = os.path.join(dirpath, f)
+            s3_key = os.path.join(suffix, f)
 
-                    ext = os.path.splitext(f)[1]
-                    mime = _MIME_TYPES.get(ext)
+            ext = os.path.splitext(f)[1]
+            mime = _MIME_TYPES.get(ext)
 
-                    extra_args = {}
-                    if mime:
-                        extra_args['ContentType'] = mime
+            extra_args = {}
+            if mime:
+                extra_args['ContentType'] = mime
 
-                    bucket.upload_file(src_name, s3_key,
-                                       Config=transfer_config,
-                                       ExtraArgs=extra_args)
+            # retry up to 6 times, waiting 32 (=2^5) seconds before the final
+            # attempt.
+            tries = 6
+            self.retry_upload_file(src_name, s3_key, transfer_config,
+                                   extra_args, tries)
+
+    def retry_upload_file(self, src_name, s3_key, transfer_config,
+                          extra_args, tries, backoff=1):
+        logger = logging.getLogger('s3')
+
+        bucket = self._get_bucket()
+        try_num = 0
+        while True:
+            try:
+                bucket.upload_file(src_name, s3_key,
+                                   Config=transfer_config,
+                                   ExtraArgs=extra_args)
+                break
+
+            except StandardError as e:
+                try_num += 1
+                logger.warning("Try %d of %d: Failed to upload %s due to: %s" \
+                               % (try_num, tries, s3_key,
+                                  "".join(traceback.format_exception(
+                                      *sys.exc_info()))))
+                if try_num > tries:
+                    raise
+
+            time.sleep(backoff)
+            backoff *= 2
 
     @contextmanager
     def upload_dir(self):

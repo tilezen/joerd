@@ -162,7 +162,7 @@ def joerd_enqueue_downloads(cfg):
     for d in downloads:
         # skip any files which already exist.
         if skip_existing and j.source_store.exists(d.output_file()):
-            next
+            continue
 
         data = d.freeze_dry()
         job = dict(job='download', data=data)
