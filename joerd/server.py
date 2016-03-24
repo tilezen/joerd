@@ -183,8 +183,8 @@ class Server:
             for s in sources:
                 src = self._find_source_by_name(s['source'])
                 vrts = _download_local_vrts(d, self.source_store, s['vrts'])
-            if vrts:
-                mock_sources.append(MockSource(src, vrts))
+                if vrts:
+                    mock_sources.append(MockSource(src, vrts))
 
             rehydrated.set_sources(mock_sources)
 
