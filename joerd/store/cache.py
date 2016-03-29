@@ -1,6 +1,7 @@
 from joerd.mkdir_p import mkdir_p
 from joerd.plugin import plugin
 from os import link
+from contextlib2 import contextmanager
 import os.path
 
 
