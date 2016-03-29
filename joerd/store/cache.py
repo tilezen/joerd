@@ -7,8 +7,10 @@ import os.path
 
 class CacheStore(object):
     """
-    Every tile that gets generated requires ETOPO1. Rather than re-download
-    it every time (it's 446MB), we cache that file only.
+    Every tile that gets generated requires ETOPO1. And most require a GMTED
+    tile, which are pretty large and cover much of the world. Rather than
+    re-download them every time (ETOPO1 alone is 446MB), we cache ETOPO1 and
+    GMTED.
 
     This is a bit of a hack, and would be better replaced by a generic
     fixed-size LRU/LFU cache. Even better if the cache could be shared
@@ -34,7 +36,7 @@ class CacheStore(object):
         return self.store.exists(filename)
 
     def get(self, source, dest):
-        if 'ETOPO1' in source:
+        if 'ETOPO1' in source or 'gmted' in source:
             cache_path = os.path.join(self.cache_dir, source)
             if not os.path.exists(cache_path):
                 mkdir_p(os.path.dirname(cache_path))
