@@ -18,7 +18,7 @@ class CacheStore(object):
     def __init__(self, cfg):
         store_type = cfg['store']['type']
         create_fn = plugin('store', store_type, 'create')
-        self.store = create_fn('store', cfg['store'])
+        self.store = create_fn(cfg['store'])
         self.cache_dir = cfg['cache_dir']
 
     def upload_all(self, d):
