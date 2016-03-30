@@ -177,7 +177,7 @@ class Server:
     def _download(self, rehydrated):
         _download(rehydrated, self.source_store)
 
-    def _render(self, rehydrated, sources):
+    def _render(self, rehydrated_jobs, sources):
         with tmpdir.tmpdir() as d:
             mock_sources = []
             for s in sources:
@@ -186,9 +186,10 @@ class Server:
                 if vrts:
                     mock_sources.append(MockSource(src, vrts))
 
-            rehydrated.set_sources(mock_sources)
+            for rehydrated in rehydrated_jobs:
+                rehydrated.set_sources(mock_sources)
 
-            _render(rehydrated, self.store)
+                _render(rehydrated, self.store)
 
     def _run_job_download(self, job):
         data = job['data']
@@ -212,7 +213,28 @@ class Server:
             "%r" % job
 
         rehydrated = self.outputs[typ].rehydrate(data)
-        self._render(rehydrated, sources)
+        self._render([rehydrated], sources)
+
+    def _run_job_render_batch(self, job):
+        logger = logging.getLogger('process')
+
+        data = job['data']
+
+        # composite operation needs to look up the sources, so we
+        # need to wrap each source in a fake source which overrides
+        # the 'vrts_for' lookup with the sources we baked into the
+        # job.
+        sources = job.get('sources')
+        assert sources, "Got tile render job with no sources! Job was: " \
+            "%r" % job
+
+        rehydrated_jobs = []
+        for datum in data:
+            typ = datum['type']
+            job = self.outputs[typ].rehydrate(datum)
+            rehydrated_jobs.append(job)
+
+        self._render(rehydrated_jobs, sources)
 
     def dispatch_job(self, job):
         logger = logging.getLogger('process')
@@ -225,6 +247,9 @@ class Server:
         elif job_type == 'render':
             self._run_job_render(job)
 
+        elif job_type == 'renderbatch':
+            self._run_job_render_batch(job)
+
         else:
-            raise Exception("Don't understand job type %r from job %r, " \
+            raise LookupError("Don't understand job type %r from job %r, " \
                             "ignoring." % (job_type, job))

@@ -1,3 +1,21 @@
+class Batch(object):
+    """
+    A fake batch, which batches nothing and just sends messages on the
+    queue immediately.
+    """
+
+    def __init__(self, queue, max_batch_len):
+        self.queue = queue
+        # NOTE: this is ignored, and "batches" always contain a single job.
+        self.max_batch_len = max_batch_len
+
+    def append(self, job):
+        self.queue.send_message(job)
+
+    def flush(self):
+        pass
+
+
 class Queue(object):
     """
     A fake queue, which doesn't store or communicate any messages at all, but
@@ -9,12 +27,14 @@ class Queue(object):
     def __init__(self, server):
         self.server = server
 
-    def batch_size(self):
-        return 1
+    def start_batch(self, max_batch_len=1):
+        return Batch(self, max_batch_len)
 
-    def send_messages(self, batch):
-        for msg in batch:
-            self.server.dispatch_job(msg)
+    def send_message(self, msg):
+        self.server.dispatch_job(msg)
+
+    def flush(self):
+        pass
 
     def receive_messages(self):
         # fake queue doesn't actually hold any messages, so this is really
