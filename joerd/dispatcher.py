@@ -40,6 +40,8 @@ class Dispatcher(object):
                                 % "".join(traceback.format_exception(
                                     *sys.exc_info())))
 
+        self.logger.info("Dispatcher sent %d jobs in total." % self.idx)
+
 
 class JSONSizer(object):
     def __init__(self, sources, limit):
