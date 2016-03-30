@@ -2,6 +2,7 @@ from config import make_config_from_argparse
 from osgeo import gdal
 from joerd.server import Server
 from joerd.plugin import plugin
+from joerd.dispatcher import Dispatcher, GroupingDispatcher
 import sys
 import argparse
 import os
@@ -57,10 +58,11 @@ def joerd_server(cfg):
 
     while True:
         for message in queue.receive_messages():
-            job = message.body
+            jobs = message.body
 
             try:
-                j.dispatch_job(job)
+                for job in jobs:
+                    j.dispatch_job(job)
 
             except StandardError as e:
                 logger.warning("During processing of job %r, caught "
@@ -90,9 +92,11 @@ def joerd_enqueue_renders(cfg):
     logger.info("Streaming jobs to the queue")
     queue = _make_queue(j, cfg.queue_config)
 
-    batch = []
-    idx = 0
-    next_log_idx = 0
+    max_batch_len = 1000
+    # size limit is 256KB for SQS, but we'll leave a little bit of space
+    # just in case there's some small overhead for encoding it as an array.
+    size_limit = 256 * 1024 - 100
+    dispatcher = GroupingDispatcher(queue, max_batch_len, logger, size_limit)
 
     for output in j.outputs.itervalues():
         for tile in output.generate_tiles():
@@ -109,33 +113,12 @@ def joerd_enqueue_renders(cfg):
                         sources.append(dict(source=name, vrts=vrts))
 
             assert sources, "Was expecting at least one source for tile %r, " \
-                "but it has none." % tile
+                "but it has none." % tile.tile_name()
 
             job = dict(job='render', data=tile.freeze_dry(), sources=sources)
-            batch.append(job)
-            idx += 1
+            dispatcher.append(job)
 
-            if len(batch) == queue.batch_size():
-                try:
-                    queue.send_messages(batch)
-                except StandardError as e:
-                    logger.warning("Failed to enqueue batch: %s" \
-                                   % "".join(traceback.format_exception(
-                                       *sys.exc_info())))
-                batch = []
-
-            if idx >= next_log_idx:
-                logger.info("Sent %d jobs to queue." % idx)
-                next_log_idx += 1000
-
-    if len(batch) > 0:
-        try:
-            queue.send_messages(batch)
-        except StandardError as e:
-            logger.warning("Failed to enqueue batch: %s" \
-                           % "".join(traceback.format_exception(
-                               *sys.exc_info())))
-
+    dispatcher.flush()
     logger.info("Done.")
 
 
@@ -153,7 +136,10 @@ def joerd_enqueue_downloads(cfg):
     logger.info("Sending %d download jobs to the queue" % len(downloads))
     queue = _make_queue(j, cfg.queue_config)
 
-    batch = []
+    # download jobs are long-running and don't benefit from any cache re-use,
+    # so don't batch them - just one job per batch.
+    max_batch_len = 1
+    dispatcher = Dispatcher(queue, max_batch_len, logger)
 
     # env var to turn on/off skipping existing files. this can be useful when
     # re-running the jobs for a particular area.
@@ -166,25 +152,9 @@ def joerd_enqueue_downloads(cfg):
 
         data = d.freeze_dry()
         job = dict(job='download', data=data)
-        batch.append(job)
+        dispatcher.append(job)
 
-        if len(batch) == queue.batch_size():
-            try:
-                queue.send_messages(batch)
-            except StandardError as e:
-                logger.warning("Failed to enqueue batch: %s" \
-                               % "".join(traceback.format_exception(
-                                   *sys.exc_info())))
-            batch = []
-
-    if len(batch) > 0:
-        try:
-            queue.send_messages(batch)
-        except StandardError as e:
-            logger.warning("Failed to enqueue batch: %s" \
-                           % "".join(traceback.format_exception(
-                               *sys.exc_info())))
-
+    dispatcher.flush()
     logger.info("Done.")
 
 

@@ -174,8 +174,8 @@ def options(in_opts={}):
     if backoff == 'exponential':
         out_opts['backoff'] = _exponential_backoff
     else:
-        raise Exception("Configuration backoff=%r not understood."
-                            % backoff)
+        raise NotImplementedError("Configuration backoff=%r not understood."
+                                  % backoff)
 
     timeout = in_opts.get('timeout', 60)
     out_opts['timeout'] = int(timeout)
