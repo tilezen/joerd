@@ -52,7 +52,7 @@ class Batch(object):
 
     def flush(self):
         if len(self.batch) > 0:
-            self.queue.send_message("[" + (",".join(batch)) + "]")
+            self.queue.send_message("[" + (",".join(self.batch)) + "]")
             self.batch = []
             self.batch_size = 2
             self.batch_count = 0
