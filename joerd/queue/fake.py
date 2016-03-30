@@ -39,7 +39,7 @@ class Queue(object):
     def receive_messages(self):
         # fake queue doesn't actually hold any messages, so this is really
         # an error.
-        raise Exception("Fake queue doesn't hold any messages.")
+        raise NotImplementedError("Fake queue doesn't hold any messages.")
 
 
 def create(j, cfg):

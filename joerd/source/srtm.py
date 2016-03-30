@@ -85,9 +85,9 @@ class SRTMTile(object):
                          os.path.join(target_dir, self.fname))
                 return
 
-            raise Exception("None of the alternative names %r were found "
-                            "in the SRTM zipfile %r. Contents are: %r" %
-                            (names, zip_name, exists))
+            raise LookupError("None of the alternative names %r were found "
+                              "in the SRTM zipfile %r. Contents are: %r" %
+                              (names, zip_name, exists))
 
     def unpack(self, store, data_zip, mask_zip=None):
         with store.upload_dir() as target:

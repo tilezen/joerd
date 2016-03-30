@@ -16,30 +16,26 @@ def _download(d, store):
 
     logger = logging.getLogger('download')
 
-    try:
-        options = download.options(d.options()).copy()
-        options['verifier'] = d.verifier()
+    options = download.options(d.options()).copy()
+    options['verifier'] = d.verifier()
 
-        with ExitStack() as stack:
-            def _get(u):
-                return stack.enter_context(download.get(u, options))
+    with ExitStack() as stack:
+        def _get(u):
+            return stack.enter_context(download.get(u, options))
 
-            tmps = [_get(url) for url in d.urls()]
+        tmps = [_get(url) for url in d.urls()]
 
-            try:
-                d.unpack(store, *tmps)
+        try:
+            d.unpack(store, *tmps)
 
-            except Exception as e:
-                logger.error(repr(e))
-                raise Exception("Failed to download %r: %s" %
-                                (d.output_file(),
-                                 "".join(traceback.format_exception(
-                                     *sys.exc_info()))))
+        except Exception as e:
+            logger.error(repr(e))
+            raise RuntimeError("Failed to download %r: %s" %
+                               (d.output_file(),
+                                "".join(traceback.format_exception(
+                                    *sys.exc_info()))))
 
-        assert store.exists(d.output_file())
-
-    except:
-        raise Exception("".join(traceback.format_exception(*sys.exc_info())))
+    assert store.exists(d.output_file())
 
 
 def _download_local_vrts(d, source_store, input_vrts):
@@ -75,13 +71,9 @@ def _render(t, store):
     result(s) in the store.
     """
 
-    try:
-        with tmpdir.tmpdir() as d:
-            t.render(d)
-            store.upload_all(d)
-
-    except:
-        raise Exception("".join(traceback.format_exception(*sys.exc_info())))
+    with tmpdir.tmpdir() as d:
+        t.render(d)
+        store.upload_all(d)
 
 
 class MockSource(object):
@@ -172,7 +164,7 @@ class Server:
         for n, source in self.sources:
             if n == name:
                 return source
-        raise Exception("Unable to find source called %r" % name)
+        raise LookupError("Unable to find source called %r" % name)
 
     def _download(self, rehydrated):
         _download(rehydrated, self.source_store)

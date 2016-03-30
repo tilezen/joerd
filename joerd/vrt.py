@@ -19,7 +19,7 @@ def build(files, srs):
         status = subprocess.call(args)
 
         if status != 0:
-            raise Exception("Call to gdalbuildvrt failed: status=%r" % status)
+            raise RuntimeError("Call to gdalbuildvrt failed: status=%r" % status)
 
         ds = gdal.Open(vrt.name)
         yield ds

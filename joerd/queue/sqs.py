@@ -103,7 +103,7 @@ class Queue(object):
     def flush(self):
         result = self.queue.send_messages(Entries=self.entries)
         if 'Failed' in result and result['Failed']:
-            raise Exception("Failed to enqueue: %r" % result['Failed'])
+            raise RuntimeError("Failed to enqueue: %r" % result['Failed'])
 
         self.entries = []
         self.entries_size = 0

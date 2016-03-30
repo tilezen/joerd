@@ -145,9 +145,9 @@ class S3Store(object):
             obj = bucket.Object(source)
             obj.download_file(dest)
         except:
-            raise Exception("Failed to download %r, due to: %s"
-                            % (source, "".join(traceback.format_exception(
-                                *sys.exc_info()))))
+            raise RuntimeError("Failed to download %r, due to: %s"
+                               % (source, "".join(traceback.format_exception(
+                                   *sys.exc_info()))))
 
 
 def create(cfg):
