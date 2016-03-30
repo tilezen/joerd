@@ -93,7 +93,9 @@ def joerd_enqueue_renders(cfg):
     queue = _make_queue(j, cfg.queue_config)
 
     max_batch_len = 1000
-    size_limit = 256 * 1024
+    # size limit is 256KB for SQS, but we'll leave a little bit of space
+    # just in case there's some small overhead for encoding it as an array.
+    size_limit = 256 * 1024 - 100
     dispatcher = GroupingDispatcher(queue, max_batch_len, logger, size_limit)
 
     for output in j.outputs.itervalues():
