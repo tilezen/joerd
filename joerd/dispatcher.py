@@ -43,13 +43,21 @@ class Dispatcher(object):
         self.logger.info("Dispatcher sent %d jobs in total." % self.idx)
 
 
+def _json_dumps(obj):
+    """
+    Convenience method to call json.dumps with a consistent set of (compact)
+    parameters.
+    """
+    return json.dumps(obj, separators=(',',':'))
+
+
 class JSONSizer(object):
     def __init__(self, sources, limit):
         self.limit = limit
         self.data = []
-        self.size = 0
         fake_job_data = self._job_data(sources)
-        self.initial_size = len(json.dumps(fake_job_data))
+        self.initial_size = len(_json_dumps(fake_job_data))
+        self.size = self.initial_size
 
     def _job_data(self, sources):
         return dict(job='renderbatch',
@@ -58,7 +66,7 @@ class JSONSizer(object):
 
     def append(self, sources, data):
         flushed = None
-        data_size = len(json.dumps(data)) + 1
+        data_size = len(_json_dumps(data)) + 1
 
         assert data_size < self.limit, "Job too large for limit: " \
             "%d >= %d." % (self.size + 1, self.limit)
@@ -67,7 +75,7 @@ class JSONSizer(object):
             flushed = self.flush(sources)
 
         self.data.append(data)
-        self.size += data_size + 1
+        self.size += data_size
 
         return flushed
 

@@ -31,7 +31,9 @@ class Batch(object):
         self.batch = []
 
     def append(self, job):
-        job_json = json.dumps(job)
+        # NOTE: using the most compact encoding, as SQS has a size limit on
+        # the payload.
+        job_json = json.dumps(job, separators=(',',':'))
         job_len = len(job_json) + 1
         assert job_len + 1 < self.max_bytes, "Cannot send job of size %d, " \
             "as this job alone is larger than the maximum job size." \
