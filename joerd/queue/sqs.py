@@ -89,7 +89,7 @@ class Queue(object):
         # we still want to take advantage of message batching at the API
         # level, so we do this "second level" of batching.
 
-        entries_too_long = len(entries) + 1 > self.max_batch_len
+        entries_too_long = len(self.entries) + 1 > self.max_batch_len
         entries_too_large = len(job_json) + self.entries_size > \
                             self.max_batch_bytes
 
