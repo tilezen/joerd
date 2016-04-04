@@ -197,16 +197,16 @@ class NormalTile(mercator.MercatorTile):
         hyps = func(pixels).astype(numpy.uint8)
 
         # extract the area without the "bleed" margin.
-        ext = img[filter_lft_margin:(filter_lft_margin+dst_x_size), \
-                  filter_bot_margin:(filter_bot_margin+dst_y_size)]
+        ext = img[filter_top_margin:(filter_top_margin+dst_y_size), \
+                  filter_lft_margin:(filter_lft_margin+dst_x_size)]
         dst_ds.GetRasterBand(1).WriteArray(ext[...,0].astype(numpy.uint8))
         dst_ds.GetRasterBand(2).WriteArray(ext[...,1].astype(numpy.uint8))
         dst_ds.GetRasterBand(3).WriteArray(ext[...,2].astype(numpy.uint8))
 
         # add hypsometric tint index as alpha channel
         dst_ds.GetRasterBand(4).WriteArray(
-            hyps[filter_lft_margin:(filter_lft_margin+dst_x_size),
-                 filter_bot_margin:(filter_bot_margin+dst_y_size)])
+            hyps[filter_top_margin:(filter_top_margin+dst_y_size),
+                 filter_lft_margin:(filter_lft_margin+dst_x_size)])
 
         png_drv = gdal.GetDriverByName("PNG")
         png_ds = png_drv.CreateCopy(tile_file, dst_ds)
