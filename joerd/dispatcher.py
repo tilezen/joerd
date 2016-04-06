@@ -35,6 +35,11 @@ class Dispatcher(object):
     def flush(self):
         try:
             self.batch.flush()
+
+            # ensure that queue is flushed too, in case it is buffering or
+            # batching jobs itself.
+            self.queue.flush()
+
         except StandardError as e:
             self.logger.warning("Failed to flush batch: %s" \
                                 % "".join(traceback.format_exception(
