@@ -1,5 +1,6 @@
 import boto3
 from boto3.s3.transfer import TransferConfig
+from botocore.exceptions import ClientError
 from os import walk
 import os.path
 from contextlib2 import contextmanager
