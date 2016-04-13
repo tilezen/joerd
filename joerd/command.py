@@ -98,8 +98,17 @@ def joerd_enqueue_renders(cfg):
     size_limit = 256 * 1024 - 100
     dispatcher = GroupingDispatcher(queue, max_batch_len, logger, size_limit)
 
+    idx = 0
+    next_idx = 0
+
+    logger.info("Starting loop")
     for output in j.outputs.itervalues():
+        logger.info("Starting output %r" % output.__class__.__name__)
         for tile in output.generate_tiles():
+            if idx >= next_idx:
+                next_idx += 10000
+                logger.info("[%d] At job %r" % (idx, tile.__class__.__name__))
+            idx += 1
             sources = []
             for name, s in j.sources:
                 v = s.vrts_for(tile)

@@ -119,7 +119,6 @@ class Terrarium:
 
     def generate_tiles(self):
         logger = logging.getLogger('terrarium')
-        tiles = set()
 
         for r in self.regions:
             rbox = r.bbox.bounds
@@ -127,12 +126,10 @@ class Terrarium:
                 lx, ly = self.mercator.lonlat_to_xy(zoom, rbox[0], rbox[3])
                 ux, uy = self.mercator.lonlat_to_xy(zoom, rbox[2], rbox[1])
 
+                logger.info("Generating %d tiles for region." % ((ux - lx + 1) * (uy - ly + 1),))
                 for x in range(lx, ux + 1):
                     for y in range(ly, uy + 1):
-                        tiles.add(TerrariumTile(self, zoom, x, y))
-
-        logger.info("Generated %d tile jobs." % len(tiles))
-        return list(tiles)
+                        yield TerrariumTile(self, zoom, x, y)
 
     def rehydrate(self, data):
         typ = data.get('type')
