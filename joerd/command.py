@@ -131,6 +131,90 @@ def joerd_enqueue_renders(cfg):
     logger.info("Done.")
 
 
+def joerd_enqueue_single_renders(cfg):
+    """
+    Renders single tiles without a queue. The list of tiles is read from a file
+    called `tiles_to_enqueue.txt`. Can be useful for testing.
+    """
+
+    logger = logging.getLogger('enqueuer')
+
+    j = Server(cfg)
+
+    logger.info("Fetching download information")
+    j.list_downloads()
+
+    logger.info("Streaming jobs to the queue")
+    queue = _make_queue(j, cfg.queue_config)
+
+    max_batch_len = 1000
+    # size limit is 256KB for SQS, but we'll leave a little bit of space
+    # just in case there's some small overhead for encoding it as an array.
+    size_limit = 256 * 1024 - 100
+    dispatcher = GroupingDispatcher(queue, max_batch_len, logger, size_limit)
+
+    idx = 0
+    next_idx = 0
+
+    tiff_output = j.outputs['tiff']
+    normal_output = j.outputs['normal']
+    terrarium_output = j.outputs['terrarium']
+
+    import joerd.output as output
+
+    logger.info("Starting loop")
+    with open('tiles_to_enqueue.txt', 'r') as fh:
+        for line in fh:
+            location = line.split(".")[0]
+            tile = None
+
+            if location.startswith('skadi/'):
+                output_name, y, tile_name = location.split("/")
+                pos = output.skadi._parse_tile(tile_name)
+                if pos is None:
+                    raise Exception, "Couldn't parse skadi tile name %r" \
+                        % tile_name
+                tile = output.skadi.SkadiTile('skadi', *pos)
+
+            else:
+                output_name, z, x, y = location.split("/")
+                z = int(z)
+                x = int(x)
+                y = int(y)
+
+                if output_name == 'geotiff':
+                    tile = output.tiff.TiffTile(tiff_output, z, x, y)
+                elif output_name == 'normal':
+                    tile = output.normal.NormalTile(normal_output, z, x, y)
+                elif output_name == 'terrarium':
+                    tile = output.terrarium.TerrariumTile(terrarium_output,
+                                                          z, x, y)
+                else:
+                    raise Exception, "Couldn't make a tile from line %r" \
+                        % line
+
+            sources = []
+            for name, s in j.sources:
+                v = s.vrts_for(tile)
+                if v:
+                    vrts = []
+                    for rasters in v:
+                        files = [r.output_file() for r in rasters]
+                        if files:
+                            vrts.append(files)
+                    if vrts:
+                        sources.append(dict(source=name, vrts=vrts))
+
+            assert sources, "Was expecting at least one source for tile %r, " \
+                "but it has none." % tile.tile_name()
+
+            job = dict(job='render', data=tile.freeze_dry(), sources=sources)
+            dispatcher.append(job)
+
+    dispatcher.flush()
+    logger.info("Done.")
+
+
 def joerd_enqueue_downloads(cfg):
     """
     Sends a list of all the source files needed for rendering the configured
@@ -177,6 +261,7 @@ def joerd_main(argv=None):
     parser_config = (
         ('server', create_command_parser(joerd_server)),
         ('enqueue-renders', create_command_parser(joerd_enqueue_renders)),
+        ('enqueue-single-renders', create_command_parser(joerd_enqueue_single_renders)),
         ('enqueue-downloads', create_command_parser(joerd_enqueue_downloads)),
     )
 
