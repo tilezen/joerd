@@ -35,6 +35,6 @@ Methods which need implementing:
 * `srs(self)` returns a Spatial Reference object for this dataset.
 * `filter_type(self, src_res, dst_res)` returns the GDAL filter type enum to use for up- or down-scaling this raster.
 
-Finally, we need to add a free function, `create(options)` which returns a factory `GreatLakes` based ont he options given.
+Finally, we need to add a free function, `create(options)` which returns a factory `GreatLakes` based on the options given.
 
 To enable this data source in a run of Joerd, it needs to be included in the config file. Because the resolution of the Great Lakes data is 3 arcseconds, which is better than GMTED but not as good as NED or SRTM, the best place is between SRTM and GMTED.
