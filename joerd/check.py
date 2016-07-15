@@ -1,5 +1,7 @@
 import zipfile
 import tarfile
+import shutil
+import tempfile
 from osgeo import gdal
 
 
@@ -20,19 +22,22 @@ def is_zip(tmp):
     return False
 
 
-def is_tar_gz(tmp):
+def tar_gz_has_gdal(member_name):
     """
-    Returns True if the NamedTemporaryFile given as the argument appears to be
-    a GZip-encoded TAR file.
+    Returns a function which, when called with a NamedTemporaryFile, returns
+    True if that file is a GZip-encoded TAR file containing a `member_name`
+    member which can be opened with GDAL.
     """
 
-    try:
-        tar = tarfile.open(tmp.name, mode='r:gz', errorlevel=2)
-        names = [info.name for info in tar]
-        return True
+    def func(tmp):
+        try:
+            tar = tarfile.open(tmp.name, mode='r:gz', errorlevel=2)
+            with tempfile.NamedTemporaryFile() as tmp_member:
+                shutil.copyfileobj(tar.extractfile(member_name), tmp_member)
+                return is_gdal(tmp_member)
 
-    except (tarfile.TarError, IOError, OSError) as e:
-        return False
+        except (tarfile.TarError, IOError, OSError) as e:
+            return False
 
 
 def is_gdal(tmp):

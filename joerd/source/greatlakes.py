@@ -71,7 +71,7 @@ class GreatLake(object):
             % dict(base_url=BASE_URL,lake=self.lake) ]
 
     def verifier(self):
-        return check.is_tar_gz
+        return check.tar_gz_has_gdal(self._tif_file())
 
     def options(self):
         return self.download_options
@@ -80,11 +80,15 @@ class GreatLake(object):
         fname = self.lake + ".tif"
         return os.path.join(self.base_dir, fname)
 
+    def _tif_file(self):
+        # returns the name of the geotiff file within the distributed archive.
+        return "%(lake)s_lld/%(lake)s_lld.tif" % dict(lake=self.lake)
+
     def unpack(self, store, tmp):
         # the file inside the TAR is named like this - we're only interested
         # in the GeoTIFF file, as it already contains all the information
         # that we need.
-        tif_file = "%(lake)s_lld/%(lake)s_lld.tif" % dict(lake=self.lake)
+        tif_file = self._tif_file()
         shift = GREAT_LAKES[self.lake]['datum']
 
         with tmpdir.tmpdir() as tmp_dir:
