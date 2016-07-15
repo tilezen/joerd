@@ -34,10 +34,13 @@ def tar_gz_has_gdal(member_name):
             tar = tarfile.open(tmp.name, mode='r:gz', errorlevel=2)
             with tempfile.NamedTemporaryFile() as tmp_member:
                 shutil.copyfileobj(tar.extractfile(member_name), tmp_member)
+                tmp_member.seek(0)
                 return is_gdal(tmp_member)
 
         except (tarfile.TarError, IOError, OSError) as e:
             return False
+
+    return func
 
 
 def is_gdal(tmp):
