@@ -104,3 +104,31 @@ def raw(src_filename, raw_filename, raw_value, dst_driver, dst_filename):
     del dst_ds
     del src_ds
     del orig_ds
+
+
+def datum_shift(src_filename, dst_driver, dst_filename, shift):
+    """
+    Processes a raster, adding `shift` to each height. The file is written to
+    `dst_filename` using `dst_driver`.
+    """
+
+    src_ds = gdal.Open(src_filename)
+    mem_drv = gdal.GetDriverByName("MEM")
+    ds = mem_drv.CreateCopy('', src_ds)
+    x_size = ds.RasterXSize
+    y_size = ds.RasterYSize
+
+    band = ds.GetRasterBand(1)
+    nodata = band.GetNoDataValue()
+
+    data = band.ReadAsArray(0, 0, x_size, y_size)
+    data[data != nodata] += shift
+    res = band.WriteArray(data)
+    assert res == gdal.CPLE_None
+
+    drv = gdal.GetDriverByName(dst_driver)
+    dst_ds = drv.CreateCopy(dst_filename, ds)
+
+    del dst_ds
+    del ds
+    del src_ds

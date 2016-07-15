@@ -1,4 +1,5 @@
 import zipfile
+import tarfile
 from osgeo import gdal
 
 
@@ -17,6 +18,21 @@ def is_zip(tmp):
         pass
 
     return False
+
+
+def is_tar_gz(tmp):
+    """
+    Returns True if the NamedTemporaryFile given as the argument appears to be
+    a GZip-encoded TAR file.
+    """
+
+    try:
+        tar = tarfile.open(tmp.name, mode='r:gz', errorlevel=2)
+        names = [info.name for info in tar]
+        return True
+
+    except (tarfile.TarError, IOError, OSError) as e:
+        return False
 
 
 def is_gdal(tmp):
