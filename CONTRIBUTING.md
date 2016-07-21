@@ -2,7 +2,7 @@
 
 Example, using Great Lakes bathymetry.
 
-To add a new data source, we have to write a "source" in Joerd. These are pieces of code which can be found in the `joerd/source/` subdirectory of the project. The sources are responsible for encapsulating how to download and unpack DEM data from sites on the internet, and calculate the intersection of these with bounding boxes of tiles.
+To add a new data source, we have to write a "source" in Joerd. These are pieces of code which can be found in the `joerd/source/` subdirectory of the project. The sources are responsible for encapsulating how to download and unpack DEM data (digital elevation models, also known as DTM or digital terrain models) from sites on the internet, and calculate the intersection of these with bounding boxes of tiles.
 
 We start the new `joerd/source/greatlakes.py` by enumerating the lakes and the bounding boxes of their source files and their datum offsets. Other data sets have a fixed relationship between the name of the file and the bounding box, for example, an SRTM file called `N50W001.SRTMGL1.hgt` covers a known bounding box and has a no datum offset to the projection's spheroid. However, that isn't the case with the Great Lakes data, and the bounding box can only be found from the source data. This is a bit of a design flaw, and we'll have to work around it by hard-coding the bounding boxes for now.
 
