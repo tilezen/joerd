@@ -83,6 +83,7 @@ Where `<command>` is one of the commands above (currently only `process`). The c
   * `bucket_name` (`s3` only) the name of the bucket to store into.
   * `upload_config` (`s3` only) a dictionary of additional parameters to pass to the upload function.
 * `source_store` is the store to download source files to when processing a download job, and retrieve them from when processing a render job. Note that _all_ the source files needed by the render jobs must be present in the source store before the render jobs are run. Configuration is the same as for `store`.
+
 License
 -------
 
