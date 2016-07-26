@@ -26,7 +26,7 @@ Which is close to "y-earthe". Many thanks to @baldur for lending us his voice.
 Build Status
 ------------
 
-[![Circle CI](https://circleci.com/gh/mapzen/joerd.svg?style=svg)](https://circleci.com/gh/mapzen/joerd)
+[![Circle CI](https://circleci.com/gh/tilezen/joerd.svg?style=svg)](https://circleci.com/gh/tilezen/joerd)
 
 Building
 --------
@@ -87,12 +87,12 @@ Where `<command>` is one of the commands above (currently only `process`). The c
 License
 -------
 
-Joerd, and all of the projects under the Valhalla organization use the [MIT License](COPYING).
+Joerd uses the [MIT License](COPYING).
 
 Contributing
 ------------
 
-We welcome contributions to Joerd. If you would like to report an issue, or even better fix an existing one, please use the [Joerd issue tracker](https://github.com/mapzen/joerd/issues) on GitHub.
+We welcome contributions to Joerd. If you would like to report an issue, or even better fix an existing one, please use the [Joerd issue tracker](https://github.com/tilezen/joerd/issues) on GitHub.
 
 Tests
 -----
