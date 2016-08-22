@@ -4,24 +4,10 @@ from itertools import product
 from argparse import ArgumentParser
 from os.path import join
 import tempfile, shutil
+import unittest
 
 def mercator(lat, lon, zoom):
     ''' Convert latitude, longitude to z/x/y tile coordinate at given zoom.
-        
-        >>> mercator(0, 0, 0)
-        (0, 0, 0)
-        
-        >>> mercator(0, 0, 16)
-        (16, 32768, 32768)
-        
-        >>> mercator(37.79125, -122.39197, 16)
-        (16, 10487, 25327)
-
-        >>> mercator(40.74418, -73.99047, 16)
-        (16, 19298, 24632)
-
-        >>> mercator(-35.30816, 149.12446, 16)
-        (16, 59915, 39645)
     '''
     # convert to radians
     x1, y1 = lon * pi/180, lat * pi/180
@@ -37,15 +23,6 @@ def mercator(lat, lon, zoom):
 
 def tiles(zoom, lat1, lon1, lat2, lon2):
     ''' Convert geographic bounds into a list of tile coordinates at given zoom.
-        
-        >>> tiles(16, 37.79125, -122.39197, 37.79125, -122.39197)
-        [(16, 10487, 25327)]
-
-        >>> tiles(16, 0.00034, -0.00056, -0.00034, 0.00043)
-        [(16, 32767, 32767), (16, 32768, 32767), (16, 32767, 32768), (16, 32768, 32768)]
-
-        >>> tiles(16, -0.00034, 0.00043, 0.00034, -0.00056)
-        [(16, 32767, 32767), (16, 32768, 32767), (16, 32767, 32768), (16, 32768, 32768)]
     '''
     # convert to geographic bounding box
     minlat, minlon = min(lat1, lat2), min(lon1, lon2)
@@ -60,6 +37,18 @@ def tiles(zoom, lat1, lon1, lat2, lon2):
     tiles = [(zoom, x, y) for (y, x) in product(ys, xs)]
     
     return tiles
+
+class TestCollect (unittest.TestCase):
+    def test_mercator(self):
+        self.assertEqual(mercator(0, 0, 0), (0, 0, 0))
+        self.assertEqual(mercator(0, 0, 16), (16, 32768, 32768))
+        self.assertEqual(mercator(37.79125, -122.39197, 16), (16, 10487, 25327))
+        self.assertEqual(mercator(40.74418, -73.99047, 16), (16, 19298, 24632))
+        self.assertEqual(mercator(-35.30816, 149.12446, 16), (16, 59915, 39645))
+    def test_tiles(self):
+        self.assertEqual(tiles(16, 37.79125, -122.39197, 37.79125, -122.39197), [(16, 10487, 25327)])
+        self.assertEqual(tiles(16, 0.00034, -0.00056, -0.00034, 0.00043), [(16, 32767, 32767), (16, 32768, 32767), (16, 32767, 32768), (16, 32768, 32768)])
+        self.assertEqual(tiles(16, -0.00034, 0.00043, 0.00034, -0.00056), [(16, 32767, 32767), (16, 32768, 32767), (16, 32767, 32768), (16, 32768, 32768)])
 
 parser = ArgumentParser(description='Collect Mapzen elevation tiles into a single GeoTIFF')
 
@@ -79,9 +68,9 @@ if __name__ == '__main__':
     args = parser.parse_args()
     
     if args.testing:
-        import doctest
-        doctest.testmod()
-        exit(0)
+        suite = unittest.defaultTestLoader.loadTestsFromName(__name__)
+        result = unittest.TextTestRunner(verbosity=2).run(suite)
+        exit(0 if result.wasSuccessful() else 1)
     
     for (z, x, y) in tiles(args.zoom, *args.bounds):
         print(z, x, y)
