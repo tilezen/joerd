@@ -1,0 +1,11 @@
+machine:
+  python:
+    version: 3.5.0
+
+dependencies:
+  override:
+    - echo nothing
+
+test:
+  override:
+    - ./scripts/collect.py

@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from math import log, tan, pi
+from itertools import product
 
 def mercator(lat, lon, zoom):
     ''' Convert latitude, longitude to z/x/y tile coordinate at given zoom.
@@ -30,6 +31,32 @@ def mercator(lat, lon, zoom):
     x3, y3 = int(tiles * (x2 + pi) / diameter), int(tiles * (pi - y2) / diameter)
     
     return zoom, x3, y3
+
+def tiles(zoom, lat1, lon1, lat2, lon2):
+    ''' Convert geographic bounds into a list of tile coordinates at given zoom.
+        
+        >>> tiles(16, 37.79125, -122.39197, 37.79125, -122.39197)
+        [(16, 10487, 25327)]
+
+        >>> tiles(16, 0.00034, -0.00056, -0.00034, 0.00043)
+        [(16, 32767, 32767), (16, 32768, 32767), (16, 32767, 32768), (16, 32768, 32768)]
+
+        >>> tiles(16, -0.00034, 0.00043, 0.00034, -0.00056)
+        [(16, 32767, 32767), (16, 32768, 32767), (16, 32767, 32768), (16, 32768, 32768)]
+    '''
+    # convert to geographic bounding box
+    minlat, minlon = min(lat1, lat2), min(lon1, lon2)
+    maxlat, maxlon = max(lat1, lat2), max(lon1, lon2)
+    
+    # convert to tile-space bounding box
+    _, xmin, ymin = mercator(maxlat, minlon, zoom)
+    _, xmax, ymax = mercator(minlat, maxlon, zoom)
+    
+    # generate a list of tiles
+    xs, ys = range(xmin, xmax+1), range(ymin, ymax+1)
+    tiles = [(zoom, x, y) for (y, x) in product(ys, xs)]
+    
+    return tiles
 
 if __name__ == '__main__':
     import doctest
