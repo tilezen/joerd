@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 from math import log, tan, pi
 from itertools import product
+from argparse import ArgumentParser
+from os.path import join
+import tempfile, shutil
 
 def mercator(lat, lon, zoom):
     ''' Convert latitude, longitude to z/x/y tile coordinate at given zoom.
@@ -58,6 +61,27 @@ def tiles(zoom, lat1, lon1, lat2, lon2):
     
     return tiles
 
+parser = ArgumentParser(description='Collect Mapzen elevation tiles into a single GeoTIFF')
+
+parser.add_argument('--testing', action='store_const', const=True, default=False,
+                    help='If set, run unit tests and bail out.')
+
+parser.add_argument('--bounds', metavar='DEG', type=float, nargs=4,
+                    default=(37.8434, -122.3193, 37.7517, -122.0927),
+                    help='Geographic bounds given as two lat/lon pairs. Defaults to Oakland, CA hills.')
+
+parser.add_argument('--zoom', type=int, default=12,
+                    help='Map zoom level given as integer. Defaults to 12.')
+
+parser.add_argument('output_tif', help='Output GeoTIFF filename')
+
 if __name__ == '__main__':
-    import doctest
-    doctest.testmod()
+    args = parser.parse_args()
+    
+    if args.testing:
+        import doctest
+        doctest.testmod()
+        exit(0)
+    
+    for (z, x, y) in tiles(args.zoom, *args.bounds):
+        print(z, x, y)
