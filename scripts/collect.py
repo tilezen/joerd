@@ -3,7 +3,7 @@ from __future__ import print_function
 from math import log, tan, pi
 from itertools import product
 from argparse import ArgumentParser
-from os.path import join
+from os.path import join, splitext
 
 import tempfile, shutil, urllib, io, sys, subprocess
 import unittest
@@ -42,10 +42,13 @@ def tiles(zoom, lat1, lon1, lat2, lon2):
     
     return tiles
 
-def download(output_tif, tiles, verbose=True):
+def download(output_path, tiles, verbose=True):
     ''' Download list of tiles to a temporary directory and return its name.
     '''
-    dir = tempfile.mkdtemp(prefix='collect-')
+    dir = tempfile.mkdtemp(prefix='collected-')
+    _, ext = splitext(output_path)
+    
+    merge_geotiff = bool(ext.lower() in ('.tif', '.tiff', '.geotiff'))
     
     try:
         files = []
@@ -61,14 +64,20 @@ def download(output_tif, tiles, verbose=True):
                 file.write(response.read())
                 files.append(file.name)
         
-        if verbose:
-            print('Combining', len(files), 'into', output_tif, '...', file=sys.stderr)
-        temp_tif = join(dir, 'temp.tif')
-        subprocess.check_call(['gdal_merge.py', '-o', temp_tif] + files)
-        shutil.move(temp_tif, output_tif)
+        if merge_geotiff:
+            if verbose:
+                print('Combining', len(files), 'into', output_path, '...', file=sys.stderr)
+            temp_tif = join(dir, 'temp.tif')
+            subprocess.check_call(['gdal_merge.py', '-o', temp_tif] + files)
+            shutil.move(temp_tif, output_path)
+        else:
+            if verbose:
+                print('Moving', dir, 'to', output_path, '...', file=sys.stderr)
+            shutil.move(dir, output_path)
     
     finally:
-        shutil.rmtree(dir)
+        if merge_geotiff:
+            shutil.rmtree(dir)
 
 class TestCollect (unittest.TestCase):
 
@@ -84,7 +93,36 @@ class TestCollect (unittest.TestCase):
         self.assertEqual(tiles(16, 0.00034, -0.00056, -0.00034, 0.00043), [(16, 32767, 32767), (16, 32768, 32767), (16, 32767, 32768), (16, 32768, 32768)])
         self.assertEqual(tiles(16, -0.00034, 0.00043, 0.00034, -0.00056), [(16, 32767, 32767), (16, 32768, 32767), (16, 32767, 32768), (16, 32768, 32768)])
 
-    def test_download(self):
+    def test_download_tilebag(self):
+        with mock.patch('io.open') as open, \
+             mock.patch('shutil.move') as move, \
+             mock.patch('shutil.rmtree') as rmtree, \
+             mock.patch('tempfile.mkdtemp') as mkdtemp, \
+             mock.patch('urllib.urlopen') as urlopen, \
+             mock.patch('subprocess.check_call') as check_call:
+
+            mkdtemp.return_value = '/tmp'
+            urlopen.return_value.getcode.return_value = 200
+            open.return_value.__enter__.return_value.name = '/tmp/tile.tif'
+
+            download('/tmp/output', [
+                (12, 656, 1582),
+                (12, 657, 1582),
+                (12, 658, 1582),
+                ], False)
+        
+            self.assertEqual(len(rmtree.mock_calls), 0)
+            self.assertEqual(len(check_call.mock_calls), 0)
+        
+            self.assertEqual(urlopen.mock_calls[::3], [
+                mock.call('https://terrain-preview.mapzen.com/geotiff/12/656/1582.tif'),
+                mock.call('https://terrain-preview.mapzen.com/geotiff/12/657/1582.tif'),
+                mock.call('https://terrain-preview.mapzen.com/geotiff/12/658/1582.tif')
+                ])
+        
+            move.assert_called_once_with('/tmp', '/tmp/output')
+
+    def test_download_merge(self):
         with mock.patch('io.open') as open, \
              mock.patch('shutil.move') as move, \
              mock.patch('shutil.rmtree') as rmtree, \
@@ -113,7 +151,10 @@ class TestCollect (unittest.TestCase):
             check_call.assert_called_once_with(['gdal_merge.py', '-o', '/tmp/temp.tif', '/tmp/tile.tif', '/tmp/tile.tif', '/tmp/tile.tif'])
             move.assert_called_once_with('/tmp/temp.tif', '/tmp/output.tif')
 
-parser = ArgumentParser(description='Collect Mapzen elevation tiles into a single GeoTIFF')
+parser = ArgumentParser(description='''Collect Mapzen elevation tiles into a
+single GeoTIFF or directory. If output_path ends in ".tif", ".tiff", or
+".geotiff", gdal_merge.py will be called to merge all downloaded tiles into a
+single image. Otherwise, they are collected into the named directory.''')
 
 parser.add_argument('--testing', action='store_const', const=True, default=False,
                     help='If set, run unit tests and bail out.')
@@ -125,7 +166,7 @@ parser.add_argument('--bounds', metavar='DEG', type=float, nargs=4,
 parser.add_argument('--zoom', type=int, default=12,
                     help='Map zoom level given as integer. Defaults to 12.')
 
-parser.add_argument('output_tif', help='Output GeoTIFF filename')
+parser.add_argument('output_path', help='Output GeoTIFF filename or local directory name.')
 
 if __name__ == '__main__':
     args = parser.parse_args()
@@ -136,4 +177,4 @@ if __name__ == '__main__':
         result = unittest.TextTestRunner(verbosity=2).run(suite)
         exit(0 if result.wasSuccessful() else 1)
     
-    download(args.output_tif, tiles(args.zoom, *args.bounds))
+    download(args.output_path, tiles(args.zoom, *args.bounds))
