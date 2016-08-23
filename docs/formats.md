@@ -56,13 +56,13 @@ To decode quantized height value:
 
 ## GeoTIFF
 
-**GeoTIFF** format tiles are raw elevation data suitable for analytical use and are optimized to reduce transfer costs in 512x512 tile sizes but with internal 256x256 image pyramiding, in Mercator projection (EPSG:3857).
+**GeoTIFF** format tiles are raw elevation data suitable for analytical use and are optimized to reduce transfer costs in 512x512 tile sizes but with internal 256x256 image pyramiding, in Mercator projection (EPSG:3857). See (GDAL [docs](http://www.gdal.org/frmt_gtiff.html)).
 
 Allow for the larger tile size by referring to the tile coordinate of {z-1} parent tile.
 
 ## Skadi
 
-**Skadi** format tiles are raw elevation data in unprojected latlng (EPSG:4326) 1°x1° tiles, used by the Mapzen Elevation Service. Essentially they are the SRTMGL1 format tiles but with global coverage.
+**Skadi** format tiles are raw elevation data in unprojected latlng (EPSG:4326) 1°x1° tiles, used by the Mapzen Elevation Service. Essentially they are the SRTMGL1 format tiles but with global coverage. See (GDAL [docs](http://www.gdal.org/frmt_various.html#SRTMHGT)).
 
 See the [SRTM](https://lpdaac.usgs.gov/sites/default/files/public/measures/docs/NASA_SRTM_V3.pdf) guide for exact format specifications, which are summarized below:
 
