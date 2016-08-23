@@ -1,10 +1,10 @@
 machine:
   python:
-    version: 3.5.0
+    version: 2.7.10
 
 dependencies:
   override:
-    - echo nothing
+    - pip install mock==2.0.0
 
 test:
   override:

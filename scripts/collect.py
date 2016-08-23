@@ -1,11 +1,12 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
+from __future__ import print_function
 from math import log, tan, pi
 from itertools import product
 from argparse import ArgumentParser
 from os.path import join
 
-import tempfile, shutil, urllib.request, io, sys, subprocess
-import unittest, unittest.mock as mock
+import tempfile, shutil, urllib, io, sys, subprocess
+import unittest
 
 tile_url = 'https://terrain-preview.mapzen.com/geotiff/{z}/{x}/{y}.tif'
 
@@ -50,8 +51,8 @@ def download(output_tif, tiles, verbose=True):
         files = []
 
         for (z, x, y) in tiles:
-            response = urllib.request.urlopen(tile_url.format(z=z, x=x, y=y))
-            if response.status != 200:
+            response = urllib.urlopen(tile_url.format(z=z, x=x, y=y))
+            if response.getcode() != 200:
                 raise RuntimeError('No such tile: {}'.format((z, x, y)))
             if verbose:
                 print('Downloaded', response.url, file=sys.stderr)
@@ -61,7 +62,7 @@ def download(output_tif, tiles, verbose=True):
                 files.append(file.name)
         
         if verbose:
-            print('Combining', len(files), 'into', output_tif, '...')
+            print('Combining', len(files), 'into', output_tif, '...', file=sys.stderr)
         temp_tif = join(dir, 'temp.tif')
         subprocess.check_call(['gdal_merge.py', '-o', temp_tif] + files)
         shutil.move(temp_tif, output_tif)
@@ -83,33 +84,34 @@ class TestCollect (unittest.TestCase):
         self.assertEqual(tiles(16, 0.00034, -0.00056, -0.00034, 0.00043), [(16, 32767, 32767), (16, 32768, 32767), (16, 32767, 32768), (16, 32768, 32768)])
         self.assertEqual(tiles(16, -0.00034, 0.00043, 0.00034, -0.00056), [(16, 32767, 32767), (16, 32768, 32767), (16, 32767, 32768), (16, 32768, 32768)])
 
-    @mock.patch('io.open')
-    @mock.patch('shutil.move')
-    @mock.patch('shutil.rmtree')
-    @mock.patch('tempfile.mkdtemp')
-    @mock.patch('urllib.request.urlopen')
-    @mock.patch('subprocess.check_call')
-    def test_download(self, check_call, urlopen, mkdtemp, rmtree, move, open):
-        mkdtemp.return_value = '/tmp'
-        urlopen.return_value.status = 200
-        open.return_value.__enter__.return_value.name = '/tmp/tile.tif'
+    def test_download(self):
+        with mock.patch('io.open') as open, \
+             mock.patch('shutil.move') as move, \
+             mock.patch('shutil.rmtree') as rmtree, \
+             mock.patch('tempfile.mkdtemp') as mkdtemp, \
+             mock.patch('urllib.urlopen') as urlopen, \
+             mock.patch('subprocess.check_call') as check_call:
 
-        download('/tmp/output.tif', [
-            (12, 656, 1582),
-            (12, 657, 1582),
-            (12, 658, 1582),
-            ], False)
+            mkdtemp.return_value = '/tmp'
+            urlopen.return_value.getcode.return_value = 200
+            open.return_value.__enter__.return_value.name = '/tmp/tile.tif'
+
+            download('/tmp/output.tif', [
+                (12, 656, 1582),
+                (12, 657, 1582),
+                (12, 658, 1582),
+                ], False)
         
-        rmtree.assert_called_once_with(tempfile.mkdtemp.return_value)
+            rmtree.assert_called_once_with(tempfile.mkdtemp.return_value)
         
-        self.assertEqual(urlopen.mock_calls[::2], [
-            mock.call('https://terrain-preview.mapzen.com/geotiff/12/656/1582.tif'),
-            mock.call('https://terrain-preview.mapzen.com/geotiff/12/657/1582.tif'),
-            mock.call('https://terrain-preview.mapzen.com/geotiff/12/658/1582.tif')
-            ])
+            self.assertEqual(urlopen.mock_calls[::3], [
+                mock.call('https://terrain-preview.mapzen.com/geotiff/12/656/1582.tif'),
+                mock.call('https://terrain-preview.mapzen.com/geotiff/12/657/1582.tif'),
+                mock.call('https://terrain-preview.mapzen.com/geotiff/12/658/1582.tif')
+                ])
         
-        check_call.assert_called_once_with(['gdal_merge.py', '-o', '/tmp/temp.tif', '/tmp/tile.tif', '/tmp/tile.tif', '/tmp/tile.tif'])
-        move.assert_called_once_with('/tmp/temp.tif', '/tmp/output.tif')
+            check_call.assert_called_once_with(['gdal_merge.py', '-o', '/tmp/temp.tif', '/tmp/tile.tif', '/tmp/tile.tif', '/tmp/tile.tif'])
+            move.assert_called_once_with('/tmp/temp.tif', '/tmp/output.tif')
 
 parser = ArgumentParser(description='Collect Mapzen elevation tiles into a single GeoTIFF')
 
@@ -129,6 +131,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     
     if args.testing:
+        import mock # To run tests, `pip install mock==2.0.0`
         suite = unittest.defaultTestLoader.loadTestsFromName(__name__)
         result = unittest.TextTestRunner(verbosity=2).run(suite)
         exit(0 if result.wasSuccessful() else 1)
