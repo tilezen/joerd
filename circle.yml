@@ -8,4 +8,4 @@ dependencies:
 
 test:
   override:
-    - ./scripts/collect.py --testing out.tif
+    - docs/examples/collect.py --testing .
