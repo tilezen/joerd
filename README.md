@@ -84,6 +84,11 @@ Where `<command>` is one of the commands above (currently only `process`). The c
   * `upload_config` (`s3` only) a dictionary of additional parameters to pass to the upload function.
 * `source_store` is the store to download source files to when processing a download job, and retrieve them from when processing a render job. Note that _all_ the source files needed by the render jobs must be present in the source store before the render jobs are run. Configuration is the same as for `store`.
 
+Caveats
+-------
+
+When generating "skadi" format HGT files, it's possible to run into [this bug](https://trac.osgeo.org/gdal/ticket/3305). The work-around given in the issue (export `GDAL_SKIP=JPEG`) appears to work.
+
 License
 -------
 
