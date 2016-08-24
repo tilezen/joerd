@@ -1,16 +1,16 @@
-#Mapzen Elevation Tiles
+#Mapzen Terrain Tiles
 
-The [Mapzen elevation tiles](https://mapzen.com/projects/elevation-tiles) provides worldwide basemap coverage sourced from several open data projects.
+The [Mapzen terrain tiles](https://mapzen.com/projects/joerd) provides worldwide basemap coverage sourced from several open data projects.
 
-![Contents of an example elevation tile](images/elevation-tile-example.png)
+![Contents of an example terrain tile](images/elevation-tile-example.png)
 
 Raster tiles are square-shaped grids of geographic data that contain contain either raw elevation data or processed data (like normals).
 
 Tiles are available at zooms 0 through 15 and are available in several formats including PNG and GeoTIFF, and raw elevation and processed normal values optimized for mobile and web display, and desktop analytical use. Data is available in both web Mercator projected and raw latlng.
 
-With elevation tiles you have the power to customize the content and visual appearance of the map and perform analysis on the desktop. We're excited to see what you build!
+With terrain tiles you have the power to customize the content and visual appearance of the map and perform analysis on the desktop. We're excited to see what you build!
 
-### Use Mapzen's Elevation Tiles
+### Use Mapzen's Terrain Tiles
 
 To start integrating vector tiles to your app, you need a [developer API key](https://mapzen.com/developers). API keys come in the pattern: `vector-tiles-xxxxxxx`.
 
@@ -21,7 +21,7 @@ To start integrating vector tiles to your app, you need a [developer API key](ht
 
 The URL endpoint pattern to request tiles is:
 
-- `https://tile.mapzen.com/{format}/v1/{z}/{x}/{y}.{extension}?api_key=elevation-tiles-xxxxxxx`
+- `https://tile.mapzen.com/{format}/v1/{z}/{x}/{y}.{extension}?api_key=terrain-tiles-xxxxxxx`
 
 Where format is one of:
 
@@ -32,16 +32,16 @@ Where format is one of:
 
 Here’s a sample Terrarium in PNG format:
 
-- `https://tile.mapzen.com/terrarium/v1/0/0/0.png?api_key=elevation-tiles-xxxxxxx`
+- `https://tile.mapzen.com/terrarium/v1/0/0/0.png?api_key=terrain-tiles-xxxxxxx`
 
-More information is available about how to [use the elevation tile service](use-service.md).
+More information is available about how to [use the terrain tile service](use-service.md).
 
 #### File formats
 
 * **Terrarium** format _PNG_ tiles provide raw elevation values in web Mercator projection.
 * **Normal** format _PNG_ tiles provide processed elevation values with the the red, green, and blue values corresponding to the direction the pixel “surface” is facing (its XYZ vector), in Mercator projection, and alpha channel contains **quantized elevation data** with values suitable for common hypsometric tint ranges
 * **GeoTIFF** format tiles provide raw elevation values in web Mercator projection but with 512x512 sized tiles.
-* **Skadi** format tiles are raw elevation data in unprojected latlng 1°x1° tiles, used by the Mapzen Elevation Service.
+* **Skadi** format tiles are raw elevation data in unprojected latlng 1°x1° tiles, used by the Mapzen Terrain Service.
 
 More information is available about [file formats](formats.md).
 
@@ -68,9 +68,9 @@ How to [draw the tile](build-a-map.md#tangram) in a browser is up to the raster-
 
 More interested in analytical tools on the desktop or in the cloud? We walk you thru how to download & merge tiles and generate hillshades using [GDAL](build-a-map.md#gdal) and [QGIS](build-a-map.md#qgis).
 
-### How are raster elevation tiles produced?
+### How are raster terrain tiles produced?
 
-Elevation tiles are served by clipping source grids to the tile bounding box and tile downsampling resolution to match the zoom level to avoid unnecessary complexity at lower zoom levels. Ground resolution table is available in the [data sources](data-sources.md#what-is-the-ground-resolution) description.
+Terrain tiles are served by clipping source grids to the tile bounding box and tile downsampling resolution to match the zoom level to avoid unnecessary complexity at lower zoom levels. Ground resolution table is available in the [data sources](data-sources.md#what-is-the-ground-resolution) description.
 
 ### Build from source
 
@@ -78,7 +78,7 @@ If you are interested in setting up your own version of this service, follow the
 
 ### Credits
 
-Many thanks to Amazon for providing EC2 and S3 resources for processing and distributing v1 elevation tiles as part of their public data initiative!
+Many thanks to Amazon for providing EC2 and S3 resources for processing and distributing v1 terrain tiles as part of their public data initiative!
 
 ### Additional resources
 

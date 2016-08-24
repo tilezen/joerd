@@ -4,11 +4,11 @@ Attribution is required for many of our data providers. Example language is prov
 
 **Required attribution:**
 
-> Mapzen elevation tiles contain content courtesy of the U.S. Geological Survey and U.S. National Oceanic and Atmospheric Administration.
+> Mapzen terrain tiles contain content courtesy of the U.S. Geological Survey and U.S. National Oceanic and Atmospheric Administration.
 
 **Full attribution for all projects:**
 
->  Mapzen elevation tiles contain 3DEP, SRTM, and GMTED2010 content courtesy of the U.S. Geological Survey and ETOPO1 content courtesy of U.S. National Oceanic and Atmospheric Administration.
+>  Mapzen terrain tiles contain 3DEP, SRTM, and GMTED2010 content courtesy of the U.S. Geological Survey and ETOPO1 content courtesy of U.S. National Oceanic and Atmospheric Administration.
 
 ### Where to attribute
 

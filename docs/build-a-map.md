@@ -1,6 +1,6 @@
-# Building a map with Mapzen elevation tiles
+# Building a map with Mapzen terrain tiles
 
-You can use Mapzen’s elevation tiles with a variety of browser-based rendering software packages. Following the syntax of the library you are using, you need to specify the URL to the Mapzen elevation tile service, the layers that you want to draw on the map, and styling information about how to draw the features.
+You can use Mapzen’s terrain tiles with a variety of browser-based rendering software packages. Following the syntax of the library you are using, you need to specify the URL to the Mapzen terrain tile service, the layers that you want to draw on the map, and styling information about how to draw the features.
 
 ## Tangram
 

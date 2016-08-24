@@ -1,6 +1,6 @@
 # Data Sources
 
-Mapzen Elevation Tiles are powered by several major open data sets and we owe a tremendous debt of gratitude to the individuals and communities which produced them.
+Mapzen Terrain Tiles are powered by several major open data sets and we owe a tremendous debt of gratitude to the individuals and communities which produced them.
 
 **Attribution is required** for some of our data providers. See the [Attribution](attribution.md) document for more information.
 
@@ -80,13 +80,13 @@ zoom   | ocean    | land
 
 ## Sources native resolution
 
-You might be wondering why we source from different data sets at different zooms. Besides bandwidth reasons, it's helpful to know the native resolution of each data set which is expressed as a nominal arc resolution which maps roughly to a web map zoom for "best displayed at". 
+You might be wondering why we source from different data sets at different zooms. Besides bandwidth reasons, it's helpful to know the native resolution of each data set which is expressed as a nominal arc resolution which maps roughly to a web map zoom for "best displayed at".
 
-In more practicle terms, this results in some datasets being **"oversampled"** for a given zoom and map location. 
+In more practicle terms, this results in some datasets being **"oversampled"** for a given zoom and map location.
 
-* In the water, most bathymetry values at zoom 15 for a pixel that has a ground resolution of 5 meter will actually be showing an oversampled zoom 6 `ETOPO1` value (nominally 2.5 km). 
+* In the water, most bathymetry values at zoom 15 for a pixel that has a ground resolution of 5 meter will actually be showing an oversampled zoom 6 `ETOPO1` value (nominally 2.5 km).
 
-* On the land, most elevation values at zoom 15 for a pixel that has a ground resolution of 5 meter will actually be showing an oversampled zoom 12 `SRTM` value (nominally 30 meters). 
+* On the land, most elevation values at zoom 15 for a pixel that has a ground resolution of 5 meter will actually be showing an oversampled zoom 12 `SRTM` value (nominally 30 meters).
 
 This formula generates the following table:
 
@@ -96,22 +96,22 @@ Arc resolution per **zoom** and data sources, per pixel:
 
 zoom   | meters at equator     | arc seconds     | nominal arc degrees minutes seconds            | source      | nominal ground units
 -----  | ---------- | -------- | ------------------- | --------    | --------------------
-**0**  | _156543.0_ | `5071.0` | **1.5 arc degrees**  |             | 
-**1**  | _78271.5_  | `2535.5` | **40 arc minutes**   |             | 
-**2**  | _39135.8_  | `1267.8` | **20 arc minutes**   |             | 
-**3**  | _19567.9_  | `633.9`  | **10 arc minutes**   |             | 
-**4**  | _9783.9_   | `316.9`  | **5 arc minutes**    |             | 
-**5**  | _4892.0_   | `158.5`  | **2.5 arc minutes**  |             | 
+**0**  | _156543.0_ | `5071.0` | **1.5 arc degrees**  |             |
+**1**  | _78271.5_  | `2535.5` | **40 arc minutes**   |             |
+**2**  | _39135.8_  | `1267.8` | **20 arc minutes**   |             |
+**3**  | _19567.9_  | `633.9`  | **10 arc minutes**   |             |
+**4**  | _9783.9_   | `316.9`  | **5 arc minutes**    |             |
+**5**  | _4892.0_   | `158.5`  | **2.5 arc minutes**  |             |
 **6**  | _2446.0_   | `79.2`   | **1 arc minutes**    | `ETOPO1`    | 2.5 km
 **7**  | _1223.0_   | `39.6`   | **30 arc seconds**   | `GMTED2010` | 1km  (not used)
 **8**  | _611.5_    | `19.8`   | **15  arc seconds**  | `GMTED2010` | 500m (not used)
 **9**  | _305.7_    | `9.9`    | **7.5  arc seconds** | `GMTED2010` | 250m
-**10** | _152.9_    | `5.0`    | **5 arc seconds**    |             | 
+**10** | _152.9_    | `5.0`    | **5 arc seconds**    |             |
 **11** | _76.4_     | `2.5`    | **3 arc seconds**    | `SRTM`      | 90m (not used)
 **12** | _38.2_     | `1.2`    | **1 arc seconds**    | `SRTM`      | 30m
-**13** | _19.1_     | `0.6`    | **2/3 arc seconds**  |             | 
+**13** | _19.1_     | `0.6`    | **2/3 arc seconds**  |             |
 **14** | _9.6_      | `0.3`    | **1/3 arc seconds**  | `3DEP`      | 10m
-**15** | _4.8_      | `0.2`    | **1/5 arc seconds**  |             | 
+**15** | _4.8_      | `0.2`    | **1/5 arc seconds**  |             |
 **16** | _2.4_      | `0.1`    | **1/9 arc seconds**  | `3DEP`      | 3m
 
 ## Known issues

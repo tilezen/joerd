@@ -1,8 +1,8 @@
-# Types of Elevation Tiles
+# Types of Terrain Tiles
 
 ![image](images/mapzen-vector-tile-docs-all-layers.png)
 
-The [Mapzen elevation tiles](https://mapzen.com/projects/vector-tiles) provides worldwide basemap coverage sourced from [SRTM](www.openstreetmap.org) and other open data projects.
+The [Mapzen terrain tiles](https://mapzen.com/projects/joerd) provides worldwide basemap coverage sourced from [SRTM](www.openstreetmap.org) and other open data projects.
 
 The following formats are available, full details below:
 
@@ -62,7 +62,7 @@ Allow for the larger tile size by referring to the tile coordinate of {z-1} pare
 
 ## Skadi
 
-**Skadi** format tiles are raw elevation data in unprojected latlng (EPSG:4326) 1°x1° tiles, used by the Mapzen Elevation Service. Essentially they are the SRTMGL1 format tiles but with global coverage. See (GDAL [docs](http://www.gdal.org/frmt_various.html#SRTMHGT)).
+**Skadi** format tiles are raw elevation data in unprojected latlng (EPSG:4326) 1°x1° tiles, used by the Mapzen Terrain Service. Essentially they are the SRTMGL1 format tiles but with global coverage. See (GDAL [docs](http://www.gdal.org/frmt_various.html#SRTMHGT)).
 
 See the [SRTM](https://lpdaac.usgs.gov/sites/default/files/public/measures/docs/NASA_SRTM_V3.pdf) guide for exact format specifications, which are summarized below:
 
