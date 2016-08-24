@@ -87,7 +87,7 @@ Where `<command>` is one of the commands above (currently only `process`). The c
 Caveats
 -------
 
-When generating "skadi" format HGT files, it's possible to run into [this bug](https://trac.osgeo.org/gdal/ticket/3305). The work-around given in the issue (export `GDAL_SKIP=JPEG`) appears to work.
+When using SRTM source HGT files, it's possible to run into [this bug](https://trac.osgeo.org/gdal/ticket/3305). The work-around given in the issue (export `GDAL_SKIP=JPEG`) appears to work.
 
 License
 -------
