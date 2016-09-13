@@ -4,12 +4,6 @@ Mapzen Terrain Tiles are powered by several major open data sets and we owe a tr
 
 **Attribution is required** for some of our data providers. See the [Attribution](attribution.md) document for more information.
 
-* [List of sources](#list-of-sources)
-* [What is the ground resolution?](#what-is-the-ground-resolution)
-* [What is sourced at what zooms?](#what-is-sourced-at-what-zooms)
-* [Sources native resolution](#sources-native-resolution)
-* [Known issues](#known-issues)
-
 ## List of sources
 
 The underlying data sources are a mix of:
@@ -49,7 +43,7 @@ zoom   | _0°_       | _45°_      | _60°_
 **14** | `9.6`      | `6.8`      | `4.8`
 **15** | `4.8`      | `3.4`      | `2.4`
 
-**Note:** Esri has good [documentation](https://blogs.esri.com/esri/arcgis/2009/03/19/how-can-you-tell-what-map-scales-are-shown-for-online-maps/) converting web map zoom integers to conventional map scales.
+**Note:** Esri has  [documentation](https://blogs.esri.com/esri/arcgis/2009/03/19/how-can-you-tell-what-map-scales-are-shown-for-online-maps/) about converting web map zoom integers to conventional map scales.
 
 ## What is sourced at what zooms?
 
@@ -117,7 +111,3 @@ zoom   | meters at equator     | arc seconds     | nominal arc degrees minutes s
 ## Known issues
 
 Many other classical DEM-related issues occur in these datasets. It is not uncommon to see large variations in elevation in areas with large buildings and other such structures. We are considering how to best integrate additional `NED/3DEP` and `NRCAN` sources, and are always looking for better datasets. If you find any data issues or can suggest any supplemental open datasets, please let us know by filing an issue in [tilezen/joerd](https://github.com/tilezen/joerd/issues/new).
-
-===
-
-Please notify us if you believe that an open data project has not been properly noted.
