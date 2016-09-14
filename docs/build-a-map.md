@@ -22,7 +22,7 @@ Download tiles into a named local directory:
 
 `python collect.py --bounds 37.8434, -122.3193, 37.7517, -122.0927 --zoom 12 directory/path/`
 
-If the output filename ends in `.tif`, `.tiff`, or `.geotiff`, **gdal_merge.py** will be called to merge all downloaded tiles into a single image.
+If the output filename ends in `.tif`, `.tiff`, or `.geotiff`, **gdal_merge.py** will be called (required [GDAL](http://www.gdal.org)) to merge all downloaded tiles into a single image (and removes the intermediate files).
 
 `python collect.py --bounds 37.8434, -122.3193, 37.7517, -122.0927 --zoom 12  directory/path/merged_filename.tif`
 
