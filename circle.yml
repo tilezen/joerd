@@ -1,0 +1,11 @@
+machine:
+  python:
+    version: 2.7.10
+
+dependencies:
+  override:
+    - pip install mock==2.0.0
+
+test:
+  override:
+    - docs/examples/collect.py --testing .
