@@ -62,7 +62,7 @@ To decode quantized height value:
 
 ## Skadi
 
-**Skadi** format tiles are raw elevation data in unprojected latlng (EPSG:4326) 1°x1° tiles, used by the Mapzen Terrain Service. Essentially they are the SRTMGL1 format tiles but with global coverage. See [GDAL documentation](http://www.gdal.org/frmt_various.html#SRTMHGT)) for more information.
+**Skadi** format tiles are raw elevation data in unprojected latlng (EPSG:4326) 1°x1° tiles, used by the Mapzen Elevation lookup service. Essentially they are the SRTMGL1 format tiles but with global coverage and compressed using gzip. See [GDAL documentation](http://www.gdal.org/frmt_various.html#SRTMHGT)) for more information.
 
 See the [SRTM](https://lpdaac.usgs.gov/sites/default/files/public/measures/docs/NASA_SRTM_V3.pdf) guide for exact format specifications, which are summarized below:
 

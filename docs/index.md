@@ -1,4 +1,4 @@
-The [Mapzen terrain tiles](https://mapzen.com/projects/joerd) provide basemap terrain coverage of the world in a raster tile format.
+The [Mapzen terrain tiles](https://mapzen.com/projects/joerd) provide basemap elevation coverage of the world in a raster tile format.
 
 ![Contents of an example terrain tile](images/elevation-tile-example.png)
 
