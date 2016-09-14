@@ -1,4 +1,4 @@
-Joerd, can be used to download, merge and generate tiles from digital elevation data. These tiles can then be used in a variety of ways; for map display in Walkabout, in [Valhalla's](https://github.com/valhalla) [Skadi](https://github.com/valhalla/skadi) for elevation influenced routing. In keeping with the Norse mythological theme used by Valhalla, the jotunn/goddess [Jörð](https://en.wikipedia.org/wiki/J%C3%B6r%C3%B0) was chosen as she is the personification of the Earth.
+ Joerd, can be used to download, merge and generate tiles from digital elevation data. These tiles can then be used in a variety of ways; for map display in Walkabout, in [Valhalla's](https://github.com/valhalla) [Skadi](https://github.com/valhalla/skadi) for elevation influenced routing. In keeping with the Norse mythological theme used by Valhalla, the jotunn/goddess [Jörð](https://en.wikipedia.org/wiki/J%C3%B6r%C3%B0) was chosen as she is the personification of the Earth.
 
 How do I pronounce it?
 ----------------------
@@ -14,6 +14,8 @@ Which is close to "y-earthe". Many thanks to [@baldur](https://github.com/baldur
 
 Building
 --------
+
+Build status: [![CircleCI](https://circleci.com/gh/tilezen/joerd.svg?style=svg)](https://circleci.com/gh/tilezen/joerd)
 
 Joerd is a Python command line tool using `setuptools`. To install on a Debian or Ubuntu system, you need to install its dependencies:
 
