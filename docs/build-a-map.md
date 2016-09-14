@@ -14,15 +14,9 @@ You can use Mapzen’s terrain tiles with a variety of browser-based rendering s
 
 GDAL allows Desktop analytics, hill shading, and contouring.
 
-_TODO: script needs to be writen to download tiles in a given area and hillshade them, show result in QGIS_
+The [collect.py](https://github.com/tilezen/joerd/blob/master/docs/examples/collect.py) script in the examples downloads GeoTIFF tiles in a bounding box and optionally merges them into one big file.
 
-_See:_
-
-- http://jgomezdans.github.io/stitching-together-modis-data.html
-- https://gist.github.com/jgomezdans/3152468
-- http://www.mikejcorey.com/wordpress/2011/02/05/tutorial-create-beautiful-hillshade-maps-from-digital-elevation-models-with-gdal-and-mapnik/
-- https://www.mapbox.com/tilemill/docs/guides/terrain-data/#creating-hillshades
-- http://www.gdal.org/gdal_merge.html
+Once you have that big file, you could run [gdaldem hillshade](http://www.gdal.org/gdaldem.html#gdaldem_hillshade) to generate a basic hillshade. Mapbox has a great [tutorial](https://www.mapbox.com/tilemill/docs/guides/terrain-data/#creating-hillshades) with full set of options.
 
 ## QGIS
 
