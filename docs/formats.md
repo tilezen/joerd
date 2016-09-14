@@ -7,13 +7,21 @@ The [Mapzen terrain tiles](https://mapzen.com/projects/joerd) provides worldwide
 The following formats are available, full details below:
 
 * `terrarium` with extention `png` in web Mercator projection, 256x256 tiles
+* `terrarium` with extention `tif` (GeoTIFF) in web Mercator projection, 512x512 tiles
 * `normal` with extention `png` in web Mercator projection, 256x256 tiles
-* `geotiff` with extention `tif` in web Mercator projection, 512x512 tiles
 * `skadi` with extention `hgt` in unprojected latlng, 1°x1° tiles
 
 Need help displaying raster tiles in a map? We have several [examples](display-tiles.md) using Mapzen raster tiles to style in your favorite graphics library including Tangram.
 
-## GeoTIFF
+## Terrarium PNG
+
+**Terrarium** format _PNG_ tiles contain raw elevation data in meters, in Mercator projection (EPSG:3857). All values are positive with a 32,768 offset, split into the red, green, and blue channels, with 16 bits of integer and 8 bits of fraction.
+
+To decode:
+
+  `(red * 256 + green + blue / 256) - 32768`
+
+## Terrarium GeoTIFF
 
 **GeoTIFF** format tiles are raw elevation data suitable for analytical use and are optimized to reduce transfer costs in 512x512 tile sizes but with internal 256x256 image pyramiding, in Mercator projection (EPSG:3857). See [GDAL documentation](http://www.gdal.org/frmt_gtiff.html) for more information.
 
@@ -67,11 +75,3 @@ See the [SRTM](https://lpdaac.usgs.gov/sites/default/files/public/measures/docs/
 * Byte order is [Motorola ("big-endian") standard](https://en.wikipedia.org/wiki/Endianness) with the most significant byte first. Since they are signed integers elevations can range from -32767 to 32767 meters, encompassing the range of elevation to be found on the Earth.
 
 * These data also contain occasional voids from a number of causes such as shadowing, phase unwrapping anomalies, or other radar-specific causes. Voids are flagged with the value -32768.
-
-## Terrarium
-
-**Terrarium** format _PNG_ tiles contain raw elevation data in meters, in Mercator projection (EPSG:3857). All values are positive with a 32,768 offset, split into the red, green, and blue channels, with 16 bits of integer and 8 bits of fraction.
-
-To decode:
-
-  `(red * 256 + green + blue / 256) - 32768`

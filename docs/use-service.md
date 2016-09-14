@@ -19,20 +19,19 @@ Mapzen raster terrain tiles can be returned in the following formats:
 
 You can request tiles using Mapzen's global CDN:
 
-##### Terrarium
+##### Terrarium PNG
 
-  `https://tile.mapzen.com/mapzen/terrain/v1/normal/{z}/{x}/{y}.png?api_key=terrain-tiles-xxxxxxx`
+  `https://tile.mapzen.com/mapzen/terrain/v1/terrarium/{z}/{x}/{y}.png?api_key=terrain-tiles-xxxxxxx`
+
+##### Terrarium GeoTIFF
+
+  `https://tile.mapzen.com/mapzen/terrain/v1/terrarium/{z}/{x}/{y}.tif?api_key=terrain-tiles-xxxxxxx`
+
+  Note: GeoTIFF format tiles are 512x512 sized so request the parent tile’s coordinate. For instance, if you’re looking for a zoom 14 tile then request the parent tile at zoom 13.
 
 ##### Normal
 
   `https://tile.mapzen.com/mapzen/terrain/v1/normal/{z}/{x}/{y}.png?api_key=terrain-tiles-xxxxxxx`
-
-##### GeoTIFF
-
-  `https://tile.mapzen.com/mapzen/terrain/v1/geotiff/{z}/{x}/{y}.tif?api_key=terrain-tiles-xxxxxxx`
-
-  Note: GeoTIFF format tiles are 512x512 sized so request the parent tile’s coordinate. For instance, if you’re looking for a zoom 14 tile then request the parent tile at zoom 13.
-
 
 ##### Skadi
 
@@ -43,8 +42,8 @@ You can request tiles using Mapzen's global CDN:
 If you’re building in Amazon AWS we recommend using machines in the `us-east` region (the same region as the S3 bucket) and use the following endpoints for increased performance:
 
 * `https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png`
+* `https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.tif`
 * `https://s3.amazonaws.com/elevation-tiles-prod/normal/{z}/{x}/{y}.png`
-* `https://s3.amazonaws.com/elevation-tiles-prod/geotiff/{z}/{x}/{y}.tif`
 * `https://s3.amazonaws.com/elevation-tiles-prod/skadi/{N|S}{y}/{N|S}{y}{E|W}{x}.hgt.gz`
 
 NOTE: The S3 tiles are meant for efficent networking with EC2 resources only. The Amazon S3 endpoints are not cached using Cloudfront, but you could put your own Cloudfront or other CDN in front of them.
