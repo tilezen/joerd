@@ -101,7 +101,3 @@ DOC/NOAA/NESDIS/NCEI > National Centers for Environmental Information, NESDIS, N
 ```
 
 More details can be found on the ETOPO1 [about](https://www.ngdc.noaa.gov/mgg/global/global.html) page and [data sources](https://www.ngdc.noaa.gov/mgg/global/etopo1sources.html) page, and [description](https://www.ngdc.noaa.gov/docucomp/page?xml=NOAA/NESDIS/NGDC/MGG/DEM/iso/xml/316.xml&view=getDataView&header=none) page and [disclaimer](https://www.ngdc.noaa.gov/ngdcinfo/privacy.html#disclaimer) page.
-
-===
-
-See something funky? Please notify us if you believe that an open data project has not been properly noted!
