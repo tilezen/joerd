@@ -14,9 +14,25 @@ You can use Mapzen’s terrain tiles with a variety of browser-based rendering s
 
 GDAL allows Desktop analytics, hill shading, and contouring.
 
-The [collect.py](https://github.com/tilezen/joerd/blob/master/docs/examples/collect.py) script in the examples downloads GeoTIFF tiles in a bounding box and optionally merges them into one big file.
+The [collect.py](https://github.com/tilezen/joerd/blob/master/docs/examples/collect.py) script in the examples downloads and collects GeoTIFF tiles within a bounding box and map zoom into a local directory and optionally merges them into one big file.
+
+### GDAL examples:
+
+Download tiles into a named local directory:
+
+`python collect.py --bounds 37.8434, -122.3193, 37.7517, -122.0927 --zoom 12 directory/path/`
+
+If the output filename ends in `.tif`, `.tiff`, or `.geotiff`, **gdal_merge.py** will be called to merge all downloaded tiles into a single image.
+
+`python collect.py --bounds 37.8434, -122.3193, 37.7517, -122.0927 --zoom 12  directory/path/merged_filename.tif`
 
 Once you have that big file, you could run [gdaldem hillshade](http://www.gdal.org/gdaldem.html#gdaldem_hillshade) to generate a basic hillshade. Mapbox has a great [tutorial](https://www.mapbox.com/tilemill/docs/guides/terrain-data/#creating-hillshades) with full set of options.
 
 ## QGIS
 
+Visualize the merged GeoTIFF image (see examples above) and perform analysis functions including generating contour lines and hillshades in QGIS, the free and open source GIS app.
+
+### QGIS resources:
+
+- [QGIS Docs: Terrain analysis](https://docs.qgis.org/2.2/en/docs/training_manual/rasters/terrain_analysis.html)
+- [QGIS Tutorial: Working with terrain](http://www.qgistutorials.com/en/docs/working_with_terrain.html)
