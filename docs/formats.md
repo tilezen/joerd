@@ -58,7 +58,9 @@ To decode quantized height value:
 
 See the [SRTM](https://lpdaac.usgs.gov/sites/default/files/public/measures/docs/NASA_SRTM_V3.pdf) guide for exact format specifications, which are summarized below:
 
-* The DEM is provided as 16-bit signed integer data in a simple binary raster. There are no header or trailer bytes embedded in the file. The data are stored in row major order (all the data for row 1, followed by all the data for row 2, etc.).
+* The DEM is provided as 16-bit signed integer data in a simple binary raster. There are no header or trailer bytes embedded in the file. The data are stored in row major order (all the data for row 1, followed by all the data for row 2, and so on).
+
+* Tiles are compressed in a gzip format and have a '.hgt.gz' type extension.
 
 * All elevations are in meters referenced to the WGS84/EGM96 geoid as documented by the  [National Geospatial Agency](http://earth-info.nga.mil/GandG/wgs84/gravitymod/egm96/egm96.html).
 
