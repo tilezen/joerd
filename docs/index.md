@@ -6,4 +6,6 @@ Raster tiles are square-shaped grids of geographic data that contain contain eit
 
 Tiles are available for zooms 0 through 15 and are available in several spatial data formats including PNG and GeoTIFF. The tiles also can be in a raw elevation and processed normal value format that's optimized for mobile and web display, and desktop analytical use. Data is available in both web Mercator projected and raw latlng.
 
+If you are familiar with digital elevation models (DEMs) or digital terrain models (DTMs), this service is for you!
+
 With terrain tiles you have the power to customize the content and visual appearance of the map and perform analysis on the desktop.

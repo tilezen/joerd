@@ -1,6 +1,6 @@
 # Get started with Mapzen Terrain Tiles
 
-The [Mapzen terrain tiles](https://mapzen.com/projects/joerd) provide basemap terrain coverage of the world in a raster tile format. Tiles are available for zooms 0 through 15 and are available in several spatial data formats including PNG and GeoTIFF. The tiles also can be in a raw elevation and processed normal value format that's optimized for mobile and web display, and desktop analytical use. Data is available in both web Mercator projected and raw latlng.
+The [Mapzen terrain tiles](https://mapzen.com/projects/joerd) provide basemap elevation coverage of the world in a raster tile format. Tiles are available for zooms 0 through 15 and are available in several spatial data formats including PNG and GeoTIFF. The tiles also can be in a raw elevation and processed normal value format that's optimized for mobile and web display, and desktop analytical use. Data is available in both web Mercator projected and raw latlng. If you are familiar with digital elevation models (DEMs) or digital terrain models (DTMs), this service is for you.
 
 ## Get an API key
 
@@ -19,28 +19,24 @@ Mapzen raster terrain tiles can be returned in the following formats:
 
 You can request tiles using Mapzen's global CDN:
 
-- **Terrarium**
+##### Terrarium
 
-  `https://tile.mapzen.com/terrarium/v1/{z}/{x}/{y}.png?api_key=terrain-tiles-xxxxxxx`
+  `https://tile.mapzen.com/mapzen/terrain/v1/normal/{z}/{x}/{y}.png?api_key=terrain-tiles-xxxxxxx`
 
-- **Normal**
+##### Normal
 
-  `
-https://tile.mapzen.com/normal/v1/{z}/{x}/{y}.png?api_key=terrain-tiles-xxxxxxx`
+  `https://tile.mapzen.com/mapzen/terrain/v1/normal/{z}/{x}/{y}.png?api_key=terrain-tiles-xxxxxxx`
 
-- **GeoTIFF**
+##### GeoTIFF
 
-  `
-https://tile.mapzen.com/geotiff/v1/{z}/{x}/{y}.tif?api_key=terrain-tiles-xxxxxxx`
+  `https://tile.mapzen.com/mapzen/terrain/v1/geotiff/{z}/{x}/{y}.tif?api_key=terrain-tiles-xxxxxxx`
 
   Note: GeoTIFF format tiles are 512x512 sized so request the parent tile’s coordinate. For instance, if you’re looking for a zoom 14 tile then request the parent tile at zoom 13.
 
 
-- **Skadi**
+##### Skadi
 
-  `
-https://tile.mapzen.com/skadi/v1/{N|S}{y}/{N|S}{y}{E|W}{x}.hgt.gz?api_key=terrain-tiles-xxxxxxx`
-
+  `https://tile.mapzen.com/mapzen/terrain/v1/skadi/{N|S}{y}/{N|S}{y}{E|W}{x}.hgt.gz?api_key=terrain-tiles-xxxxxxx`
 
 #### Additional Amazon S3 Endpoints
 
