@@ -108,6 +108,14 @@ zoom   | meters at equator     | arc seconds     | nominal arc degrees minutes s
 **15** | _4.8_      | `0.2`    | **1/5 arc seconds**  |             |
 **16** | _2.4_      | `0.1`    | **1/9 arc seconds**  | `3DEP`      | 3m
 
+## Data updates
+
+Terrain tiles were built during 2016Q2 and 2016Q3 based on available sources at that time. Regular updates are not planned.
+
+Future updates will be on an as-needed basis for smaller regions to incorporate additional `3DEP` coverage in the United States and additional country specific data sources globally (such as `NRCAN` in Canada).
+
+We are always looking for better datasets. If you find a data issue or can suggest an open terrain datasets, please let us know by filing an issue in [tilezen/joerd](https://github.com/tilezen/joerd/issues/new).
+
 ## Known issues
 
-Many other classical DEM-related issues occur in these datasets. It is not uncommon to see large variations in elevation in areas with large buildings and other such structures. We are considering how to best integrate additional `NED/3DEP` and `NRCAN` sources, and are always looking for better datasets. If you find any data issues or can suggest any supplemental open datasets, please let us know by filing an issue in [tilezen/joerd](https://github.com/tilezen/joerd/issues/new).
+Many classical DEM and LIDAR related issues occur in terrain tiles. It is not uncommon to see large variations in elevation in areas with large buildings and other such structures. Resampling and merging artifacts are also observed along coastlines (where different datasets are seamed together).
