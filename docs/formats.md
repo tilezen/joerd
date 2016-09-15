@@ -1,7 +1,5 @@
 # Types of Terrain Tiles
 
-![image](images/mapzen-vector-tile-docs-all-layers.png)
-
 The [Mapzen terrain tiles](https://mapzen.com/projects/joerd) provides worldwide basemap coverage sourced from [SRTM](www.openstreetmap.org) and other open data projects.
 
 The following formats are available, full details below:
