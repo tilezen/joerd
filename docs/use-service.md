@@ -9,7 +9,7 @@ To use the Mapzen Terrain Tiles service, you must first get a developer API key.
 1. Go to https://mapzen.com/developers.
 2. Sign in with your GitHub account. If you have not done this before, you need to agree to the terms first.
 3. Create a new key for Mapzen Search, and optionally, give it a name so you can remember the purpose of the project.
-4. Copy the key into the terrain URL where `terrain-tiles-xxxxxxx` represents your key.
+4. Copy the key into the terrain URL where `mapzen-xxxxxxx` represents your key.
 
 ## Available tile formats
 
@@ -21,21 +21,21 @@ You can request tiles using Mapzen's global CDN:
 
 ##### Terrarium PNG
 
-  `https://tile.mapzen.com/mapzen/terrain/v1/terrarium/{z}/{x}/{y}.png?api_key=terrain-tiles-xxxxxxx`
+  `https://tile.mapzen.com/mapzen/terrain/v1/terrarium/{z}/{x}/{y}.png?api_key=mapzen-xxxxxxx`
 
 ##### Terrarium GeoTIFF
 
-  `https://tile.mapzen.com/mapzen/terrain/v1/terrarium/{z}/{x}/{y}.tif?api_key=terrain-tiles-xxxxxxx`
+  `https://tile.mapzen.com/mapzen/terrain/v1/terrarium/{z}/{x}/{y}.tif?api_key=mapzen-xxxxxxx`
 
   Note: GeoTIFF format tiles are 512x512 sized so request the parent tile’s coordinate. For instance, if you’re looking for a zoom 14 tile then request the parent tile at zoom 13.
 
 ##### Normal
 
-  `https://tile.mapzen.com/mapzen/terrain/v1/normal/{z}/{x}/{y}.png?api_key=terrain-tiles-xxxxxxx`
+  `https://tile.mapzen.com/mapzen/terrain/v1/normal/{z}/{x}/{y}.png?api_key=mapzen-xxxxxxx`
 
 ##### Skadi
 
-  `https://tile.mapzen.com/mapzen/terrain/v1/skadi/{N|S}{y}/{N|S}{y}{E|W}{x}.hgt.gz?api_key=terrain-tiles-xxxxxxx`
+  `https://tile.mapzen.com/mapzen/terrain/v1/skadi/{N|S}{y}/{N|S}{y}{E|W}{x}.hgt.gz?api_key=mapzen-xxxxxxx`
 
 #### Additional Amazon S3 Endpoints
 
