@@ -1,6 +1,6 @@
 The [Mapzen terrain tiles](https://mapzen.com/projects/joerd) provide basemap elevation coverage of the world in a raster tile format.
 
-![Contents of an example terrain tile](images/elevation-tile-example.png)
+![Contents of an example terrain tile](images/elevation-tile-example.jpg)
 
 Raster tiles are square-shaped grids of geographic data that contain contain either elevation data in a raw or processed format.
 
