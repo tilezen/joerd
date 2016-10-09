@@ -8,7 +8,7 @@ You can use Mapzen’s terrain tiles with a variety of browser-based rendering s
 
 * **Walkabout demo:** [preview](http://tangrams.github.io/walkabout-style-more-labels) | [source code](http://github.com/tangrams/walkabout-style-more-labels)
 
-![Walkabout Mapzen House Style](images/walkabout-example.png)
+![Walkabout Mapzen House Style](images/walkabout-example.jpg)
 
 ## Back to the Desktop
 
@@ -23,7 +23,7 @@ Download tiles into a named local directory:
 
 ### GDAL
 
-When [GDAL](http://www.gdal.org) is installed, the collect script can optionally merge downloaded tiles into one large mosaic. 
+When [GDAL](http://www.gdal.org) is installed, the collect script can optionally merge downloaded tiles into one large mosaic.
 
 To trigger this behavior specify an output filename ending in `.tif`, `.tiff`, or `.geotiff` and **gdal_merge.py** will be called to merge all downloaded tiles into a single image (and removes the intermediate files):
 
