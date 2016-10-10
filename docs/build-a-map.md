@@ -10,7 +10,7 @@ You can use Mapzen’s terrain tiles with a variety of browser-based rendering s
 
 ![Walkabout Mapzen House Style](images/walkabout-example.jpg)
 
-## Back to the Desktop
+## Desktop
 
 The [collect.py](https://github.com/tilezen/joerd/blob/master/docs/examples/collect.py) script in the examples downloads and collects GeoTIFF tiles within a bounding box and map zoom into a local directory and optionally merges them into one big file.
 
