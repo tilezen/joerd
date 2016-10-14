@@ -1,6 +1,6 @@
 # Types of Terrain Tiles
 
-The [Mapzen terrain tiles](https://mapzen.com/projects/joerd) provides worldwide basemap coverage sourced from [SRTM](www.openstreetmap.org) and other open data projects with several different data formats, with varying levels of processing.
+The Mapzen terrain tiles provides worldwide basemap coverage sourced from [SRTM](www.openstreetmap.org) and other open data projects with several different data formats, with varying levels of processing.
 
 The following formats are available, full details below:
 
