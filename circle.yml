@@ -9,3 +9,10 @@ dependencies:
 test:
   override:
     - docs/examples/collect.py --testing .
+
+deployment:
+  production:
+    branch: "migurski/tickle-docs-rebuild"
+    commands:
+      - pip install 'Circle-Tickler == 1.0.1'
+      - tickle-circle mapzen mapzen-docs-generator master $CIRCLE_TOKEN
