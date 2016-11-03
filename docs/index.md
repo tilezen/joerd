@@ -2,9 +2,9 @@ The Mapzen terrain tiles provide basemap elevation coverage of the world in a ra
 
 ![Contents of an example terrain tile](images/mapzen-terrain-tile-example.jpg)
 
-Raster tiles are square-shaped grids of geographic data that contain contain either elevation data in a raw or processed format.
+Our raster tiles are square-shaped grids of geographic data that contain elevation data in a raw or processed format.
 
-Tiles are available for zooms 0 through 15 and are available in several spatial data formats including PNG and GeoTIFF. The tiles also can be in a raw elevation and processed normal value format that's optimized for mobile and web display, and desktop analytical use. Data is available in both projected Web Mercator (EPSG:3857) and raw latlng formats.
+Tiles are available for zooms 0 through 15 and are available in several spatial data formats including processed normal PNGs, which are optimized for mobile and web display, and raw elevation GeoTIFFs for desktop analytical use. Data is available in both projected Web Mercator (EPSG:3857) and raw latlng formats.
 
 If you are familiar with [digital elevation models](https://en.wikipedia.org/wiki/Digital_elevation_model) (DEMs) or [digital terrain models](http://tx.technion.ac.il/~dalyot/docs/Intro-DTM.pdf) (DTMs), this service is for you!
 
