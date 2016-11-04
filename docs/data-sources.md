@@ -20,7 +20,7 @@ Ground resolution per tile pixel varies per zoom level, the given pixel cell's l
 
 This formula generates the following table:
 
-`ground_resultion = (cos(latitude * pi/180) * 2 * pi * 6378137 meters) / (256 * 2^zoom_level pixels)`
+`ground_resolution = (cos(latitude * pi/180) * 2 * pi * 6378137 meters) / (256 * 2^zoom_level pixels)`
 
 Ground resolution per **zoom** in `meters` at a given _latitude_:
 
@@ -49,7 +49,7 @@ zoom   | _0°_       | _45°_      | _60°_
 
 Generally speaking, **GMTED** is used at low-zooms, and **ETOPO1** is used to show ocean bathymetry at all zooms (even bathymetry oversampled at zoom 15), and **[SRTM](http://www2.jpl.nasa.gov/srtm/)** is relied on in mid- and high-zooms on land. In the United States, data from **USGS** supplements the SRTM land data to provide greater detail at 10 meters and in some areas at up to 3 meters.
 
-It should be noted that both `SRTM` and `GMTED` fill oceans and other bodies of water with a value of zero to indicate mean sea level; in these areas, `ETOPO1` provides bathymetry (as well as in regions which are not coverged by `SRTM` and `GMTED`).
+It should be noted that both `SRTM` and `GMTED` fill oceans and other bodies of water with a value of zero to indicate mean sea level; in these areas, `ETOPO1` provides bathymetry (as well as in regions which are not covered by `SRTM` and `GMTED`).
 
 **Data sources per zoom:**
 
@@ -76,7 +76,7 @@ zoom   | ocean    | land
 
 You might be wondering why we source from different data sets at different zooms. Besides bandwidth reasons, it's helpful to know the native resolution of each data set which is expressed as a nominal arc resolution which maps roughly to a web map zoom for "best displayed at".
 
-In more practicle terms, this results in some datasets being **"oversampled"** for a given zoom and map location.
+In more practical terms, this results in some datasets being **"oversampled"** for a given zoom and map location.
 
 * In the water, most bathymetry values at zoom 15 for a pixel that has a ground resolution of 5 meter will actually be showing an oversampled zoom 6 `ETOPO1` value (nominally 2.5 km).
 
@@ -84,7 +84,7 @@ In more practicle terms, this results in some datasets being **"oversampled"** f
 
 This formula generates the following table:
 
-`ground_resultion = (cos(latitude * pi/180) * 2 * pi * 6378137 meters) / (256 * 2^zoom_level pixels) / 30.87 meters per arc second`
+`ground_resolution = (cos(latitude * pi/180) * 2 * pi * 6378137 meters) / (256 * 2^zoom_level pixels) / 30.87 meters per arc second`
 
 Arc resolution per **zoom** and data sources, per pixel:
 
