@@ -4,10 +4,10 @@ The Mapzen terrain tiles provides worldwide basemap coverage sourced from [SRTM]
 
 The following formats are available, full details below:
 
-* `terrarium` with extention `png` in Web Mercator projection, 256x256 tiles
-* `normal` with extention `png` in Web Mercator projection, 256x256 tiles
-* `geotiff` with extention `tif` in Web Mercator projection, 512x512 tiles
-* `skadi` with extention `hgt` in unprojected latlng, 1°x1° tiles
+* `terrarium` with extension `png` in Web Mercator projection, 256x256 tiles
+* `normal` with extension `png` in Web Mercator projection, 256x256 tiles
+* `geotiff` with extension `tif` in Web Mercator projection, 512x512 tiles
+* `skadi` with extension `hgt` in unprojected latlng, 1°x1° tiles
 
 Need help displaying raster tiles in a map? We have several [examples](display-tiles.md) using Mapzen raster tiles to style in your favorite graphics library including Tangram.
 
