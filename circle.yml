@@ -9,3 +9,15 @@ dependencies:
 test:
   override:
     - docs/examples/collect.py --testing .
+
+deployment:
+  prerelease:
+    branch: "master"
+    commands:
+      - pip install 'Circle-Tickler == 1.0.1'
+      - tickle-circle mapzen mapzen-docs-generator tilezen-buildbot/tiles-prerelease-docs $CIRCLE_TOKEN
+  release:
+    tag: /.+/
+    commands:
+      - pip install 'Circle-Tickler == 1.0.1'
+      - tickle-circle mapzen mapzen-docs-generator master $CIRCLE_TOKEN
