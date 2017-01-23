@@ -8,7 +8,7 @@ from os.path import join, splitext
 import tempfile, shutil, urllib, io, sys, subprocess
 import unittest
 
-tile_url = 'https://terrain-preview.mapzen.com/geotiff/{z}/{x}/{y}.tif'
+tile_url = 'https://tile.mapzen.com/mapzen/terrain/v1/geotiff/{z}/{x}/{y}.tif'
 
 def mercator(lat, lon, zoom):
     ''' Convert latitude, longitude to z/x/y tile coordinate at given zoom.
@@ -115,9 +115,9 @@ class TestCollect (unittest.TestCase):
             self.assertEqual(len(check_call.mock_calls), 0)
         
             self.assertEqual(urlopen.mock_calls[::3], [
-                mock.call('https://terrain-preview.mapzen.com/geotiff/12/656/1582.tif'),
-                mock.call('https://terrain-preview.mapzen.com/geotiff/12/657/1582.tif'),
-                mock.call('https://terrain-preview.mapzen.com/geotiff/12/658/1582.tif')
+                mock.call('https://tile.mapzen.com/mapzen/terrain/v1/geotiff/12/656/1582.tif'),
+                mock.call('https://tile.mapzen.com/mapzen/terrain/v1/geotiff/12/657/1582.tif'),
+                mock.call('https://tile.mapzen.com/mapzen/terrain/v1/geotiff/12/658/1582.tif')
                 ])
         
             move.assert_called_once_with('/tmp', '/tmp/output')
@@ -143,9 +143,9 @@ class TestCollect (unittest.TestCase):
             rmtree.assert_called_once_with(tempfile.mkdtemp.return_value)
         
             self.assertEqual(urlopen.mock_calls[::3], [
-                mock.call('https://terrain-preview.mapzen.com/geotiff/12/656/1582.tif'),
-                mock.call('https://terrain-preview.mapzen.com/geotiff/12/657/1582.tif'),
-                mock.call('https://terrain-preview.mapzen.com/geotiff/12/658/1582.tif')
+                mock.call('https://tile.mapzen.com/mapzen/terrain/v1/geotiff/12/656/1582.tif'),
+                mock.call('https://tile.mapzen.com/mapzen/terrain/v1/geotiff/12/657/1582.tif'),
+                mock.call('https://tile.mapzen.com/mapzen/terrain/v1/geotiff/12/658/1582.tif')
                 ])
         
             check_call.assert_called_once_with(['gdal_merge.py', '-o', '/tmp/temp.tif', '/tmp/tile.tif', '/tmp/tile.tif', '/tmp/tile.tif'])
