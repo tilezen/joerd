@@ -16,7 +16,7 @@ deployment:
     commands:
       - pip install 'Circle-Tickler == 1.0.1'
       # remove the first run once new repo is verified
-      - tickle-circle mapzen mapzen-docs-generator master $CIRCLE_TOKEN || tickle-circle mapzen documentation master $CIRCLE_TOKEN  release:
+      - tickle-circle mapzen mapzen-docs-generator master $CIRCLE_TOKEN || tickle-circle mapzen documentation master $CIRCLE_TOKEN
   release:
     tag: /.+/
     commands:
