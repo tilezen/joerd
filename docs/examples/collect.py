@@ -113,7 +113,7 @@ class TestCollect (unittest.TestCase):
                 (12, 656, 1582),
                 (12, 657, 1582),
                 (12, 658, 1582),
-                ], False)
+                ], default_api_key, False)
 
             self.assertEqual(len(rmtree.mock_calls), 0)
             self.assertEqual(len(check_call.mock_calls), 0)
@@ -142,7 +142,7 @@ class TestCollect (unittest.TestCase):
                 (12, 656, 1582),
                 (12, 657, 1582),
                 (12, 658, 1582),
-                ], False)
+                ], default_api_key, False)
 
             rmtree.assert_called_once_with(tempfile.mkdtemp.return_value)
 
