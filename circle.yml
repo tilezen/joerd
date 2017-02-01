@@ -8,7 +8,7 @@ dependencies:
 
 test:
   override:
-    - docs/examples/collect.py --testing .
+    - docs/examples/collect.py --testing --mapzen_api_key mapzen-SPsSJJY .
 
 deployment:
   prerelease:
