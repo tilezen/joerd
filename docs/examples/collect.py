@@ -170,7 +170,7 @@ parser.add_argument('--bounds', metavar='DEG', type=float, nargs=4,
 parser.add_argument('--zoom', type=int, default=12,
                     help='Map zoom level given as integer. Defaults to 12.')
 
-parser.add_argument('--mapzen_api_key', default=default_api_key,
+parser.add_argument('--mapzen_api_key', default=None, required=True,
                     help='Mapzen API key required to use the terrain tile service. See: https://mapzen.com/documentation/overview/#developer-accounts-and-api-keys.')
 
 parser.add_argument('output_path', help='Output GeoTIFF filename or local directory name.')
