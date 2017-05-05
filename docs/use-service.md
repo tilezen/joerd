@@ -6,7 +6,11 @@ The Mapzen terrain tiles provide basemap elevation coverage of the world in a ra
 
 To start integrating Mapzen's hosted terrain tiles to your project you need a [developer API key](https://mapzen.com/documentation/overview/).
 
-Once you have your Mapzen API key you'll need include it with Terrain Tile requests as a [URL query string](https://en.wikipedia.org/wiki/Query_string) like `?api_key=your_mapzen_api_key`.
+Once you have your Mapzen API key you'll need include it with Terrain Tile requests as a [URL query string](https://en.wikipedia.org/wiki/Query_string) like:
+
+```
+?api_key=your_mapzen_api_key
+```
 
 ## Requesting tiles
 
