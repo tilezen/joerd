@@ -1,8 +1,12 @@
 # Attribution
 
-Attribution is required for using Mapzen's hosted terrain service as well as many of our data providers. Example language is provided below, but you are responsible for researching each project to follow their license terms. More details are available on the [Data Sources](data-sources.md) and the [Mapzen rights](https://mapzen.com/rights) pages.
+Attribution is required for many terrain tile data providers. Example language is provided below, but you are responsible for researching each project to follow their license terms. More details are available on the [Data Sources](data-sources.md) page at [Mapzen rights](https://mapzen.com/rights) for Mapzen's hosted service.
 
-***Required attribution for Mapzen's hosted service:***
+***Required attribution:***
+
+> U.S. Geological Survey, and U.S. National Oceanic and Atmospheric Administration
+
+***Required attribution when using Mapzen's hosted service:***
 
 > Mapzen, U.S. Geological Survey, and U.S. National Oceanic and Atmospheric Administration
 
