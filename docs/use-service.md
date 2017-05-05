@@ -4,7 +4,9 @@ The Mapzen terrain tiles provide basemap elevation coverage of the world in a ra
 
 ## Get an API key
 
-To start integrating terrain tiles to your project you need a [developer API key](https://mapzen.com/documentation/overview/).
+To start integrating Mapzen's hosted terrain tiles to your project you need a [developer API key](https://mapzen.com/documentation/overview/).
+
+Once you have your Mapzen API key you'll need include it with Terrain Tile requests as a [URL query string](https://en.wikipedia.org/wiki/Query_string) like `?api_key=your_mapzen_api_key`.
 
 ## Requesting tiles
 
@@ -12,23 +14,23 @@ You can request tiles using Mapzen's global CDN:
 
 ##### Terrarium
 
-  `https://tile.mapzen.com/mapzen/terrain/v1/terrarium/{z}/{x}/{y}.png`
+  `https://tile.mapzen.com/mapzen/terrain/v1/terrarium/{z}/{x}/{y}.png?api_key=your_mapzen_api_key`
 
 ##### Normal
 
-  `https://tile.mapzen.com/mapzen/terrain/v1/normal/{z}/{x}/{y}.png`
+  `https://tile.mapzen.com/mapzen/terrain/v1/normal/{z}/{x}/{y}.png?api_key=your_mapzen_api_key`
 
 ##### GeoTIFF
 
-  `https://tile.mapzen.com/mapzen/terrain/v1/geotiff/{z}/{x}/{y}.tif`
+  `https://tile.mapzen.com/mapzen/terrain/v1/geotiff/{z}/{x}/{y}.tif?api_key=your_mapzen_api_key`
 
   Note: GeoTIFF format tiles are 512x512 sized so request the parent tile’s coordinate. For instance, if you’re looking for a zoom 14 tile then request the parent tile at zoom 13.
 
 ##### Skadi
 
-  `https://tile.mapzen.com/mapzen/terrain/v1/skadi/{N|S}{y}/{N|S}{y}{E|W}{x}.hgt.gz`
+  `https://tile.mapzen.com/mapzen/terrain/v1/skadi/{N|S}{y}/{N|S}{y}{E|W}{x}.hgt.gz?api_key=your_mapzen_api_key`
   
-  Note: Skadi files are split into 1° by 1° grids. File names refer to the latitude and longitude of the lower left corner of the tile - e.g. N37W105 has its lower left corner at 37 degrees north latitude and 105 degrees west longitude. For example:  N37W105: `https://tile.mapzen.com/mapzen/terrain/v1/skadi/N37/N37W105.hgt.gz`.
+  Note: Skadi files are split into 1° by 1° grids. File names refer to the latitude and longitude of the lower left corner of the tile - e.g. N37W105 has its lower left corner at 37 degrees north latitude and 105 degrees west longitude. For example:  N37W105: `https://tile.mapzen.com/mapzen/terrain/v1/skadi/N37/N37W105.hgt.gz?api_key=your_mapzen_api_key`.
 
 #### Additional Amazon S3 Endpoints
 
@@ -39,7 +41,7 @@ If you’re building in Amazon AWS we recommend using machines in the `us-east` 
 * `https://s3.amazonaws.com/elevation-tiles-prod/geotiff/{z}/{x}/{y}.tif`
 * `https://s3.amazonaws.com/elevation-tiles-prod/skadi/{N|S}{y}/{N|S}{y}{E|W}{x}.hgt.gz`
 
-NOTE: The S3 tiles are meant for efficient networking with EC2 resources only. The Amazon S3 endpoints are not cached using Cloudfront, but you could put your own Cloudfront or other CDN in front of them (or use Mapzen's Terrain Tiles service).
+NOTE: The S3 tiles are meant for efficient networking with EC2 resources only. The Amazon S3 endpoints are not cached using Cloudfront, but you could put your own Cloudfront or other CDN in front of them (or use Mapzen's hosted Terrain Tiles service).
 
 ## Security
 
