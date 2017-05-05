@@ -1,6 +1,6 @@
 # Get started with Mapzen Terrain Tiles
 
-The Mapzen terrain tiles provide basemap elevation coverage of the world in a raster tile format. Tiles are available for zooms 0 through 15 and are available in several spatial data formats including PNG and GeoTIFF. The tiles also can be in a raw elevation and processed normal value format that's optimized for mobile and web display, and desktop analytical use. Data is available in both Web Mercator (EPSG:3857) projected and raw latlng. Learn more about the [various data formats](fileformats.md) offered.
+The Mapzen terrain tiles provide basemap elevation coverage of the world in a raster tile format. Tiles are available for zooms 0 through 15 and are available in several spatial data formats including PNG and GeoTIFF. The tiles also can be in a raw elevation and processed normal value format that's optimized for mobile and web display, and desktop analytical use. Data is available in both Web Mercator (EPSG:3857) projected and raw latlng. Learn more about the [various data formats](formats.md) offered.
 
 ## Get an API key
 
@@ -17,7 +17,7 @@ Once you have your Mapzen API key you'll need include it with Terrain Tile reque
 Request a single tile with this URL pattern to get started:
   		  
 ```
-https://tile.mapzen.com/mapzen/terrain/v1/{layers}/{z}/{x}/{y}.{format}?api_key={your_mapzen_api_key}
+https://tile.mapzen.com/mapzen/terrain/v1/{format}/{z}/{x}/{y}.{extension}?api_key={your_mapzen_api_key}
 ```
   		  
 The [OpenStreetMap Wiki](http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames) has more information on this url scheme.
