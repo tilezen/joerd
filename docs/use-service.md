@@ -34,7 +34,7 @@ http://tile.mapzen.com/mapzen/terrain/v1/normal/11/330/790.png?api_key=your_mapz
 https://tile.mapzen.com/mapzen/terrain/v1/terrarium/{z}/{x}/{y}.png?api_key={your_mapzen_api_key}
 ```
 
-Supported tile size variants:
+Supported optional tile size variants:
 
   `https://tile.mapzen.com/mapzen/terrain/v1/{256,512,260,516}/terrarium/{z}/{x}/{y}.png`
 
@@ -46,7 +46,7 @@ The 260 and 516 variants contain 2 pixels of buffering on each edge.
 https://tile.mapzen.com/mapzen/terrain/v1/normal/{z}/{x}/{y}.png?api_key={your_mapzen_api_key}
 ```
 
-Supported tile size variants:
+Supported optional tile size variants:
 
   `https://tile.mapzen.com/mapzen/terrain/v1/{256,512}/normal/{z}/{x}/{y}.png`
 
