@@ -9,7 +9,7 @@ The following formats are available, full details below:
 * `geotiff` with extension `tif` in Web Mercator projection, 512x512 tiles
 * `skadi` with extension `hgt` in unprojected latlng, 1°x1° tiles
 
-Need help displaying raster tiles in a map? We have several [examples](display-tiles.md) using Mapzen raster tiles to style in your favorite graphics library including Tangram.
+Need help displaying raster tiles in a map? We have several [examples](build-a-map.md) using Mapzen raster tiles to style in your favorite graphics library including Tangram.
 
 ## Terrarium
 
