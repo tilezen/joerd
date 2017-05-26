@@ -39,7 +39,7 @@ r = floor(v/256)
 > 137
 g = floor(v % 256)
 > 219
-b = floor(v % 256 % 1 * 256)
+b = floor((v - floor(v)) * 256)
 > 68
   
 > rgb(137, 219, 68)
