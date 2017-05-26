@@ -15,9 +15,44 @@ Need help displaying raster tiles in a map? We have several [examples](build-a-m
 
 **Terrarium** format _PNG_ tiles contain raw elevation data in meters, in Web Mercator projection (EPSG:3857). All values are positive with a 32,768 offset, split into the red, green, and blue channels, with 16 bits of integer and 8 bits of fraction.
 
+In other words, the red channel encodes the "256s" place, the green channel the "1s" place, and the blue channel the fractional component, which is 0 - 0.99609375 (255/256) in increments of 0.00390625 (1 / 256).
+
 To decode:
 
   `(red * 256 + green + blue / 256) - 32768`
+
+To encode, asuming a starting value of `v`:
+
+```
+v += 32768
+r = floor(v/256)
+g = floor(v % 256)
+b = floor((v - floor(v)) * 256)
+```
+
+For example, with a starting value of 2523.266:
+
+```
+v += 32768
+> 35291.266
+r = floor(v/256)
+> 137
+g = floor(v % 256)
+> 219
+b = floor((v - floor(v)) * 256)
+> 68
+  
+> rgb(137, 219, 68)
+```
+
+Decoded, this gives us:
+
+```
+(r * 256 + g + b / 256) - 32768
+> 2523.265625
+```
+
+The range of the elevation data (-11000 - 8900 meters) spans `rgb(85, 8, 0)` - `rgb(162, 198, 0)`, or `[0.33203125, 0.03125, 0] - [0.6328125, 0.7734375, 0]`.
 
 ## Normal
 
