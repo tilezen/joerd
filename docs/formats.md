@@ -27,7 +27,7 @@ To encode, asuming a starting value of `v`:
 v += 32768
 r = floor(v/256)
 g = floor(v % 256)
-b = floor(v % 256 % 1 * 256)
+b = floor((v - floor(v)) * 256)
 ```
 
 For example, with a starting value of 2523.266:
