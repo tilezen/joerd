@@ -1,8 +1,8 @@
-# Data Sources
+# Data sources
 
 Mapzen Terrain Tiles are powered by several major open data sets and we owe a tremendous debt of gratitude to the individuals and communities which produced them.
 
-**Attribution is required** for some of our data providers. See the [Attribution](attribution.md) document for more information.
+**Attribution is required** for some data providers. See the [Attribution](https://github.com/tilezen/joerd/blob/master/docs/attribution.md) document for more information.
 
 ## List of sources
 
