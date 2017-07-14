@@ -48,7 +48,9 @@ https://tile.mapzen.com/mapzen/terrain/v1/normal/{z}/{x}/{y}.png?api_key=your-ma
 
 Supported optional tile size variants:
 
-  `https://tile.mapzen.com/mapzen/terrain/v1/{256,512}/normal/{z}/{x}/{y}.png`
+  `https://tile.mapzen.com/mapzen/terrain/v1/{256,512,260,516}/normal/{z}/{x}/{y}.png`
+
+The 260 and 516 variants contain 2 pixels of buffering on each edge.
 
 ##### GeoTIFF
 
