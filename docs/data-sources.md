@@ -8,17 +8,17 @@ Mapzen Terrain Tiles are powered by several major open data sets and we owe a tr
 
 The underlying data sources are a mix of:
 
-- [CDEM](http://geogratis.gc.ca/api/en/nrcan-rncan/ess-sst/c40acfba-c722-4be1-862e-146b80be738e.html) (Canadian Digital Elevation Model) in Canada, with variable spatial resolution (from 20-400 meters) depending on the latitude.
-- [EUDEM](https://www.eea.europa.eu/data-and-maps/data/eu-dem#tab-original-data) in most of Europe at 30 meter resolution
-- [ArcticDEM](http://nga.maps.arcgis.com/apps/MapSeries/index.html?appid=cf2fba21df7540fb981f8836f2a97e25) strips of 5 meter mosaics across the majority of the land north of 60° latitude
-- [Kartverket](http://data.kartverket.no/download/content/digital-terrengmodell-10-m-utm-33)'s Digital Terrain Model, 10 meters over Norway
-- [data.gv.at](https://www.data.gv.at/katalog/dataset/b5de6975-417b-4320-afdb-eb2a9e2a1dbf), 10 meters over Austria
-- [data.gov.uk](http://environment.data.gov.uk/ds/survey/index.jsp#/survey), 2 meters over most of the United Kingdom
-- [LINZ](https://data.linz.govt.nz/layer/1768-nz-8m-digital-elevation-model-2012/), 8 meters over New Zealand
 - [3DEP](http://nationalmap.gov/elevation.html) (formerly NED) in the United States, 10 meters outside of Alaska, 3 meter in select land and territorial water areas
-- [SRTM](https://lta.cr.usgs.gov/SRTM) globally except high latitudes, 30 meters in land areas
-- [GMTED](http://topotools.cr.usgs.gov/gmted_viewer/) globally, coarser resolutions at 7.5", 15", and 30" in land areas
+- [ArcticDEM](http://nga.maps.arcgis.com/apps/MapSeries/index.html?appid=cf2fba21df7540fb981f8836f2a97e25) strips of 5 meter mosaics across the majority of the land north of 60° latitude
+- [CDEM](http://geogratis.gc.ca/api/en/nrcan-rncan/ess-sst/c40acfba-c722-4be1-862e-146b80be738e.html) (Canadian Digital Elevation Model) in Canada, with variable spatial resolution (from 20-400 meters) depending on the latitude.
+- [data.gov.uk](http://environment.data.gov.uk/ds/survey/index.jsp#/survey), 2 meters over most of the United Kingdom
+- [data.gv.at](https://www.data.gv.at/katalog/dataset/b5de6975-417b-4320-afdb-eb2a9e2a1dbf), 10 meters over Austria
 - [ETOPO1](https://www.ngdc.noaa.gov/mgg/global/global.html) to fill in ocean bathymetry at 1'
+- [EUDEM](https://www.eea.europa.eu/data-and-maps/data/eu-dem#tab-original-data) in most of Europe at 30 meter resolution
+- [GMTED](http://topotools.cr.usgs.gov/gmted_viewer/) globally, coarser resolutions at 7.5", 15", and 30" in land areas
+- [Kartverket](http://data.kartverket.no/download/content/digital-terrengmodell-10-m-utm-33)'s Digital Terrain Model, 10 meters over Norway
+- [LINZ](https://data.linz.govt.nz/layer/1768-nz-8m-digital-elevation-model-2012/), 8 meters over New Zealand
+- [SRTM](https://lta.cr.usgs.gov/SRTM) globally except high latitudes, 30 meters in land areas
 
 
 ## What is the ground resolution?
