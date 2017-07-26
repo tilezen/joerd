@@ -20,6 +20,10 @@ The underlying data sources are a mix of:
 - [LINZ](https://data.linz.govt.nz/layer/1768-nz-8m-digital-elevation-model-2012/), 8 meters over New Zealand
 - [SRTM](https://lta.cr.usgs.gov/SRTM) globally except high latitudes, 30 meters in land areas
 
+These source images are composited to form tiles that make up the Mapzen Terrain Tiles service. To determine exactly which images contributed to Mapzen Terrain Tiles in a particular area, you can download the footprints database and use it with a GIS program like [QGIS](http://www.qgis.org/) to inspect which of these sources were used.
+
+To further assist in determining which sources contributed to an individual tile, each tile in the service has an `X-Imagery-Sources` header listing the sources that contributed to the tile. Each entry in the comma-separated list follows the pattern `source/filename.tif`.
+
 
 ## What is the ground resolution?
 
