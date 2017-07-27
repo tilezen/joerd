@@ -28,6 +28,23 @@ Here’s a sample tile in Normal format:
 http://tile.mapzen.com/mapzen/terrain/v1/normal/11/330/790.png?api_key=your-mapzen-api-key
 ```
 
+## Specify z, x, and y tile coordinates
+
+Tiled geographic data enables fast fetching and display of "[slippy maps](https://en.wikipedia.org/wiki/Tiled_web_map)".
+
+Tiling is the process of cutting raw map data from latitude and longitude geographic coordinates ([EPSG:4329](http://spatialreference.org/ref/epsg/4329/)) into a smaller data files using a file naming scheme based on zoom, x, and y in the Web Mercator ([EPSG:3857](http://spatialreference.org/ref/sr-org/6864/)) projection.
+
+### Tile coordinate components
+
+- `{z}` **zoom** ranges from 0 to 20 (but no new information is added after zoom 15)
+- `{x}` **horizontal position**, counting from the "left", ranges from 0 to variable depending on the zoom
+- `{y}` **vertical position**, counting from the "top", ranges from 0 to variable depending on the zoom
+
+### Tile coordinate resources
+
+- MapTiler.org's [Tiles à la Google Maps: Coordinates, Tile Bounds and Projection](http://www.maptiler.org/google-maps-coordinates-tile-bounds-projection/) has a great visualization that overlays tile coordinates on an interactive map
+- GeoFabrik's [Tile Calculator](http://tools.geofabrik.de/calc/) charts number of tiles per zoom with a customizable bounding box
+
 ##### Terrarium
 
 ```
