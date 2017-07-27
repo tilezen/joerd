@@ -29,7 +29,7 @@ These source images are composited to form tiles that make up the Mapzen Terrain
 
 ### Source headers
 
-To further assist in determining which sources contributed to an individual tile, the Mapzen Terrain Tiles service will respond with an HTTP header listing the sources that contributed to that tile. The value of the `X-Imagery-Sources` HTTP header is a comma-separated list, where each entry follows the pattern `source/filename.tif`.
+To further assist in determining which sources contributed to an individual tile, the Mapzen Terrain Tiles service will respond with an [HTTP header](https://en.wikipedia.org/wiki/List_of_HTTP_header_fields#Response_fields) listing the sources that contributed to that tile. The value of the `X-Imagery-Sources` HTTP header is a comma-separated list, where each entry follows the pattern `source/filename.tif`.
 
 For example, a tile might have the header `X-Imagery-Sources: srtm/N39W110.tif, srtm/N39W112.tif, gmted/30N120W_20101117_gmted_mea075.tif`, meaning that it was built from three source images. Two SRTM images and a GMTED image were composited together to generate the tile output. Using the footprint database dumps above you can gather more information about these source images, including the calculated resolution and footprint geometry. To find the entry in the database, look for an entry that has a matching `filename` attribute.
 
