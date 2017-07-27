@@ -20,9 +20,18 @@ The underlying data sources are a mix of:
 - [LINZ](https://data.linz.govt.nz/layer/1768-nz-8m-digital-elevation-model-2012/), 8 meters over New Zealand
 - [SRTM](https://lta.cr.usgs.gov/SRTM) globally except high latitudes, 30 meters in land areas
 
+### Footprints database
+
 These source images are composited to form tiles that make up the Mapzen Terrain Tiles service. To determine exactly which images contributed to Mapzen Terrain Tiles in a particular area, you can download the footprints database and use it with a GIS program like [QGIS](http://www.qgis.org/) to inspect which of these sources were used.
 
-To further assist in determining which sources contributed to an individual tile, each tile in the service has an `X-Imagery-Sources` header listing the sources that contributed to the tile. Each entry in the comma-separated list follows the pattern `source/filename.tif`.
+* [PostgreSQL Dump](https://example.com) (8.4MB, gzipped)
+* [GeoJSON](https://example.com) (5.3MB, gzipped)
+
+### Source headers
+
+To further assist in determining which sources contributed to an individual tile, the Mapzen Terrain Tiles service will respond with an HTTP header listing the sources that contributed to that tile. The value of the `X-Imagery-Sources` HTTP header is a comma-separated list, where each entry follows the pattern `source/filename.tif`.
+
+For example, a tile might have the header `X-Imagery-Sources: srtm/N39W110.tif, srtm/N39W112.tif, gmted/30N120W_20101117_gmted_mea075.tif`, meaning that it was built from three source images. Two SRTM images and a GMTED image were composited together to generate the tile output. Using the footprint database dumps above you can gather more information about these source images, including the calculated resolution and footprint geometry. To find the entry in the database, look for an entry that has a matching `filename` attribute.
 
 
 ## What is the ground resolution?
