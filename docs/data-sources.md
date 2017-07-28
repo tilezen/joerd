@@ -76,22 +76,22 @@ It should be noted that both `SRTM` and `GMTED` fill oceans and other bodies of 
 
 zoom   | ocean    | land
 ------ | -------- | -------
-**0**  | `ETOPO1` | `GMTED`
-**1**  | `ETOPO1` | `GMTED`
-**2**  | `ETOPO1` | `GMTED`
-**3**  | `ETOPO1` | `GMTED`
+**0**  | `ETOPO1` | `ETOPO1`
+**1**  | `ETOPO1` | `ETOPO1`
+**2**  | `ETOPO1` | `ETOPO1`
+**3**  | `ETOPO1` | `ETOPO1`
 **4**  | `ETOPO1` | `GMTED`
 **5**  | `ETOPO1` | `GMTED`
 **6**  | `ETOPO1` | `GMTED`
-**7**  | `ETOPO1` | `GMTED`
-**8**  | `ETOPO1` | `GMTED`
-**9**  | `ETOPO1` | `SRTM` with `GMTED` in high latitudes above 60°
-**10** | `ETOPO1` | `SRTM` with `GMTED` in high latitudes above 60°
-**11** | `ETOPO1` | `SRTM` with `GMTED` in high latitudes above 60°
-**12** | `ETOPO1` | `SRTM` with `GMTED` and `NED/3DEP` in USA (10 meter)
-**13** | `ETOPO1` | `SRTM` with `GMTED` and `NED/3DEP` in USA (10 meter)
-**14** | `ETOPO1` | `SRTM` with `GMTED` and `NED/3DEP` in USA (mostly 10 meter, some 3 meter)
-**15** | `ETOPO1` | `SRTM` with `GMTED` and `NED/3DEP` in USA (mostly 10 meter, some 3 meter)
+**7**  | `ETOPO1` | `SRTM`, `NRCAN in Canada, with `GMTED` in high latitudes above 60°
+**8**  | `ETOPO1` | `SRTM`, `NRCAN in Canada, with `GMTED` in high latitudes above 60°
+**9**  | `ETOPO1` | `SRTM`, `NRCAN in Canada, `EUDEM` in Europe, with `GMTED` in high latitudes above 60°
+**10** | `ETOPO1`, `3DEP` in California | `SRTM`, `data.gov.at` in Austria, `NRCAN` in Canada, `SRTM`, `NED/3DEP` 1/3 arcsec, `data.gov.uk` in United Kingdom, `INEGI` in Mexico, `ArcticDEM` in latitudes above 60°, `LINZ` in New Zealand, `Kartverket` in Norway
+**11** | `ETOPO1`, `3DEP` in California | `SRTM`, `data.gov.at` in Austria, `NRCAN` in Canada, `SRTM`, `NED/3DEP` 1/3 arcsec and 1/9 arcsec, `data.gov.uk` in United Kingdom, `INEGI` in Mexico, `ArcticDEM` in latitudes above 60°, `LINZ` in New Zealand, `Kartverket` in Norway
+**12** | `ETOPO1`, `3DEP` in California | `SRTM`, `data.gov.at` in Austria, `NRCAN` in Canada, `SRTM`, `NED/3DEP` 1/3 arcsec and 1/9 arcsec, `data.gov.uk` in United Kingdom, `INEGI` in Mexico, `ArcticDEM` in latitudes above 60°, `LINZ` in New Zealand, `Kartverket` in Norway
+**13** | `ETOPO1`, `3DEP` in California | `SRTM`, `data.gov.at` in Austria, `NRCAN` in Canada, `SRTM`, `NED/3DEP` 1/3 arcsec and 1/9 arcsec, `data.gov.uk` in United Kingdom, `INEGI` in Mexico, `ArcticDEM` in latitudes above 60°, `LINZ` in New Zealand, `Kartverket` in Norway
+**14** | `ETOPO1`, `3DEP` in California | `SRTM`, `data.gov.at` in Austria, `NRCAN` in Canada, `SRTM`, `NED/3DEP` 1/3 arcsec and 1/9 arcsec, `data.gov.uk` in United Kingdom, `INEGI` in Mexico, `ArcticDEM` in latitudes above 60°, `LINZ` in New Zealand, `Kartverket` in Norway
+**15** | `ETOPO1`, `3DEP` in California | `SRTM`, `data.gov.at` in Austria, `NRCAN` in Canada, `SRTM`, `NED/3DEP` 1/3 arcsec and 1/9 arcsec, `data.gov.uk` in United Kingdom, `INEGI` in Mexico, `ArcticDEM` in latitudes above 60°, `LINZ` in New Zealand, `Kartverket` in Norway
 
 ## Sources native resolution
 
