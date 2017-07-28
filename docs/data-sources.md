@@ -9,7 +9,7 @@ Mapzen Terrain Tiles are powered by several major open data sets and we owe a tr
 The underlying data sources are a mix of:
 
 - [3DEP](http://nationalmap.gov/elevation.html) (formerly NED) in the United States, 10 meters outside of Alaska, 3 meter in select land and territorial water areas
-- [ArcticDEM](http://nga.maps.arcgis.com/apps/MapSeries/index.html?appid=cf2fba21df7540fb981f8836f2a97e25) strips of 5 meter mosaics across the majority of the land north of 60° latitude
+- [ArcticDEM](http://nga.maps.arcgis.com/apps/MapSeries/index.html?appid=cf2fba21df7540fb981f8836f2a97e25) strips of 5 meter mosaics across all of the land north of 60° latitude, including Alaska, Canada, Greenland, Iceland, Norway, and Russia
 - [CDEM](http://geogratis.gc.ca/api/en/nrcan-rncan/ess-sst/c40acfba-c722-4be1-862e-146b80be738e.html) (Canadian Digital Elevation Model) in Canada, with variable spatial resolution (from 20-400 meters) depending on the latitude.
 - [data.gov.uk](http://environment.data.gov.uk/ds/survey/index.jsp#/survey), 2 meters over most of the United Kingdom
 - [data.gv.at](https://www.data.gv.at/katalog/dataset/b5de6975-417b-4320-afdb-eb2a9e2a1dbf), 10 meters over Austria
