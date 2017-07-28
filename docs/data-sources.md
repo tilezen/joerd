@@ -16,6 +16,7 @@ The underlying data sources are a mix of:
 - [ETOPO1](https://www.ngdc.noaa.gov/mgg/global/global.html) to fill in ocean bathymetry at 1'
 - [EUDEM](https://www.eea.europa.eu/data-and-maps/data/eu-dem#tab-original-data) in most of Europe at 30 meter resolution, including Albania, Austria, Belgium, Bosnia and Herzegovina, Bulgaria, Croatia, Cyprus, Czechia, Denmark, Estonia, Finland, France, Germany, Greece, Hungary, Iceland, Ireland, Italy, Kosovo, Latvia, Liechtenstein, Lithuania, Luxembourg, Macedonia, Malta, Montenegro, Netherlands, Norway, Poland, Portugal, Romania, Serbia, Slovakia, Slovenia, Spain, Sweden, Switzerland, and United Kingdom
 - [GMTED](http://topotools.cr.usgs.gov/gmted_viewer/) globally, coarser resolutions at 7.5", 15", and 30" in land areas
+- [INEGI](http://en.www.inegi.org.mx/temas/mapas/relieve/continental/)'s continental relief in Mexico
 - [Kartverket](http://data.kartverket.no/download/content/digital-terrengmodell-10-m-utm-33)'s Digital Terrain Model, 10 meters over Norway
 - [LINZ](https://data.linz.govt.nz/layer/1768-nz-8m-digital-elevation-model-2012/), 8 meters over New Zealand
 - [SRTM](https://lta.cr.usgs.gov/SRTM) globally except high latitudes, 30 meters in land areas

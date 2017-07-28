@@ -165,3 +165,13 @@ Attribution statement:
 ```
 Contains information licensed under the Open Government Licence – Canada.
 ```
+
+### National Institute of Statistics and Geography (INEGI)
+
+[Released]() under [INEGI's "free use of information" license](http://en.www.inegi.org.mx/inegi/terminos.html).
+
+Attribution statement:
+
+```
+Source: INEGI, Continental relief, 2016
+```
