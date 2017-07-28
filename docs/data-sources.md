@@ -131,9 +131,9 @@ zoom   | meters at equator     | arc seconds     | nominal arc degrees minutes s
 
 ## Data updates
 
-Terrain tiles were built during 2016Q2 and 2016Q3 based on available sources at that time. Regular updates are not planned.
+Terrain tiles were built during 2017Q2 based on available sources at that time. Regular updates are not planned.
 
-Future updates will be on an as-needed basis for smaller regions to incorporate additional `3DEP` coverage in the United States and additional country specific data sources globally (such as `NRCAN` in Canada).
+Future updates will be on an as-needed basis for smaller regions to incorporate additional `3DEP` coverage in the United States and additional country specific data sources globally.
 
 We are always looking for better datasets. If you find a data issue or can suggest an open terrain datasets, please let us know by filing an issue in [tilezen/joerd](https://github.com/tilezen/joerd/issues/new).
 
