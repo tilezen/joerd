@@ -106,13 +106,21 @@ More details can be found on the ETOPO1 [about](https://www.ngdc.noaa.gov/mgg/gl
 
 [Released](https://data.linz.govt.nz/layer/1768-nz-8m-digital-elevation-model-2012/) by [LINZ](https://data.linz.govt.nz/), licensed under [Creative Commons Attribution 3.0 New Zealand](https://data.linz.govt.nz/license/attribution-3-0-new-zealand/).
 
-Attribution statement: Copyright 2011 Crown copyright (c) Land Information New Zealand and the New Zealand Government. All rights reserved
+Attribution statement:
+
+```
+Copyright 2011 Crown copyright (c) Land Information New Zealand and the New Zealand Government. All rights reserved
+```
 
 ### data.gov.uk LIDAR Composite Digital Terrain Model
 
 [Released](https://data.gov.uk/dataset/lidar-composite-dtm-2m1) by [data.gov.uk](https://data.gov.uk/), licensed under [Open Government License version 3](http://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/)
 
-Attribution statement: © Environment Agency copyright and/or database right 2015. All rights reserved.
+Attribution statement:
+
+```
+© Environment Agency copyright and/or database right 2015. All rights reserved.
+```
 
 ### data.gv.at Digitales Geländemodell (DGM) Österreich
 
@@ -122,22 +130,38 @@ Attribution statement: © Environment Agency copyright and/or database right 201
 
 [Released](http://data.kartverket.no/download/content/digital-terrengmodell-10-m-utm-33) by Kartverket, [licensed](http://www.kartverket.no/data/lisens/) under [Creative Commons Attribution 4.0 International (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/deed.no).
 
-Attribution statement: © Kartverket
+Attribution statement:
+
+```
+© Kartverket
+```
 
 ### Arctic Digital Elevation Model (ArcticDEM)
 
 [Released](http://nga.maps.arcgis.com/apps/MapSeries/index.html?appid=cf2fba21df7540fb981f8836f2a97e25) without limitation. "ArcticDEM data is an unlicensed product and may be used, distributed, and modified without permission".
 
-Requested citation: DEM(s) were created from DigitalGlobe, Inc., imagery and funded under National Science Foundation awards 1043681, 1559691, and 1542736.
+Requested citation:
+
+```
+DEM(s) were created from DigitalGlobe, Inc., imagery and funded under National Science Foundation awards 1043681, 1559691, and 1542736.
+```
 
 ### Digital Terrain Model over Europe (EU-DEM)
 
 [Released](https://www.eea.europa.eu/data-and-maps/data/eu-dem#tab-metadata) by [European Environmental Agency](https://www.eea.europa.eu/).
 
-Attribution statement: Produced using Copernicus data and information funded by the European Union - EU-DEM layers.
+Attribution statement:
+
+```
+Produced using Copernicus data and information funded by the European Union - EU-DEM layers.
+```
 
 ### Canadian Digital Elevation Model (CDEM)
 
 [Released](http://ftp.geogratis.gc.ca/pub/nrcan_rncan/elevation/cdem_mnec/doc/CDEM_product_specs.pdf) under the [Open Government Licence Agreement for Unrestricted Use of Digital Data](http://open.canada.ca/en/open-government-licence-canada).
 
-Attribution statement: Contains information licensed under the Open Government Licence – Canada.
+Attribution statement:
+
+```
+Contains information licensed under the Open Government Licence – Canada.
+```
