@@ -126,6 +126,12 @@ Attribution statement:
 
 [Released](https://www.data.gv.at/katalog/dataset/b5de6975-417b-4320-afdb-eb2a9e2a1dbf) by [data.gv.at](https://www.data.gv.at/), licensed under [Creative Commons Namensnennung 3.0 Österreich](https://creativecommons.org/licenses/by/3.0/at/deed.de)
 
+Attribution statement:
+
+```
+© offene Daten Österreichs – Digitales Geländemodell (DGM) Österreich.
+```
+
 ### data.kartverket.no Digital terrengmodell
 
 [Released](http://data.kartverket.no/download/content/digital-terrengmodell-10-m-utm-33) by Kartverket, [licensed](http://www.kartverket.no/data/lisens/) under [Creative Commons Attribution 4.0 International (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/deed.no).
