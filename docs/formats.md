@@ -4,9 +4,8 @@ Mapzen Terrain Tiles provide worldwide basemap coverage sourced from [SRTM](www.
 
 The following formats are available, with full details below:
 
-* `terrarium` with extension `png` in Web Mercator projection, 256x256 and 512x512 tiles
-* `normal` with extension `png` in Web Mercator projection, 256x256 and 512x512 tiles
-* buffered `terrarium` and `normal` tiles in Web Mercator projection, 260x260 and 516x516
+* `terrarium` with extension `png` in Web Mercator projection, 256x256, 260x260, 512x512, and 516x516 tiles
+* `normal` with extension `png` in Web Mercator projection, 256x256, 260x260, 512x512, and 516x516 tiles
 * `geotiff` with extension `tif` in Web Mercator projection, 512x512 tiles
 * `skadi` with extension `hgt` in unprojected latlng, 1°x1° tiles
 
@@ -87,12 +86,6 @@ for i in range(0, 29):
 To decode quantized height value:
 
   `255 - bisect.bisect_left(HEIGHT_TABLE, h)`
-
-## Buffered Terrarium and Normal
-
-The **Terrarium** and **Normal** format tiles are also available with a two-pixel buffer on each side of the tile, giving overall tile sizes of 260x260 pixels and 516x516pixels.
-
-*Note that the buffered tiles are only available via Mapzen Terrain Tiles service, not via the Amazon Public Data bucket.*
 
 ## GeoTIFF
 
