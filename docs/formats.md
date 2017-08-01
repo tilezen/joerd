@@ -1,8 +1,8 @@
 # Types of Terrain Tiles
 
-The Mapzen terrain tiles provides worldwide basemap coverage sourced from [SRTM](www.openstreetmap.org) and other open data projects with several different data formats, with varying levels of processing.
+Mapzen Terrain Tiles provide worldwide basemap coverage sourced from [SRTM](www.openstreetmap.org) and other open data projects with several different data formats and varying levels of processing.
 
-The following formats are available, full details below:
+The following formats are available, with full details below:
 
 * `terrarium` with extension `png` in Web Mercator projection, 256x256 tiles
 * `normal` with extension `png` in Web Mercator projection, 256x256 tiles
