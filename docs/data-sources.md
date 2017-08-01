@@ -64,7 +64,7 @@ zoom   | _0°_       | _45°_      | _60°_
 **14** | `9.6`      | `6.8`      | `4.8`
 **15** | `4.8`      | `3.4`      | `2.4`
 
-**Note:** Esri has  [documentation](https://blogs.esri.com/esri/arcgis/2009/03/19/how-can-you-tell-what-map-scales-are-shown-for-online-maps/) about converting web map zoom integers to conventional map scales.
+**Note:** Esri has [documentation](https://blogs.esri.com/esri/arcgis/2009/03/19/how-can-you-tell-what-map-scales-are-shown-for-online-maps/) about converting web map zoom integers to conventional map scales.
 
 ## What is sourced at what zooms?
 
