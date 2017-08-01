@@ -25,8 +25,8 @@ The underlying data sources are a mix of:
 
 These source images are composited to form tiles that make up the Mapzen Terrain Tiles service. To determine exactly which images contributed to Mapzen Terrain Tiles in a particular area, you can download the footprints database and use it with a GIS program like [QGIS](http://www.qgis.org/) to inspect which of these sources were used.
 
-* [GeoJSON](https://example.com) (5.3MB, gzipped)
-* [PostgreSQL Dump](https://example.com) (8.4MB, gzipped)
+* [GeoJSON](https://s3.amazonaws.com/elevation-tiles-prod/v2/docs/footprints-2017-08-01.geojson.gz) (5.3MB, gzipped)
+* [PostgreSQL Dump](https://s3.amazonaws.com/elevation-tiles-prod/v2/docs/footprints-2017-08-01.pgdump.gz) (8.4MB, gzipped)
 
 ### Source headers
 
