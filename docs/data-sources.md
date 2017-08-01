@@ -68,7 +68,7 @@ zoom   | _0°_       | _45°_      | _60°_
 
 ## What is sourced at what zooms?
 
-Generally speaking, **GMTED** is used at low-zooms, and **ETOPO1** is used to show ocean bathymetry at all zooms (even bathymetry oversampled at zoom 15), and **[SRTM](http://www2.jpl.nasa.gov/srtm/)** is relied on in mid- and high-zooms on land. In the United States, data from **USGS** supplements the SRTM land data to provide greater detail at 10 meters and in some areas at up to 3 meters.
+Generally speaking, **GMTED** is used at low-zooms, **ETOPO1** is used to show ocean bathymetry at all zooms (even bathymetry oversampled at zoom 15), and **[SRTM](http://www2.jpl.nasa.gov/srtm/)** is relied on in mid- and high-zooms on land. Some countries have higher resolution data available over land sourced from other open datasets. More information about these sources is available below.
 
 It should be noted that both `SRTM` and `GMTED` fill oceans and other bodies of water with a value of zero to indicate mean sea level; in these areas, `ETOPO1` provides bathymetry (as well as in regions which are not covered by `SRTM` and `GMTED`).
 
