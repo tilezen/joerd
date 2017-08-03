@@ -17,7 +17,7 @@ Once you have your Mapzen API key you'll need include it with Terrain Tile reque
 Request a single tile with this URL pattern to get started:
 
 ```
-https://tile.mapzen.com/mapzen/terrain/v2/{format}/{z}/{x}/{y}.{extension}?api_key=your-mapzen-api-key
+https://tile.mapzen.com/mapzen/terrain/v1/{format}/{z}/{x}/{y}.{extension}?api_key=your-mapzen-api-key
 ```
 
 The [OpenStreetMap Wiki](http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames) has more information on this url scheme.
@@ -25,7 +25,7 @@ The [OpenStreetMap Wiki](http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames
 Here’s a sample tile in Normal format:
 
 ```
-http://tile.mapzen.com/mapzen/terrain/v2/normal/11/330/790.png?api_key=your-mapzen-api-key
+http://tile.mapzen.com/mapzen/terrain/v1/normal/11/330/790.png?api_key=your-mapzen-api-key
 ```
 
 ## Specify z, x, and y tile coordinates
@@ -48,31 +48,31 @@ Tiling is the process of cutting raw map data from latitude and longitude geogra
 ##### Terrarium
 
 ```
-https://tile.mapzen.com/mapzen/terrain/v2/terrarium/{z}/{x}/{y}.png?api_key=your-mapzen-api-key
+https://tile.mapzen.com/mapzen/terrain/v1/terrarium/{z}/{x}/{y}.png?api_key=your-mapzen-api-key
 ```
 
 Supported optional tile size variants:
 
-  `https://tile.mapzen.com/mapzen/terrain/v2/{256,512,260,516}/terrarium/{z}/{x}/{y}.png`
+  `https://tile.mapzen.com/mapzen/terrain/v1/{256,512,260,516}/terrarium/{z}/{x}/{y}.png`
 
 The 260 and 516 variants contain 2 pixels of buffering on each edge.
 
 ##### Normal
 
 ```
-https://tile.mapzen.com/mapzen/terrain/v2/normal/{z}/{x}/{y}.png?api_key=your-mapzen-api-key
+https://tile.mapzen.com/mapzen/terrain/v1/normal/{z}/{x}/{y}.png?api_key=your-mapzen-api-key
 ```
 
 Supported optional tile size variants:
 
-  `https://tile.mapzen.com/mapzen/terrain/v2/{256,512,260,516}/normal/{z}/{x}/{y}.png`
+  `https://tile.mapzen.com/mapzen/terrain/v1/{256,512,260,516}/normal/{z}/{x}/{y}.png`
 
 The 260 and 516 variants contain 2 pixels of buffering on each edge.
 
 ##### GeoTIFF
 
 ```
-https://tile.mapzen.com/mapzen/terrain/v2/geotiff/{z}/{x}/{y}.tif?api_key=your-mapzen-api-key
+https://tile.mapzen.com/mapzen/terrain/v1/geotiff/{z}/{x}/{y}.tif?api_key=your-mapzen-api-key
 ```
 
 Note: GeoTIFF format tiles are 512x512 sized so request the parent tile’s coordinate. For instance, if you’re looking for a zoom 14 tile then request the parent tile at zoom 13.
@@ -80,10 +80,10 @@ Note: GeoTIFF format tiles are 512x512 sized so request the parent tile’s coor
 ##### Skadi
 
 ```
-https://tile.mapzen.com/mapzen/terrain/v2/skadi/{N|S}{y}/{N|S}{y}{E|W}{x}.hgt.gz?api_key=your-mapzen-api-key
+https://tile.mapzen.com/mapzen/terrain/v1/skadi/{N|S}{y}/{N|S}{y}{E|W}{x}.hgt.gz?api_key=your-mapzen-api-key
 ```
 
-Note: Skadi files are split into 1° by 1° grids. File names refer to the latitude and longitude of the lower left corner of the tile - e.g. N37W105 has its lower left corner at 37 degrees north latitude and 105 degrees west longitude. For example:  N37W105: `https://tile.mapzen.com/mapzen/terrain/v2/skadi/N37/N37W105.hgt.gz?api_key=your-mapzen-api-key`.
+Note: Skadi files are split into 1° by 1° grids. File names refer to the latitude and longitude of the lower left corner of the tile - e.g. N37W105 has its lower left corner at 37 degrees north latitude and 105 degrees west longitude. For example:  N37W105: `https://tile.mapzen.com/mapzen/terrain/v1/skadi/N37/N37W105.hgt.gz?api_key=your-mapzen-api-key`.
 
 #### Additional Amazon S3 Endpoints
 
