@@ -124,12 +124,12 @@ zoom   | meters at equator     | arc seconds     | nominal arc degrees minutes s
 **8**  | _611.5_    | `19.8`   | **15  arc seconds**  | `GMTED2010` | 500m (not used)
 **9**  | _305.7_    | `9.9`    | **7.5  arc seconds** | `GMTED2010` | 250m
 **10** | _152.9_    | `5.0`    | **5 arc seconds**    |             |
-**11** | _76.4_     | `2.5`    | **3 arc seconds**    | `SRTM`      | 90m (not used)
-**12** | _38.2_     | `1.2`    | **1 arc seconds**    | `SRTM`      | 30m
+**11** | _76.4_     | `2.5`    | **3 arc seconds**    | Canada      | 90m
+**12** | _38.2_     | `1.2`    | **1 arc seconds**    | `SRTM`, Canada | 30m
 **13** | _19.1_     | `0.6`    | **2/3 arc seconds**  |             |
-**14** | _9.6_      | `0.3`    | **1/3 arc seconds**  | `3DEP`      | 10m
-**15** | _4.8_      | `0.2`    | **1/5 arc seconds**  |             |
-**16** | _2.4_      | `0.1`    | **1/9 arc seconds**  | `3DEP`      | 3m
+**14** | _9.6_      | `0.3`    | **1/3 arc seconds**  | `3DEP`, Austria, Australia, New Zealand, Norway | 10m
+**15** | _4.8_      | `0.2`    | **1/5 arc seconds**  | Mexico, Arctic |
+**16** | _2.4_      | `0.1`    | **1/9 arc seconds**  | `3DEP`, United Kingdom | 3m
 
 ## Data updates
 
