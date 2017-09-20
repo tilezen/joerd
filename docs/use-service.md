@@ -14,15 +14,21 @@ Once you have your Mapzen API key you'll need include it with Terrain Tile reque
 
 ## Requesting tiles
 
+The [OpenStreetMap Wiki](http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames) describes the web mapping tile scheme used by the Mapzen terrain tile service.
+
 Request a single tile with this URL pattern to get started:
 
 ```
 https://tile.mapzen.com/mapzen/terrain/v1/{format}/{z}/{x}/{y}.{extension}?api_key=your-mapzen-api-key
 ```
 
-The [OpenStreetMap Wiki](http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames) has more information on this url scheme.
+Some formats support a `tilesize` option, see below for more information:
 
-Here’s a sample tile in Normal format:
+```
+https://tile.mapzen.com/mapzen/terrain/v1/{tilesize}/{format}/{z}/{x}/{y}.{extension}?api_key=your-mapzen-api-key
+```
+
+Here's a sample tile in Normal format:
 
 ```
 http://tile.mapzen.com/mapzen/terrain/v1/normal/11/330/790.png?api_key=your-mapzen-api-key
@@ -68,6 +74,100 @@ https://tile.mapzen.com/mapzen/terrain/v1/skadi/{N|S}{y}/{N|S}{y}{E|W}{x}.hgt.gz
 
 Note: Skadi files are split into 1° by 1° grids. File names refer to the latitude and longitude of the lower left corner of the tile - e.g. N37W105 has its lower left corner at 37 degrees north latitude and 105 degrees west longitude. For example:  N37W105: `https://tile.mapzen.com/mapzen/terrain/v1/skadi/N37/N37W105.hgt.gz?api_key=your-mapzen-api-key`.
 
+## Specify tile size
+
+Both Terrarium and Normal formats support optional tile sizes of `256` and `512` for basic map display, and buffered sizes of `260` and `516` pixels useful for 3d and analytical applications. When not provided, the size defaults to `256`. Historically, the first web slippy maps were based on 256 pixel sized tiles.
+
+```
+https://tile.mapzen.com/mapzen/terrain/v1/{tilesize}/{format}/{z}/{x}/{y}.{extension}?api_key=your-mapzen-api-key
+```
+
+**Larger 512 pixel sized tiles offers several benefits:**
+
+- **Less tiles, less network requests:** a single 512 request is equivalent to four 256 requests
+- **Smaller overall file sizes:** A larger 512 pixel tile compresses to a smaller file size than when split into four 256 tiles
+- **Offline:** Less 512 tiles are needed to cover the same geographic area, and take up less disk space
+
+**Buffered 260 and 516 pixel sized tiles offers several benefits:**
+
+- **Less network requests:** The 2 pixel edge buffers limit reduce network requests from 9 to 1. And a single a single 516 request is equivalent to four 260 requests.
+- **3D geometry construction**: The buffer provides enough height values in the overlap to calculate 3D elevation meshes without loading neighbouring tiles.
+- **Enables professional shading for 3D**: The 2nd pixel of buffer enables custom normals (slopes) to be calculated for the 1st pixel of the terrarium buffer without loading neighbourhing tiles.
+
+### 256 tile size (default)
+
+The maximum `{z}` value for 256 pixel tiles is zoom **15**. Requesting `{z}` coordinates past that will result in a 404 error.
+
+**Default:**
+
+Including tile size in the path is not required. When not specified the default size of `256` is returned, and Tangram's default `tile_size` of 256 is used.
+.
+
+```
+https://tile.mapzen.com/mapzen/terrain/v1/{format}/{z}/{x}/{y}.{extension}?api_key=your-mapzen-api-key
+```
+
+**Example Tangram YAML:**
+
+```
+sources:
+    mapzen:
+        type: Raster
+        url:  https://tile.mapzen.com/mapzen/terrain/v1/normal/{z}/{x}/{y}.png
+        url_params:
+            api_key: your-mapzen-api-key
+        max_zoom: 15
+```
+
+**256 in path:**
+
+```
+https://tile.mapzen.com/mapzen/terrain/v1/256/{format}/{z}/{x}/{y}.{extension}?api_key=your-mapzen-api-key
+```
+
+### 512 tile size
+
+The maximum `{z}` value for 512 pixel tiles is zoom **14**. Requesting `{z}` coordinates past that will result in a 404 error.
+
+**512 in path:**
+
+```
+https://tile.mapzen.com/mapzen/terrain/v1/512/{format}/{z}/{x}/{y}.{extension}?api_key=your-mapzen-api-key
+```
+
+**Example Tangram YAML:**
+
+```
+sources:
+    mapzen:
+        type: MVT
+        url:  https://tile.mapzen.com/mapzen/terrain/v1/512/normal/{z}/{x}/{y}.png
+        url_params:
+            api_key: your-mapzen-api-key
+        tile_size: 512
+        max_zoom: 14
+```
+
+### 260 tile size
+
+The maximum `{z}` value for 260 pixel buffered tiles is zoom **15**. Requesting `{z}` coordinates past that will result in a 404 error. Supported by Terrarium and Normal formats.
+
+**260 in path:**
+
+```
+https://tile.mapzen.com/mapzen/terrain/v1/260/{format}/{z}/{x}/{y}.{extension}?api_key=your-mapzen-api-key
+```
+
+### 516 tile size
+
+The maximum `{z}` value for 516 pixel buffered tiles is zoom **14**. Requesting `{z}` coordinates past that will result in a 404 error. Supported by Terrarium and Normal formats.
+
+**516 in path:**
+
+```
+https://tile.mapzen.com/mapzen/terrain/v1/516/{format}/{z}/{x}/{y}.{extension}?api_key=your-mapzen-api-key
+```
+
 #### Additional Amazon S3 Endpoints
 
 If you’re building in Amazon AWS we recommend using machines in the `us-east` region (the same region as the S3 bucket) and use the following endpoints for increased performance:
@@ -77,7 +177,7 @@ If you’re building in Amazon AWS we recommend using machines in the `us-east` 
 * `https://s3.amazonaws.com/elevation-tiles-prod/geotiff/{z}/{x}/{y}.tif`
 * `https://s3.amazonaws.com/elevation-tiles-prod/skadi/{N|S}{y}/{N|S}{y}{E|W}{x}.hgt.gz`
 
-NOTE: The S3 tiles are meant for efficient networking with EC2 resources only. The Amazon S3 endpoints are not cached using Cloudfront, but you could put your own Cloudfront or other CDN in front of them (or use Mapzen's hosted Terrain Tiles service).
+NOTE: The S3 tiles are meant for efficient networking with EC2 resources only. Terrarium and normal formats are only available as 256 tile size on the Amazon S3 endpoints. The Amazon S3 endpoints are not cached using Cloudfront, but you could put your own Cloudfront or other CDN in front of them (or use Mapzen's hosted Terrain Tiles service).
 
 ## Security
 
