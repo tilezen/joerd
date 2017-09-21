@@ -101,7 +101,6 @@ The maximum `{z}` value for 256 pixel tiles is zoom **15**. Requesting `{z}` coo
 **Default:**
 
 Including tile size in the path is not required. When not specified the default size of `256` is returned, and Tangram's default `tile_size` of 256 is used.
-.
 
 ```
 https://tile.mapzen.com/mapzen/terrain/v1/{format}/{z}/{x}/{y}.{extension}?api_key=your-mapzen-api-key
