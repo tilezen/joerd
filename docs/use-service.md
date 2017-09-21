@@ -82,17 +82,17 @@ Both Terrarium and Normal formats support optional tile sizes of `256` and `512`
 https://tile.mapzen.com/mapzen/terrain/v1/{tilesize}/{format}/{z}/{x}/{y}.{extension}?api_key=your-mapzen-api-key
 ```
 
-**Larger 512 pixel sized tiles offers several benefits:**
+**Larger 512 pixel sized tiles offer several benefits:**
 
 - **Less tiles, less network requests:** a single 512 request is equivalent to four 256 requests
 - **Smaller overall file sizes:** A larger 512 pixel tile compresses to a smaller file size than when split into four 256 tiles
 - **Offline:** Less 512 tiles are needed to cover the same geographic area, and take up less disk space
 
-**Buffered 260 and 516 pixel sized tiles offers several benefits:**
+**Buffered 260 and 516 pixel sized tiles offer several benefits:**
 
-- **Less network requests:** The 2 pixel edge buffers limit reduce network requests from 9 to 1. And a single a single 516 request is equivalent to four 260 requests.
-- **3D geometry construction**: The buffer provides enough height values in the overlap to calculate 3D elevation meshes without loading neighbouring tiles.
-- **Enables professional shading for 3D**: The 2nd pixel of buffer enables custom normals (slopes) to be calculated for the 1st pixel of the terrarium buffer without loading neighbourhing tiles.
+- **Less network requests:** The 2 pixel edge buffers reduce network requests from 9 to 1, as sampling neighboring tiles is no longer necessary. And a single 516 request is equivalent to four 260 requests.
+- **3D geometry construction**: The buffer provides enough height values in the overlap to calculate 3D elevation meshes without loading neighboring tiles.
+- **Enables professional shading for 3D**: The 2nd pixel of buffer enables custom normals (slopes) to be calculated for the 1st pixel of the terrarium buffer without loading neighboring tiles.
 
 ### 256 tile size (default)
 
