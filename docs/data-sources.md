@@ -133,7 +133,7 @@ zoom   | meters at equator     | arc seconds     | nominal arc degrees minutes s
 
 ## Data updates
 
-Terrain tiles version 1 was built during 2016Q2 and 2016Q3 based on available sources at that time. Version 2 was built during 2017Q3. Regular updates are not planned.
+Terrain tiles version 1 was built during 2016Q2 and 2016Q3 based on available sources at that time. Version 1.1 was built during 2017Q3. Regular updates are not planned.
 
 Future updates will be on an as-needed basis for smaller regions to incorporate additional `3DEP` coverage in the United States and additional country specific data sources globally.
 
