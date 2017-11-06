@@ -27,8 +27,8 @@ These source images are composited to form tiles that make up the Mapzen Terrain
 
 ![Preview Rendering of Footprints](images/footprints-preview.png)
 
-* [GeoJSON](https://s3.amazonaws.com/elevation-tiles-prod/v2/docs/footprints-2017-10-18.geojson.gz) (8.7MB, gzipped)
-* [PostgreSQL Dump](https://s3.amazonaws.com/elevation-tiles-prod/v2/docs/footprints-2017-10-18.pgdump.gz) (14.5MB, gzipped)
+* [GeoJSON](https://s3.amazonaws.com/elevation-tiles-prod/docs/footprints.geojson.gz) (8.7MB, gzipped)
+* [PostgreSQL Dump](https://s3.amazonaws.com/elevation-tiles-prod/docs/footprints.pgdump.gz) (14.5MB, gzipped)
 
 ### Source headers
 
