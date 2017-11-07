@@ -193,6 +193,8 @@ If you’re building in Amazon AWS we recommend using machines in the `us-east` 
 * `https://s3.amazonaws.com/elevation-tiles-prod/geotiff/{z}/{x}/{y}.tif`
 * `https://s3.amazonaws.com/elevation-tiles-prod/skadi/{N|S}{y}/{N|S}{y}{E|W}{x}.hgt.gz`
 
+This bucket has [verisoning](http://docs.aws.amazon.com/AmazonS3/latest/dev/Versioning.html) enabled so you can use a previous or older version of a tile.
+
 NOTE: The S3 tiles are meant for efficient networking with EC2 resources only. Terrarium and normal formats are only available as 256 tile size on the Amazon S3 endpoints. The Amazon S3 endpoints are not cached using Cloudfront, but you could put your own Cloudfront or other CDN in front of them (or use Mapzen's hosted Terrain Tiles service).
 
 ## Security
