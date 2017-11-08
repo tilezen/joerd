@@ -100,7 +100,7 @@ Attribution statement:
 
 ### data.gov.uk LIDAR Composite Digital Terrain Model
 
-[Released](https://data.gov.uk/dataset/lidar-composite-dtm-2m1) by [data.gov.uk](https://data.gov.uk/), licensed under [Open Government License version 3](http://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/)
+[Released](https://data.gov.uk/dataset/lidar-composite-dtm-2m1) by [data.gov.uk](https://data.gov.uk/), licensed under the United Kingdom [Open Government License version 3](http://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/)
 
 Attribution statement:
 
@@ -108,7 +108,7 @@ Attribution statement:
 
 ### data.gv.at Digitales Geländemodell (DGM) Österreich
 
-[Released](https://www.data.gv.at/katalog/dataset/b5de6975-417b-4320-afdb-eb2a9e2a1dbf) by [data.gv.at](https://www.data.gv.at/), licensed under [Creative Commons Namensnennung 3.0 Österreich](https://creativecommons.org/licenses/by/3.0/at/deed.de)
+[Released](https://www.data.gv.at/katalog/dataset/b5de6975-417b-4320-afdb-eb2a9e2a1dbf) by Austria's [data.gv.at](https://www.data.gv.at/), licensed under [Creative Commons Namensnennung 3.0 Österreich](https://creativecommons.org/licenses/by/3.0/at/deed.de)
 
 Attribution statement:
 
@@ -116,7 +116,7 @@ Attribution statement:
 
 ### data.kartverket.no Digital terrengmodell
 
-[Released](http://data.kartverket.no/download/content/digital-terrengmodell-10-m-utm-33) by Kartverket, [licensed](http://www.kartverket.no/data/lisens/) under [Creative Commons Attribution 4.0 International (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/deed.no).
+[Released](http://data.kartverket.no/download/content/digital-terrengmodell-10-m-utm-33) by Austria's Kartverket, [licensed](http://www.kartverket.no/data/lisens/) under [Creative Commons Attribution 4.0 International (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/deed.no).
 
 Attribution statement:
 
@@ -148,7 +148,7 @@ Attribution statement:
 
 ### National Institute of Statistics and Geography (INEGI)
 
-[Released]() under [INEGI's "free use of information" license](http://en.www.inegi.org.mx/inegi/terminos.html).
+[Released](http://en.www.inegi.org.mx/temas/mapas/relieve/continental/) under Mexico's ["free use of information" license](http://en.www.inegi.org.mx/inegi/terminos.html).
 
 Attribution statement:
 
