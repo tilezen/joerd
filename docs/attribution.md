@@ -153,3 +153,11 @@ Attribution statement:
 Attribution statement:
 
 > Source: INEGI, Continental relief, 2016
+
+### Digital Elevation Model (DEM) of Australia derived from LiDAR 5 Metre Grid
+
+[Released](https://ecat.ga.gov.au/geonetwork/srv/eng/search#!22be4b55-2465-4320-e053-10a3070a5236) by Australia's [Geoscience Australia](http://www.ga.gov.au/), licensed under [Creative Commons Attribution 4.0 International Licence](https://creativecommons.org/licenses/by/4.0/)
+
+Attribution statement:
+
+> © Commonwealth of Australia (Geoscience Australia) 2017.
