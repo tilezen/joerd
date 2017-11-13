@@ -20,7 +20,7 @@ The underlying data sources are a mix of:
 - [INEGI](http://en.www.inegi.org.mx/temas/mapas/relieve/continental/)'s continental relief in Mexico
 - [Kartverket](http://data.kartverket.no/download/content/digital-terrengmodell-10-m-utm-33)'s Digital Terrain Model, 10 meters over Norway
 - [LINZ](https://data.linz.govt.nz/layer/1768-nz-8m-digital-elevation-model-2012/), 8 meters over New Zealand
-- [SRTM](https://lta.cr.usgs.gov/SRTM) globally except high latitudes, 30 meters in land areas
+- [SRTM](https://lta.cr.usgs.gov/SRTM) globally except high latitudes, 30 meters (90 meters nominal quality) in land areas
 
 ### Footprints database
 
