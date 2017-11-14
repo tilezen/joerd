@@ -1,11 +1,11 @@
 # Types of Terrain Tiles
 
-The Mapzen terrain tiles provides worldwide basemap coverage sourced from [SRTM](www.openstreetmap.org) and other open data projects with several different data formats, with varying levels of processing.
+Mapzen Terrain Tiles provide worldwide basemap coverage sourced from [SRTM](www.openstreetmap.org) and other open data projects with several different data formats and varying levels of processing.
 
-The following formats are available, full details below:
+The following formats are available, with full details below:
 
-* `terrarium` with extension `png` in Web Mercator projection, 256x256 tiles
-* `normal` with extension `png` in Web Mercator projection, 256x256 tiles
+* `terrarium` with extension `png` in Web Mercator projection, 256x256, 260x260, 512x512, and 516x516 tiles
+* `normal` with extension `png` in Web Mercator projection, 256x256, 260x260, 512x512, and 516x516 tiles
 * `geotiff` with extension `tif` in Web Mercator projection, 512x512 tiles
 * `skadi` with extension `hgt` in unprojected latlng, 1°x1° tiles
 
@@ -41,7 +41,7 @@ g = floor(v % 256)
 > 219
 b = floor((v - floor(v)) * 256)
 > 68
-  
+
 > rgb(137, 219, 68)
 ```
 

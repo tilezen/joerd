@@ -23,3 +23,6 @@ ned_topobathy/
 tiles/
 terrarium_tiles/
 normal_tiles/
+
+# macOS sillyness
+.DS_Store
