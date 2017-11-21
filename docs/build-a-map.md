@@ -18,7 +18,7 @@ The [collect.py](https://github.com/tilezen/joerd/blob/master/docs/examples/coll
 
 Download tiles into a named local directory:
 
-`python collect.py --bounds 37.8434, -122.3193, 37.7517, -122.0927 --zoom 12 directory/path/`
+`python collect.py --bounds 37.8434 -122.3193 37.7517 -122.0927 --zoom 12 --mapzen_api_key mapzen-XXXXXXX directory/path/`
 
 
 ### GDAL
@@ -27,7 +27,7 @@ When [GDAL](http://www.gdal.org) is installed, the collect script can optionally
 
 To trigger this behavior specify an output filename ending in `.tif`, `.tiff`, or `.geotiff` and **gdal_merge.py** will be called to merge all downloaded tiles into a single image (and removes the intermediate files):
 
-`python collect.py --bounds 37.8434, -122.3193, 37.7517, -122.0927 --zoom 12  directory/path/merged_filename.tif`
+`python collect.py --bounds 37.8434 -122.3193 37.7517 -122.0927 --zoom 12 --mapzen_api_key mapzen-XXXXXXX directory/path/merged_filename.tif`
 
 GDAL includes additional analytics, hill shading, and contouring algorithms. For instance, you could run [gdaldem hillshade](http://www.gdal.org/gdaldem.html#gdaldem_hillshade) on the merged file to generate a basic hillshade. Mapbox has a great [tutorial](https://www.mapbox.com/tilemill/docs/guides/terrain-data/#creating-hillshades) with full set of options.
 
