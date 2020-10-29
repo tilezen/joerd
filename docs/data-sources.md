@@ -21,6 +21,7 @@ The underlying data sources are a mix of:
 - [Kartverket](http://data.kartverket.no/download/content/digital-terrengmodell-10-m-utm-33)'s Digital Terrain Model, 10 meters over Norway
 - [LINZ](https://data.linz.govt.nz/layer/1768-nz-8m-digital-elevation-model-2012/), 8 meters over New Zealand
 - [SRTM](https://lta.cr.usgs.gov/SRTM) globally except high latitudes, 30 meters (90 meters nominal quality) in land areas
+- [D96TM](http://gis.arso.gov.si/evode/profile.aspx?id=atlas_voda_Lidar%40Arso&initialExtent=499500.5%2C109841.5%2C264.58333) derived from Lidar, 1200m-1400m over Slovenia
 
 ### Footprints database
 
