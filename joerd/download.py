@@ -62,6 +62,15 @@ def get(url, options={}):
         # to restart from the beginning every time).
         accept_range = False
 
+        #auth username
+        username = options.get('username')
+
+        #auth pass
+        password = options.get('password')
+
+        #auth top level url
+        auth_url = options.get('auth-url')
+
         # we need to download _something_ if the file position is less than the
         # known size, or the size is unknown.
         while filesize is None or filepos < filesize:
@@ -76,6 +85,17 @@ def get(url, options={}):
                 tries += 1
 
             req = urllib2.Request(url)
+
+            # if the user provided a username and password, add Authorization
+            if username is not None:
+                redirectHandler = urllib2.HTTPRedirectHandler()
+                cookieProcessor = urllib2.HTTPCookieProcessor()
+                passwordManager = urllib2.HTTPPasswordMgrWithDefaultRealm()
+                passwordManager.add_password(None, auth_url, username, password)
+                authHandler = urllib2.HTTPBasicAuthHandler(passwordManager)
+                opener = urllib2.build_opener(redirectHandler,cookieProcessor,authHandler)
+                urllib2.install_opener(opener)
+                #req.add_header("Authorization", "Basic %s" % base64string) 
 
             # if the server supports accept range, and we have a partial
             # download then attemp to resume it.
@@ -93,7 +113,9 @@ def get(url, options={}):
                 tmp.seek(0, os.SEEK_SET)
                 tmp.truncate(0)
 
+
             try:
+
                 f = urllib2.urlopen(req, timeout=timeout)
 
                 # try to get the filesize, if the server reports it.
@@ -182,5 +204,14 @@ def options(in_opts={}):
 
     tries = in_opts.get('tries', 10)
     out_opts['tries'] = int(tries)
+
+    username = in_opts.get('username', None)
+    out_opts['username'] = username
+
+    password = in_opts.get('password', None)
+    out_opts['password'] = password
+
+    auth_url = in_opts.get('auth-url', None)
+    out_opts['auth-url'] = auth_url
 
     return out_opts

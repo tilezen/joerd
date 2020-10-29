@@ -29,8 +29,11 @@ sources:
     tries: 100
   - type: greatlakes
   - type: srtm
-    url: http://e4ftl01.cr.usgs.gov/SRTM/SRTMGL1.003/2000.02.11/
-    mask-url: http://e4ftl01.cr.usgs.gov/SRTM/SRTMSWBD.003/2000.02.11/
+    url: http://e4ftl01.cr.usgs.gov/MEASURES/SRTMGL1.003/2000.02.11
+    mask-url: http://e4ftl01.cr.usgs.gov/MEASURES/SRTMSWBD.003/2000.02.11
+    username: 'earthdata username'
+    password: 'earthdata password'
+    auth-url: https://urs.earthdata.nasa.gov
   - type: ned13
     ftp_server: rockyftp.cr.usgs.gov
     base_path: vdelivery/Datasets/Staged/NED/13/IMG
@@ -40,5 +43,8 @@ sources:
   - type: ned_topobathy
     ftp_server: rockyftp.cr.usgs.gov
     base_path: vdelivery/Datasets/Staged/NED/19/IMG
+  - type: d96tm
+    uri: http://gis.arso.gov.si/lidar/otr/laz
+    fishnet_url: http://gis.arso.gov.si/related/lidar_porocila/lidar_fishnet_D96TM.zip
 logging:
   config: logging.example.config

@@ -205,6 +205,7 @@ class D96TM(object):
 	def _ensure_tile_index(self):
 		if self.tile_index is None:
 			index_file = os.path.join(self.base_dir, 'index.yaml')
+			#this cords are only for the test data and need to be changed for which region you want to download
 			bbox = (15.67583333,46.38861111,15.74166667,46.43305556)
 			self.tile_index = index.create(index_file, bbox, _parse_d96tm_tile, self)
 
