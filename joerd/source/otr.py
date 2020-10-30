@@ -231,8 +231,8 @@ class OTR(object):
 			return tiles
 
 		# buffer by 0.0075 degrees (81px) to grab neighbouring tiles and ensure
-	        # some overlap to take care of boundary issues.
-    		tile_bbox = tile.latlon_bbox().buffer(0.0075)
+        # some overlap to take care of boundary issues.
+		tile_bbox = tile.latlon_bbox().buffer(0.0075)
 
 		tile_index = self._ensure_tile_index()
 
