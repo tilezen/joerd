@@ -43,7 +43,7 @@ sources:
   - type: ned_topobathy
     ftp_server: rockyftp.cr.usgs.gov
     base_path: vdelivery/Datasets/Staged/NED/19/IMG
-  - type: d96tm
+  - type: otr
     uri: http://gis.arso.gov.si/lidar/otr/laz
     fishnet_url: http://gis.arso.gov.si/related/lidar_porocila/lidar_fishnet_D96TM.zip
 logging:
