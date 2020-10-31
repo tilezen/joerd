@@ -25,8 +25,6 @@ sudo apt-get install python-gdal python-bs4 python-numpy gdal-bin python-setupto
 
 (NOTE: not sure if this works: I installed GDAL-2.0.1 manually here, but I don't think it really needs it.)
 
-(NOTE: if you want to use d96tm, you must install pdal, python-pdal, and LASzip or LAZperf)
-
 You can then install it (recommended in a `virtualenv`) by running:
 
 ```sh
