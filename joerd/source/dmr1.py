@@ -24,7 +24,6 @@ import glob
 from osgeo import gdal
 from osgeo import ogr
 from osgeo import osr
-import pdal
 import yaml
 import time
 import subprocess
