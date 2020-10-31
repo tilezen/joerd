@@ -13,7 +13,7 @@ regions:
       left: 13.39027778
       bottom: 45.40750000
       right: 16.62694444 
-    zoom_range: [0, 15]
+    zoom_range: [10, 15]
 outputs:
   - type: skadi
   - type: tiff
@@ -26,7 +26,7 @@ sources:
     username: 'earthdata username'
     password: 'earthdata password'
     auth-url: https://urs.earthdata.nasa.gov
-  - type: otr
+  - type: dmr1
     uri: http://gis.arso.gov.si/lidar/otr/laz
     fishnet_url: http://gis.arso.gov.si/related/lidar_porocila/lidar_fishnet_D96TM.zip
 logging:

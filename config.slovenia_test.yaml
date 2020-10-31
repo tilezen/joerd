@@ -9,11 +9,11 @@ regions:
   #   zoom_range: [0, 16]
   slovenia-test:
     bbox:
-      top: 46.43305556
-      left: 15.67583333
-      bottom: 46.38861111
-      right: 15.74166667 
-    zoom_range: [14, 15]
+      top: 46.239346
+      left: 15.237007
+      bottom: 46.205735
+      right: 15.288334
+    zoom_range: [10, 15]
 outputs:
   - type: skadi
   - type: tiff
@@ -26,8 +26,8 @@ sources:
     username: 'earthdata username'
     password: 'earthdata password'
     auth-url: https://urs.earthdata.nasa.gov
-  - type: otr
-    uri: http://gis.arso.gov.si/lidar/otr/laz
+  - type: dmr1
+    uri: http://gis.arso.gov.si/lidar/dmr1
     fishnet_url: http://gis.arso.gov.si/related/lidar_porocila/lidar_fishnet_D96TM.zip
 logging:
   config: logging.example.config

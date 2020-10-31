@@ -21,7 +21,7 @@ The underlying data sources are a mix of:
 - [Kartverket](http://data.kartverket.no/download/content/digital-terrengmodell-10-m-utm-33)'s Digital Terrain Model, 10 meters over Norway
 - [LINZ](https://data.linz.govt.nz/layer/1768-nz-8m-digital-elevation-model-2012/), 8 meters over New Zealand
 - [SRTM](https://lta.cr.usgs.gov/SRTM) globally except high latitudes, 30 meters (90 meters nominal quality) in land areas
-- [OTR](http://gis.arso.gov.si/evode/profile.aspx?id=atlas_voda_Lidar%40Arso&initialExtent=499500.5%2C109841.5%2C264.58333) derived from pre-processed Lidar, which contains only the terrain at 1m resolution, 1200m-1400m over Slovenia
+- [DMR1](http://gis.arso.gov.si/evode/profile.aspx?id=atlas_voda_Lidar%40Arso&initialExtent=499500.5%2C109841.5%2C264.58333) derived from pre-processed Lidar, which contains only the terrain at 1m resolution, 1200m-1400m over Slovenia
 
 ### Footprints database
 
@@ -90,12 +90,12 @@ zoom   | ocean    | land
 **7**  | `ETOPO1` | `SRTM`, `NRCAN` in Canada, with `GMTED` in high latitudes above 60°
 **8**  | `ETOPO1` | `SRTM`, `NRCAN` in Canada, with `GMTED` in high latitudes above 60°
 **9**  | `ETOPO1` | `SRTM`, `NRCAN` in Canada, `EUDEM` in Europe, with `GMTED` in high latitudes above 60°
-**10** | `ETOPO1`, `NED Topobathy` in California | `SRTM`, `data.gov.at` in Austria, `NRCAN` in Canada, `SRTM`, `NED/3DEP` 1/3 arcsec, `data.gov.uk` in United Kingdom, `INEGI` in Mexico, `ArcticDEM` in latitudes above 60°, `LINZ` in New Zealand, `Kartverket` in Norway
-**11** | `ETOPO1`, `NED Topobathy` in California | `SRTM`, `data.gov.at` in Austria, `NRCAN` in Canada, `SRTM`, `NED/3DEP` 1/3 arcsec and 1/9 arcsec, `data.gov.uk` in United Kingdom, `INEGI` in Mexico, `ArcticDEM` in latitudes above 60°, `LINZ` in New Zealand, `Kartverket` in Norway
-**12** | `ETOPO1`, `NED Topobathy` in California | `SRTM`, `data.gov.at` in Austria, `NRCAN` in Canada, `SRTM`, `NED/3DEP` 1/3 arcsec and 1/9 arcsec, `data.gov.uk` in United Kingdom, `INEGI` in Mexico, `ArcticDEM` in latitudes above 60°, `LINZ` in New Zealand, `Kartverket` in Norway
-**13** | `ETOPO1`, `NED Topobathy` in California | `SRTM`, `data.gov.at` in Austria, `NRCAN` in Canada, `SRTM`, `NED/3DEP` 1/3 arcsec and 1/9 arcsec, `data.gov.uk` in United Kingdom, `INEGI` in Mexico, `ArcticDEM` in latitudes above 60°, `LINZ` in New Zealand, `Kartverket` in Norway
-**14** | `ETOPO1`, `NED Topobathy` in California | `SRTM`, `data.gov.at` in Austria, `NRCAN` in Canada, `SRTM`, `NED/3DEP` 1/3 arcsec and 1/9 arcsec, `data.gov.uk` in United Kingdom, `INEGI` in Mexico, `ArcticDEM` in latitudes above 60°, `LINZ` in New Zealand, `Kartverket` in Norway
-**15** | `ETOPO1`, `NED Topobathy` in California | `SRTM`, `data.gov.at` in Austria, `NRCAN` in Canada, `SRTM`, `NED/3DEP` 1/3 arcsec and 1/9 arcsec, `data.gov.uk` in United Kingdom, `INEGI` in Mexico, `ArcticDEM` in latitudes above 60°, `LINZ` in New Zealand, `Kartverket` in Norway
+**10** | `ETOPO1`, `NED Topobathy` in California | `SRTM`, `data.gov.at` in Austria, `NRCAN` in Canada, `SRTM`, `NED/3DEP` 1/3 arcsec, `data.gov.uk` in United Kingdom, `INEGI` in Mexico, `ArcticDEM` in latitudes above 60°, `LINZ` in New Zealand, `Kartverket` in Norway, `DMR1` in Slovenia
+**11** | `ETOPO1`, `NED Topobathy` in California | `SRTM`, `data.gov.at` in Austria, `NRCAN` in Canada, `SRTM`, `NED/3DEP` 1/3 arcsec and 1/9 arcsec, `data.gov.uk` in United Kingdom, `INEGI` in Mexico, `ArcticDEM` in latitudes above 60°, `LINZ` in New Zealand, `Kartverket` in Norway, `DMR1` in Slovenia
+**12** | `ETOPO1`, `NED Topobathy` in California | `SRTM`, `data.gov.at` in Austria, `NRCAN` in Canada, `SRTM`, `NED/3DEP` 1/3 arcsec and 1/9 arcsec, `data.gov.uk` in United Kingdom, `INEGI` in Mexico, `ArcticDEM` in latitudes above 60°, `LINZ` in New Zealand, `Kartverket` in Norway, `DMR1` in Slovenia
+**13** | `ETOPO1`, `NED Topobathy` in California | `SRTM`, `data.gov.at` in Austria, `NRCAN` in Canada, `SRTM`, `NED/3DEP` 1/3 arcsec and 1/9 arcsec, `data.gov.uk` in United Kingdom, `INEGI` in Mexico, `ArcticDEM` in latitudes above 60°, `LINZ` in New Zealand, `Kartverket` in Norway, `DMR1` in Slovenia
+**14** | `ETOPO1`, `NED Topobathy` in California | `SRTM`, `data.gov.at` in Austria, `NRCAN` in Canada, `SRTM`, `NED/3DEP` 1/3 arcsec and 1/9 arcsec, `data.gov.uk` in United Kingdom, `INEGI` in Mexico, `ArcticDEM` in latitudes above 60°, `LINZ` in New Zealand, `Kartverket` in Norway, `DMR1` in Slovenia
+**15** | `ETOPO1`, `NED Topobathy` in California | `SRTM`, `data.gov.at` in Austria, `NRCAN` in Canada, `SRTM`, `NED/3DEP` 1/3 arcsec and 1/9 arcsec, `data.gov.uk` in United Kingdom, `INEGI` in Mexico, `ArcticDEM` in latitudes above 60°, `LINZ` in New Zealand, `Kartverket` in Norway, `DMR1` in Slovenia
 
 ## Sources native resolution
 

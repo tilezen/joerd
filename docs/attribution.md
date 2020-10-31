@@ -201,11 +201,17 @@ Attribution statement:
 
 > © Commonwealth of Australia (Geoscience Australia) 2017.
 
-### Digital Elevation Model (DEM) of Slovenia derived from LiDAR 1 Meter Grid
+### Digital Elevation Model (DEM) of Slovenia derived from LiDAR 1 Meter Grid (DMR1)
 
-[Released](https://gis.arso.gov.si/related/lidar_porocila/b_25_izdelava_izdelkov.pdf) by Slovenia's [GURS](https://www.e-prostor.gov.si/), licensed under [Creative Commons 4.0](https://creativecommons.org/licenses/by/4.0/deed.sl)
+[Released](http://www.evode.gov.si/index.php?id=69) by Slovenia's [GURS](https://www.e-prostor.gov.si/), licensed under [Creative Commons 4.0](https://creativecommons.org/licenses/by/4.0/deed.sl)
+
+> Use Limitations:
+> General conditions for the use of geodetic data: https://www.e-prostor.gov.si/dostop-do-podatkov/dostop-do-podatkov/#tab1-1029
+>
+> Public access Restrictions:
+> No restrictions
 
 Attribution statement:
 
-> Geodetska uprava Republike Slovenije, LiDAR, OTR 2015 
+> Geodetska uprava Republike Slovenije, LiDAR, DMR1 2015
 > © 2017 MOP - Geodetska uprava Republike Slovenije - Vse pravice pridržane.
