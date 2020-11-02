@@ -27,7 +27,7 @@ sources:
     password: 'earthdata password'
     auth-url: https://urs.earthdata.nasa.gov
   - type: dmr1
-    uri: http://gis.arso.gov.si/lidar/otr/laz
+    uri: http://gis.arso.gov.si/lidar/dmr1
     fishnet_url: http://gis.arso.gov.si/related/lidar_porocila/lidar_fishnet_D96TM.zip
 logging:
   config: logging.example.config
