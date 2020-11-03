@@ -29,7 +29,8 @@ import time
 import subprocess
 import mimetypes
 
-#this needs to be changed to the region you want to download use
+#this needs to be changed to the region you want to download and render
+#Can be removed alongside line:141 and line:144 if memory usage due to the index is not important
 REGION_BBOX = BoundingBox(15.237007,46.205735,15.288334,46.239346)
 
 class DMR1Tile(object):
@@ -85,10 +86,11 @@ class DMR1Tile(object):
 				subprocess.check_output("sort -k2 -n -t';' -k1 {tfile} -o {ofile}".format(tfile=txt_file.name, ofile=xyz_file), cwd=temp_dir, shell=True)
 
 				#Correct NS (North South) resolution and convert to xyz to tif
-				subprocess.check_output("gdalwarp -t_srs EPSG:3794 -overwrite {xfile} {tfile}".format(xfile=xyz_file,tfile=tif_file), cwd=temp_dir, shell=True)
+				subprocess.check_output("gdalwarp -t_srs EPSG:3794 -ts 1001 1001 -overwrite {xfile} {tfile}".format(xfile=xyz_file,tfile=tif_file), cwd=temp_dir, shell=True)
 
+				#Move the file to the store
 				output_file = os.path.join(target, self.output_file())
-				mask.negative(os.path.join(temp_dir, tif_file), "GTiff", output_file)
+				move(os.path.join(temp_dir, tif_file), output_file)
 				
 
 	def freeze_dry(self):
@@ -187,8 +189,7 @@ class DMR1(object):
 		if self.tile_index is None:
 			index_file = os.path.join(self.base_dir, 'index.yaml')
 
-			#this needs to be changed to the region you want to download use
-			bbox = (15.237007,46.205735,15.288334,46.239346)
+			bbox = (13.39027778,45.40750000,16.62694444,46.88333333)
 			self.tile_index = index.create(index_file, bbox, _parse_dmr1_tile, self)
 
 		return self.tile_index
@@ -208,9 +209,9 @@ class DMR1(object):
 		tiles = set()
 		# if the tile scale is greater than 20x the D96TM scale, then there's no
 		# point in including D96TM, it'll be far too fine to make a difference.
-		# D96TM is 1m.
+		# D96TM is 1m (Aboue same as 1/9th arc second).
 
-		if tile.max_resolution() > 20:
+		if tile.max_resolution() > 20 * 1.0 / (3600 * 9):
 			return tiles
 
 		# buffer by 0.0075 degrees (81px) to grab neighbouring tiles and ensure

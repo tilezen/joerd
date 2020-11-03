@@ -13,13 +13,15 @@ regions:
       left: 13.39027778
       bottom: 45.40750000
       right: 16.62694444 
-    zoom_range: [10, 15]
+    zoom_range: [10, 16]
 outputs:
   - type: skadi
   - type: tiff
   - type: terrarium
   - type: normal
 sources:
+  - type: etopo1
+    url: https://www.ngdc.noaa.gov/mgg/global/relief/ETOPO1/data/bedrock/grid_registered/georeferenced_tiff/ETOPO1_Bed_g_geotiff.zip
   - type: srtm
     url: http://e4ftl01.cr.usgs.gov/MEASURES/SRTMGL1.003/2000.02.11
     mask-url: http://e4ftl01.cr.usgs.gov/MEASURES/SRTMSWBD.003/2000.02.11
