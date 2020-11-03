@@ -28,6 +28,7 @@ import yaml
 import time
 import subprocess
 import mimetypes
+from itertools import groupby
 
 #this needs to be changed to the region you want to download and render
 #Can be removed alongside line:141 and line:144 if memory usage due to the index is not important
@@ -168,6 +169,18 @@ class DMR1(object):
 
 		fishnet = 'LIDAR_FISHNET_D96.shp'
 
+		#these tiles do not have dmr1
+		blacklist = ['b_21/D96TM/TM1_393_35.txt',
+		'b_21/D96TM/TM1_392_35.txt', 
+		'b_23/D96TM/TM1_509_169.txt'
+		'b_24/D96TM/TM1_616_148.txt',
+		'b_24/D96TM/TM1_617_148.txt',
+		'b_24/D96TM/TM1_618_148.txt',
+		'b_24/D96TM/TM1_622_147.txt',
+		'b_24/D96TM/TM1_622_148.txt',
+		'b_24/D96TM/TM1_623_148.txt',
+		'b_24/D96TM/TM1_623_149.txt']
+
 		req = requests.get(self.fishnet_url, stream=True)
 		with tmpdir.tmpdir() as d:
 			with zipfile.ZipFile(io.BytesIO(req.content)) as zip_file:
@@ -179,7 +192,9 @@ class DMR1(object):
 			layer = dataSource.GetLayer()
 
 			for feature in layer:
-				links.append(feature.GetField("BLOK") + "/D96TM/TM1_" + feature.GetField("NAME") + ".txt")
+				link = feature.GetField("BLOK") + "/D96TM/TM1_" + feature.GetField("NAME") + ".txt";
+				if link not in blacklist:
+					links.append(link)
 			layer.ResetReading()
 
 		with open(index_file, 'w') as file:
@@ -233,9 +248,18 @@ class DMR1(object):
 		Returns a list of sets of tiles, with each list element intended as a
 		separate VRT for use in GDAL.
 		
-		D96TM is non-overlapping.
+		D96TM is overlapping.
 		"""
-		return [self.downloads_for(tile)]
+		vrt = []
+		tiles =  self.downloads_for(tile)
+
+		def func(tile):
+			return (tile.link)
+
+		for k, t in groupby(sorted(tiles, key=func), func):
+			vrt.append(set(t))
+
+		return vrt
 
 	def srs(self):
 		return srs.d96()
