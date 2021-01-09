@@ -30,10 +30,6 @@ import subprocess
 import mimetypes
 from itertools import groupby
 
-#this needs to be changed to the region you want to download and render
-#Can be removed alongside line:141 and line:144 if memory usage due to the index is not important
-REGION_BBOX = BoundingBox(15.237007,46.205735,15.288334,46.239346)
-
 class DMR1Tile(object):
 	def __init__(self, parent, link, name, block, bbox):
 		self.uri = parent.uri
@@ -43,6 +39,7 @@ class DMR1Tile(object):
 		self.block = block
 		self.link = link
 		self.bbox = bbox
+		self.region_bbox = parent.region_bbox
 
 	def __key(self):
 		return self.name
@@ -139,7 +136,7 @@ def _parse_dmr1_tile(link, parent):
 
 	#This is so the memory doesn't overflow, due to the big size of the index
 	#and is to be removed on a production server
-	if bbox.intersects(REGION_BBOX):
+	if bbox.intersects(parent.region_bbox):
 		return DMR1Tile(parent, link, name, block, bbox)
 
 	return None
@@ -149,6 +146,8 @@ class DMR1(object):
 		self.base_dir = options.get('base_dir', 'dmr1')
 		self.uri = options['uri']
 		self.fishnet_url = options['fishnet_url']
+		box = options['bbox']
+		self.region_bbox = BoundingBox(box['left'], box['bottom'], box['right'],box['top'])
 		self.download_options = options
 		self.tile_index = None
 

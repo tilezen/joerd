@@ -31,6 +31,11 @@ sources:
   - type: dmr1
     uri: http://gis.arso.gov.si/lidar/dmr1
     fishnet_url: http://gis.arso.gov.si/related/lidar_porocila/lidar_fishnet_D96TM.zip
+    bbox:
+      top: 46.88333333
+      left: 13.39027778
+      bottom: 45.40750000
+      right: 16.62694444 
 logging:
   config: logging.example.config
 cluster:
