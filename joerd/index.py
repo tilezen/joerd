@@ -1,7 +1,9 @@
+from __future__ import print_function
 import pyqtree
 import yaml
 import logging
 import thread
+
 
 
 # Create an index given a YAML file consisting of a list of strings and a
@@ -20,6 +22,7 @@ def create(index_file, bbox, parse_fn, *parse_args):
             if t:
                 idx.insert(bbox=t.bbox.bounds, item=t)
                 n += 1
+                print("\r Loaded... %d objects" % n, end="")
 
     logger.info("Created index with %d objects." % n)
     return idx

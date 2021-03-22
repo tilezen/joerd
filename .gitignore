@@ -18,6 +18,7 @@ gmted/
 etopo1/
 ned/
 ned_topobathy/
+dmr1/
 
 # tile generation directories
 tiles/

@@ -1,0 +1,49 @@
+---
+regions:
+  # san-francisco-bay_california:
+  #   bbox:
+  #     top: 38.719
+  #     left: -123.640
+  #     bottom: 36.791
+  #     right: -121.025
+  #   zoom_range: [0, 16]
+  slovenia-test:
+    bbox:
+      top: 46.239346
+      left: 15.237007
+      bottom: 46.205735
+      right: 15.288334
+    zoom_range: [10, 16]
+outputs:
+  - type: skadi
+  - type: tiff
+  - type: terrarium
+  - type: normal
+sources:
+  - type: etopo1
+    url: https://www.ngdc.noaa.gov/mgg/global/relief/ETOPO1/data/bedrock/grid_registered/georeferenced_tiff/ETOPO1_Bed_g_geotiff.zip
+  - type: srtm
+    url: http://e4ftl01.cr.usgs.gov/MEASURES/SRTMGL1.003/2000.02.11
+    mask-url: http://e4ftl01.cr.usgs.gov/MEASURES/SRTMSWBD.003/2000.02.11
+    username: 'earthdata username'
+    password: 'earthdata password'
+    auth-url: https://urs.earthdata.nasa.gov
+  - type: dmr1
+    uri: http://gis.arso.gov.si/lidar/dmr1
+    fishnet_url: https://raw.githubusercontent.com/DavixDevelop/TerraLidar/master/mapzen_data/whitelist.yaml
+    bbox:
+      top: 46.239346
+      left: 15.237007
+      bottom: 46.205735
+      right: 15.288334
+logging:
+  config: logging.example.config
+cluster:
+  queue:
+    type: fake
+store:
+  type: file
+  base_dir: 'render'
+source_store:
+  type: file
+  base_dir: 'source'

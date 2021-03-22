@@ -9,6 +9,7 @@ import joerd.tmpdir as tmpdir
 from joerd.mkdir_p import mkdir_p
 from contextlib2 import closing, ExitStack
 from shutil import copyfile, move
+from ftplib import FTP
 import os.path
 import os
 import requests
@@ -82,12 +83,12 @@ class SRTMTile(object):
                 zfile.extract(n, target_dir)
                 if n != self.fname:
                     move(os.path.join(target_dir, n),
-                         os.path.join(target_dir, self.fname))
+                    os.path.join(target_dir, self.fname))
                 return
 
             raise LookupError("None of the alternative names %r were found "
-                              "in the SRTM zipfile %r. Contents are: %r" %
-                              (names, zip_name, exists))
+                    "in the SRTM zipfile %r. Contents are: %r" %
+                    (names, zip_name, exists))
 
     def unpack(self, store, data_zip, mask_zip=None):
         with store.upload_dir() as target:
@@ -112,13 +113,18 @@ class SRTMTile(object):
                 # mask off the water using the mask raster raw file
                 output_file = os.path.join(target, self.output_file())
                 mask.raw(os.path.join(d, self.fname), mask_file, 255,
-                         "SRTMHGT", output_file)
+                    "SRTMHGT", output_file)
 
     def freeze_dry(self):
         return dict(type='srtm', link=self.link, is_masked=self.is_masked)
 
 
 def _parse_srtm_tile(link, parent, is_masked=None):
+    i = IS_SRTM_FILE.match(link)
+
+    if not i:
+        return None
+
     fname = link.replace(".SRTMGL1.hgt.zip", ".hgt")
     bbox = parent._parse_bbox(link)
     if is_masked is None:
@@ -128,7 +134,6 @@ def _parse_srtm_tile(link, parent, is_masked=None):
 
 
 class SRTM(object):
-
     def __init__(self, options={}):
         self.base_dir = options.get('base_dir', 'srtm')
         self.url = options['url']
@@ -155,7 +160,7 @@ class SRTM(object):
         index_file = os.path.join(self.base_dir, fname)
         # if index doesn't exist, or is more than 24h old
         if not os.path.isfile(index_file) or \
-           time.time() > os.path.getmtime(index_file) + 86400:
+            time.time() > os.path.getmtime(index_file) + 86400:
             self.download_index(index_file, name)
 
     def download_index(self, index_file, name):
@@ -167,30 +172,40 @@ class SRTM(object):
 
         url = None
         if name == 'tile':
-            url = self.url
+            url = self.url 
         if name == 'mask':
             url = self.mask_url
 
-        r = requests.get(url)
+        url_r = url + "/"
+
+        r = requests.get(url.replace('http','https'))
         soup = BeautifulSoup(r.text, 'html.parser')
 
         links = []
         for a in soup.find_all('a'):
             link = a.get('href')
             if link is not None:
-                bbox = self._parse_bbox(link)
-                if bbox:
-                    links.append(link)
+                if link.find(url.replace('http','https')) != -1:
+                    req = requests.get(link)
+                    isoup = BeautifulSoup(req.text, 'html.parser')
+                    for aa in isoup.find_all('a'):
+                        ilink = aa.get('href')
+                        if ilink is not None:
+                            fname = ilink.replace(url_r, '')
+                            bbox = self._parse_bbox(fname)
+                            if bbox:
+                                links.append(fname)
 
         with open(index_file, 'w') as f:
             f.write(yaml.dump(links))
+
+    
 
     def _ensure_tile_index(self):
         if self.tile_index is None:
             index_file = os.path.join(self.base_dir, 'index_tile.yaml')
             bbox = (-180, -90, 180, 90)
-            self.tile_index = index.create(index_file, bbox, _parse_srtm_tile,
-                                           self)
+            self.tile_index = index.create(index_file, bbox, _parse_srtm_tile,self)
 
         return self.tile_index
 
