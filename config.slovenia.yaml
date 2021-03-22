@@ -30,7 +30,7 @@ sources:
     auth-url: https://urs.earthdata.nasa.gov
   - type: dmr1
     uri: http://gis.arso.gov.si/lidar/dmr1
-    fishnet_url: http://gis.arso.gov.si/related/lidar_porocila/lidar_fishnet_D96TM.zip
+    fishnet_url: https://raw.githubusercontent.com/DavixDevelop/TerraLidar/master/mapzen_data/whitelist.yaml
     bbox:
       top: 46.88333333
       left: 13.39027778
